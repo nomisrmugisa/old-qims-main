@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './AddInspectionDialog.css';
 import ModalPortal from './ModalPortal';
 
@@ -78,6 +78,9 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventId, setEventId] = useState(null);
   const [fieldUpdateStatus, setFieldUpdateStatus] = useState({});
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isSettingInitialDateTime, setIsSettingInitialDateTime] = useState(false);
+  const initializationAttempted = useRef(false);
   
   // Map of field names to their DHIS2 data element IDs
   const fieldToDataElementMap = {
@@ -139,7 +142,18 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     inspectorFullname: "VOjM6ArpORU"
   };
   
-  // Note: We let DHIS2 generate UIDs on the server side
+  // Function to generate a DHIS2-compatible UID
+  const generateDHIS2UID = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    // First character must be a letter
+    result += chars.charAt(Math.floor(Math.random() * 52)); // 52 letters (A-Z, a-z)
+    // Remaining 10 characters can be letters or numbers
+    for (let i = 1; i < 11; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
   
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
@@ -216,7 +230,10 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
   
   // Create the initial event when the component mounts
   useEffect(() => {
-    if (open && !eventId) {
+    if (open && !initializationAttempted.current) {
+      // Start loading immediately when dialog opens
+      setIsSettingInitialDateTime(true);
+      initializationAttempted.current = true;
       createInitialEvent();
     }
     
@@ -226,13 +243,17 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       if (!open) {
         setEventId(null);
         setFieldUpdateStatus({});
+        setIsInitializing(false);
+        setIsSettingInitialDateTime(false);
+        initializationAttempted.current = false;
       }
     };
-  }, [open]);
+  }, [open]); // Only depend on 'open' to prevent multiple initializations
   
   // Create the initial event
   const createInitialEvent = async () => {
     try {
+      setIsInitializing(true);
       console.log("Creating initial inspection event...");
       
       const orgUnitId = await getCurrentUserOrgUnit();
@@ -263,14 +284,20 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       }
       
       const today = new Date().toISOString().split('T')[0];
+      const todayDateTime = new Date().toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
       const enrollmentId = localStorage.getItem('enrollmentId') || "foVETTd80BM"; // Use stored enrollment ID or default
       
-      // Using the exact payload structure from the screenshot
+      // Generate a DHIS2 UID for the event
+      const generatedEventId = generateDHIS2UID();
+      console.log("Generated event ID:", generatedEventId);
+      
+      // Using the exact payload structure with pre-generated event ID
       const payload = {
         events: [{
+          event: generatedEventId,
           trackedEntityInstance: teiId,
           program: "EE8yeLVo6cN",
-          programStage: "upjm3J0dt2", // Using the exact program stage ID from the screenshot
+          programStage: "Eupjm3J0dt2", // Corrected program stage ID
           enrollment: enrollmentId,
           orgUnit: orgUnitId,
           notes: [],
@@ -305,35 +332,50 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       const responseData = await eventRes.json();
       console.log("Event creation response:", responseData);
       
-      // Extract the event ID from the response
-      let createdEventId;
-      if (responseData.response && responseData.response.importSummaries && responseData.response.importSummaries.length > 0) {
-        createdEventId = responseData.response.importSummaries[0].reference;
-      } else if (responseData.importSummaries && responseData.importSummaries.length > 0) {
-        createdEventId = responseData.importSummaries[0].reference;
-      } else if (responseData.reference) {
-        createdEventId = responseData.reference;
+      // Verify the event was created successfully
+      if (responseData.response && responseData.response.status === 'ERROR') {
+        throw new Error(`Event creation failed: ${responseData.response.message}`);
       }
       
+      // Use the pre-generated event ID since we provided it in the payload
+      const createdEventId = generatedEventId;
       console.log("Initial inspection event created with ID:", createdEventId);
-      
-      if (!createdEventId) {
-        console.error("Could not extract event ID from response:", responseData);
-        throw new Error("Failed to get event ID from response");
-      }
       
       // Store the organization unit ID in localStorage for other components to use
       localStorage.setItem('userOrgUnitId', orgUnitId);
       
+      // Set the event ID in state
       setEventId(createdEventId);
 
+      // Update the form data with the initial datetime value
+      setFormData(prevData => ({
+        ...prevData,
+        inspectionDateTime: todayDateTime
+      }));
+
       // After creating the event, immediately update the inspection date field
+      // Use the generated event ID directly instead of relying on state
       if (fieldToDataElementMap && fieldToDataElementMap.inspectionDateTime) {
-        submitFieldValue('inspectionDateTime', today);
+        console.log("Updating initial inspection date field with event ID:", createdEventId);
+        try {
+          await submitFieldValueWithEventId('inspectionDateTime', todayDateTime, createdEventId);
+          console.log("Initial date and time set successfully");
+        } catch (error) {
+          console.error("Error setting initial date and time:", error);
+        } finally {
+          setIsSettingInitialDateTime(false);
+        }
+      } else {
+        // If no datetime field to update, stop loading
+        setIsSettingInitialDateTime(false);
       }
+      
+      console.log("Form initialization completed successfully with event ID:", createdEventId);
     } catch (error) {
       console.error("Error creating initial event:", error);
       setErrorMessage(`Failed to initialize form: ${error.message}`);
+    } finally {
+      setIsInitializing(false);
     }
   };
   
@@ -347,7 +389,12 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       [name]: value,
     }));
     
-    // Don't submit if we don't have an event ID yet
+    // Don't submit if we're still initializing or don't have an event ID yet
+    if (isInitializing) {
+      console.log("Form is still initializing, waiting to submit field:", name);
+      return;
+    }
+    
     if (!eventId) {
       console.log("Event ID not yet available, waiting to submit field:", name);
       return;
@@ -380,32 +427,107 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
   
      // Submit a single field value to DHIS2
    const submitFieldValue = async (fieldName, value) => {
+     if (!eventId || eventId === 'null' || eventId === null) {
+       console.error("Cannot submit field value - invalid event ID:", eventId);
+       throw new Error("Event not properly initialized");
+     }
+     return submitFieldValueWithEventId(fieldName, value, eventId);
+   };
+
+   // Helper function to format datetime values for DHIS2
+   const formatDateTimeForDHIS2 = (value, fieldName) => {
+     // For datetime fields, ensure proper format
+     if (fieldName === 'inspectionDateTime' && value) {
+       // If it's already in ISO format (from datetime-local input), use as is
+       // If it's a date string, convert to datetime format
+       if (value.includes('T')) {
+         return value; // Already has time component
+       } else {
+         // Add default time if only date is provided
+         return value + 'T00:00';
+       }
+     }
+     return value;
+   };
+
+   // Submit a single field value to DHIS2 with specific event ID
+   const submitFieldValueWithEventId = async (fieldName, value, targetEventId) => {
      const dataElementId = fieldToDataElementMap[fieldName];
      if (!dataElementId) {
        console.error("No data element ID found for field:", fieldName);
        return;
      }
      
+     // Format the value appropriately for DHIS2
+     const formattedValue = formatDateTimeForDHIS2(value, fieldName);
+     
      const credentials = localStorage.getItem('userCredentials');
      
      if (!credentials) {
        throw new Error("Authentication required");
      }
+
+     if (!targetEventId || targetEventId === 'null' || targetEventId === null) {
+       console.error("Invalid event ID:", targetEventId);
+       throw new Error("Valid event ID is required for field update");
+     }
      
-     // We'll use the dataElementId in the URL path and value in the request body
-     // DHIS2 expects { value: "theValue" } in the request body
+     // Use the DHIS2 API to update event data values
+     // Need to send a complete event payload with dataValues array
+     const url = `/api/events/${targetEventId}.json`;
+     console.log(`Updating field ${fieldName} (${dataElementId}) with value:`, value, `for event:`, targetEventId);
      
-     // Use the DHIS2 API to update a single data value with .json suffix
-     const url = `/api/events/${eventId}/dataValues/${dataElementId}.json`;
-     console.log(`Updating field ${fieldName} (${dataElementId}) with value:`, value);
+     // Get current event data to build the payload
+     const eventResponse = await fetch(`/api/events/${targetEventId}.json`, {
+       headers: {
+         Authorization: `Basic ${credentials}`,
+       },
+     });
+     
+     if (!eventResponse.ok) {
+       throw new Error(`Failed to fetch current event data: ${eventResponse.status}`);
+     }
+     
+     const currentEvent = await eventResponse.json();
+     
+     // Find existing data value or create new one
+     let dataValues = currentEvent.dataValues || [];
+     const existingIndex = dataValues.findIndex(dv => dv.dataElement === dataElementId);
+     
+     if (existingIndex >= 0) {
+       // Update existing data value
+       dataValues[existingIndex] = {
+         dataElement: dataElementId,
+         value: formattedValue,
+         providedElsewhere: false
+       };
+     } else {
+       // Add new data value
+       dataValues.push({
+         dataElement: dataElementId,
+         value: formattedValue,
+         providedElsewhere: false
+       });
+     }
+     
+     // Build the complete event payload
+     const eventPayload = {
+       event: targetEventId,
+       orgUnit: currentEvent.orgUnit,
+       program: currentEvent.program,
+       programStage: currentEvent.programStage,
+       status: currentEvent.status || "ACTIVE",
+       trackedEntityInstance: currentEvent.trackedEntityInstance,
+       dataValues: dataValues
+     };
      
      const response = await fetch(url, {
-       method: "PUT", // DHIS2 uses PUT for updating data values
+       method: "PUT",
        headers: {
          Authorization: `Basic ${credentials}`,
          "Content-Type": "application/json",
        },
-       body: JSON.stringify({ value: value }),
+       body: JSON.stringify(eventPayload),
      });
      
      if (!response.ok) {
@@ -515,8 +637,25 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
                   onBlur={handleInputChange} // Also trigger on blur for better UX
                   className="form-control"
                   required
+                  disabled={isSettingInitialDateTime}
                 />
-                {getFieldStatusIndicator('inspectionDateTime')}
+                {isSettingInitialDateTime ? (
+                  <span className="field-status updating">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div className="mini-spinner" style={{
+                        width: '12px',
+                        height: '12px',
+                        border: '2px solid #f3f3f3',
+                        borderTop: '2px solid #856404',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite'
+                      }}></div>
+                      Loading...
+                    </div>
+                  </span>
+                ) : (
+                  getFieldStatusIndicator('inspectionDateTime')
+                )}
               </div>
             </div>
             <div className="form-group">
@@ -982,6 +1121,34 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
         <div className="modal-body">
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
           {!eventId && <div className="alert alert-info">Initializing form...</div>}
+          {isSettingInitialDateTime && (
+            <div className="loading-container" style={{ 
+              marginBottom: '20px',
+              padding: '20px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #dee2e6',
+              textAlign: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+                <div className="rotating-loader" style={{
+                  width: '24px',
+                  height: '24px',
+                  border: '3px solid #e9ecef',
+                  borderTop: '3px solid #007bff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite'
+                }}></div>
+                <span style={{ 
+                  fontSize: '16px', 
+                  fontWeight: '500',
+                  color: '#495057'
+                }}>
+                  Initializing inspection form...
+                </span>
+              </div>
+            </div>
+          )}
           
           <div className="section-tabs">
             <button 

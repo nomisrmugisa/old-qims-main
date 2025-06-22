@@ -7,6 +7,7 @@ import EditEmployeeRegistrationDialog from './EditEmployeeRegistrationDialog';
 import AddServiceOfferingDialog from './AddServiceOfferingDialog';
 import EditServiceOfferingDialog from './EditServiceOfferingDialog';
 import AddInspectionDialog from './AddInspectionDialog';
+import EditInspectionDialog from './EditInspectionDialog';
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 // import { useTheme } from '@mui/material/styles';
@@ -34,6 +35,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedServiceEvent, setSelectedServiceEvent] = useState(null);
   const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
+  
+  // Situational Analysis state
+  const [inspectionEvents, setInspectionEvents] = useState([]);
+  const [isLoadingInspections, setIsLoadingInspections] = useState(true);
+  const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
+  const [showEditInspectionDialog, setShowEditInspectionDialog] = useState(false);
 
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -137,14 +144,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       case 'employeeRegistration':
         return employeeEvents.length > 0;
       case 'servicesOffered':
-        // For services offered and inspection schedule, we'll assume they have data for now
-        // since they appear to be static in your screenshots
-        return true;
-      case 'inspectionSchedule': {
-        // Check localStorage for completion status
-        const situationalAnalysisStatus = localStorage.getItem('situationalAnalysisComplete');
-        return situationalAnalysisStatus === 'true';
-      }
+        return serviceEvents.length > 0;
+      case 'inspectionSchedule':
+        return inspectionEvents.length > 0;
       default:
         return false;
     }
@@ -358,6 +360,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     setShowEditServiceDialog(true);
   };
 
+  const handleInspectionRowClick = (event) => {
+    setSelectedInspectionEvent(event);
+    setShowEditInspectionDialog(true);
+  };
+
   const handleAddEmployee = (e) => {
     console.log('Add employee button clicked');
     e.preventDefault();
@@ -445,10 +452,79 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+  const fetchInspectionData = async () => {
+    if (!trackedEntityInstanceId) {
+      setIsLoadingInspections(false);
+      return;
+    }
+
+    const credentials = localStorage.getItem('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+
+    if (!credentials || !userOrgUnitId) {
+      setIsLoadingInspections(false);
+      return;
+    }
+
+    try {
+      setIsLoadingInspections(true);
+      // Use the correct program stage ID for Situational Analysis (Inspection)
+      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=Eupjm3J0dt2&paging=false`;
+      
+      console.log("Situational Analysis API Request:");
+      console.log("- Full URL:", url);
+      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- organizationUnitId:", userOrgUnitId);
+      console.log("- programId: EE8yeLVo6cN");
+      console.log("- programStage: Eupjm3J0dt2");
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      console.log("Situational Analysis API Response:");
+      console.log("- Response data:", data);
+      console.log("- Has enrollments:", Boolean(data.enrollments));
+      console.log("- Number of enrollments:", data.enrollments?.length || 0);
+      
+      let fetchedEvents = [];
+
+      if (data.enrollments && data.enrollments.length > 0) {
+        console.log("- Processing inspection enrollments...");
+        data.enrollments.forEach((enrollment, index) => {
+          console.log(`  - Inspection Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in inspection enrollment #${index+1}:`, enrollment.events?.length || 0);
+          if (enrollment.events && enrollment.events.length > 0) {
+            console.log(`  - First inspection event programStage:`, enrollment.events[0].programStage);
+          }
+          fetchedEvents = fetchedEvents.concat(enrollment.events || []);
+        });
+      }
+      
+      console.log("- Total inspection events extracted:", fetchedEvents.length);
+
+      setInspectionEvents(fetchedEvents);
+      setIsLoadingInspections(false);
+
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      setIsLoadingInspections(false);
+    }
+  };
+
   // Add fetch function for service offerings
     // Add useEffect to fetch service data
   useEffect(() => {
     fetchServiceData();
+    fetchInspectionData();
   }, [trackedEntityInstanceId]);
   
   // Add useEffect to check for and handle the automatic tab switching flag
@@ -503,10 +579,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const handleInspectionAddSuccess = () => {
     console.log("Inspection added successfully");
     setOpenInspectionDialog(false);
-    // Mark the situational analysis as complete
-    localStorage.setItem('situationalAnalysisComplete', 'true');
-    // Force a re-render to update the tab status
-    setActiveTab(activeTab);
+    fetchInspectionData();
   };
 
   const renderTabContent = () => {
@@ -778,53 +851,92 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   +
                 </button>
               </h2>
-              <div className="table-responsive">
-                <table className="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Inspection Date</th>
-                      <th>Inspection Code</th>
-                      <th>Inspector</th>
-                      <th>Type</th>
-                      <th>Organization Structure</th>
-                      <th>Patient Policies</th>
-                      <th>Facility Environment</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {localStorage.getItem('situationalAnalysisComplete') === 'true' ? (
+              {isLoadingInspections ? (
+                <p>Loading inspection data...</p>
+              ) : inspectionEvents.length === 0 ? (
+                <p>No inspection records found.</p>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
                       <tr>
-                        <td>{new Date().toLocaleDateString()}</td>
-                        <td>INSP-{Math.floor(Math.random() * 1000)}</td>
-                        <td>Inspector Name</td>
-                        <td>Initial</td>
-                        <td>Yes</td>
-                        <td>Yes</td>
-                        <td>Compliant</td>
+                        <th>Inspection Date</th>
+                        <th>Inspection Code</th>
+                        <th>Inspector</th>
+                        <th>Type</th>
+                        <th>Organization Structure</th>
+                        <th>Patient Policies</th>
+                        <th>Facility Environment</th>
                       </tr>
-                    ) : (
-                      <tr>
-                        <td colSpan="7" className="text-center">No inspection records found. Click the + button to add an inspection.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div style={{ marginTop: '20px', textAlign: 'right' }}>
-                {localStorage.getItem('situationalAnalysisComplete') === 'true' ? (
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      localStorage.removeItem('situationalAnalysisComplete');
-                      // Force a re-render to update the tab status
-                      setActiveTab(activeTab);
-                    }}
-                  >
-                    Reset Situational Analysis Status (Testing Only)
-                  </button>
-                ) : null}
-              </div>
+                    </thead>
+                    <tbody>
+                      {inspectionEvents.map((event, index) => {
+                        const dataValues = event.dataValues || [];
+                        const getFormattedValue = (dataElementId) => {
+                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                          return dataValue ? dataValue.value : 'N/A';
+                        };
+
+                        // Helper function to format date
+                        const formatDate = (dateString) => {
+                          if (!dateString) return 'N/A';
+                          try {
+                            return new Date(dateString).toLocaleDateString();
+                          } catch {
+                            return dateString;
+                          }
+                        };
+
+                        // Helper function to format boolean values
+                        const formatBoolean = (value) => {
+                          if (value === 'true') return 'Yes';
+                          if (value === 'false') return 'No';
+                          return 'N/A';
+                        };
+
+                        // Aggregate policy compliance
+                        const patientPolicies = [
+                          getFormattedValue("pCxcolinfQ0"), // hasPoliciesForPatientAssessment
+                          getFormattedValue("D6yET9Rm3Ql"), // hasPoliciesForPatientReferral
+                          getFormattedValue("qxWs7aK3qGZ")  // hasPoliciesForPatientConsent
+                        ];
+                        const policiesCompliant = patientPolicies.filter(p => p === 'true').length;
+                        const policiesStatus = policiesCompliant === 3 ? 'All Compliant' : 
+                                             policiesCompliant > 0 ? `${policiesCompliant}/3 Compliant` : 'Not Compliant';
+
+                        // Aggregate facility environment
+                        const facilityChecks = [
+                          getFormattedValue("wjLqyKpPclD"), // hasWheelchairAccessibility
+                          getFormattedValue("uiwrRhfPUX9"), // isFencedAndSecure
+                          getFormattedValue("bWVuvn0rN0W"), // hasAdequateParking
+                          getFormattedValue("mE0keb9FteW"), // isCleanAndNeat
+                          getFormattedValue("K3me4A3CyVO")  // hasAdequateLighting
+                        ];
+                        const facilityCompliant = facilityChecks.filter(f => f === 'true').length;
+                        const facilityStatus = facilityCompliant >= 4 ? 'Compliant' : 
+                                             facilityCompliant >= 2 ? 'Partial' : 'Non-Compliant';
+
+                                                 return (
+                           <tr 
+                             key={event.event || index}
+                             onClick={() => handleInspectionRowClick(event)}
+                             style={{ cursor: 'pointer' }}
+                             className="hover-row"
+                           >
+                             <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
+                             <td>{getFormattedValue("wS6bfV1hrU0")}</td>
+                             <td>{getFormattedValue("VOjM6ArpORU")}</td>
+                             <td>{getFormattedValue("Pl4RdRtKErd")}</td>
+                             <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
+                             <td>{policiesStatus}</td>
+                             <td>{facilityStatus}</td>
+                           </tr>
+                         );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -970,6 +1082,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           onClose={handleCloseInspectionDialog}
           onAddSuccess={handleInspectionAddSuccess}
           trackedEntityInstanceId={trackedEntityInstanceId}
+        />
+      )}
+
+      {/* Edit Inspection Dialog - only render when showEditInspectionDialog is true */}
+      {showEditInspectionDialog && selectedInspectionEvent && (
+        <EditInspectionDialog
+          open={showEditInspectionDialog}
+          onClose={() => setShowEditInspectionDialog(false)}
+          onSuccess={() => {
+            setShowEditInspectionDialog(false);
+            fetchInspectionData();
+          }}
+          event={selectedInspectionEvent}
         />
       )}
     </div>
