@@ -58,7 +58,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
     useEffect(() => {
         const checkSituationalAnalysisStatus = () => {
             const status = localStorage.getItem('situationalAnalysisComplete') === 'true';
-            console.log("Dashboard - Situational Analysis Status:", status);
+            // Removed console.log to prevent console spam
             setSituationalAnalysisComplete(status);
         };
         
@@ -222,7 +222,6 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         onClick={(e) => {
                             if (!situationalAnalysisComplete && activeSection !== 'registration') {
                                 e.preventDefault();
-                                console.log("Sidebar navigation to Overview prevented");
                                 return;
                             }
                             setActiveSection('overview');
@@ -242,7 +241,6 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         onClick={(e) => {
                             if (!situationalAnalysisComplete) {
                                 e.preventDefault();
-                                console.log("Sidebar navigation to Inspections prevented");
                                 return;
                             }
                             setActiveSection('inspections');

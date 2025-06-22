@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import './AddServiceOfferingDialog.css';
+import React, { useState, useEffect } from 'react';
+import './AddServiceOfferingDialog.css'; // Reuse the same CSS
 import ModalPortal from './ModalPortal';
 
-const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
+const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
   const [formData, setFormData] = useState({
     coreEmergencyServices: false,
     coreGeneralPracticeServices: false,
@@ -24,18 +24,52 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
     additionalCounseling: false,
     additionalCommunityBased: false
   });
-  
+
   const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleInputChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: checked,
-    }));
-  };
-  
+  // Prevent scrolling on the main body when the modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
+  }, [open]);
+
+  // Populate form with existing data when event changes
+  useEffect(() => {
+    if (event && event.dataValues) {
+      const getDataValue = (dataElementId) => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === dataElementId);
+        return dataValue ? dataValue.value === 'true' : false;
+      };
+
+      setFormData({
+        coreEmergencyServices: getDataValue("j57HXXX4Ijz"),
+        coreGeneralPracticeServices: getDataValue("ECjGkIq0Deq"),
+        coreTreatmentAndCare: getDataValue("aM41KiGDJAs"),
+        coreUrgentCare: getDataValue("flzyZUlf30v"),
+        additionalHealthEducation: getDataValue("SMvKa2EWeBO"),
+        specialisedMaternityAndReproductiveHealth: getDataValue("y9QSgKRoc6L"),
+        specialisedMentalHealthAndSubstanceAbuse: getDataValue("yZhlCTgamq0"),
+        specialisedRadiology: getDataValue("RCvjFJQUaPV"),
+        specialisedRehabilitation: getDataValue("uxcdCPnaqWL"),
+        supportAmbulatoryCare: getDataValue("r76ODkNZv43"),
+        supportDialysisCenters: getDataValue("E7OMKr09N0R"),
+        supportHospices: getDataValue("GyQNkXpNraW"),
+        supportLabServices: getDataValue("OgpVvPxkLwf"),
+        supportNursingHomes: getDataValue("rLC2CE79p7Q"),
+        supportOutpatientDepartment: getDataValue("w86r0XZCLCr"),
+        supportPatientTransportation: getDataValue("m8Kl585eWSK"),
+        supportPharmacy: getDataValue("yecnkdC7HtM"),
+        additionalCounseling: getDataValue("i0QXYWMOUjy"),
+        additionalCommunityBased: getDataValue("e48W7983nBs")
+      });
+    }
+  }, [event]);
+
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
     const credentials = localStorage.getItem('userCredentials');
@@ -57,42 +91,44 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       
       const userData = await response.json();
       
-      // Check if the user has an organization unit
       if (!userData.organisationUnits || userData.organisationUnits.length === 0) {
         throw new Error("User has no associated organization units");
       }
       
-      // Return the ID of the first organization unit (primary org unit)
       return userData.organisationUnits[0].id;
     } catch (error) {
       console.error("Error fetching user organization unit:", error);
       throw error;
     }
   };
-  
-  const handleSubmit = async (e) => {
+
+  const handleInputChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: checked,
+    }));
+  };
+
+  const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
-    setIsSubmitting(true);
-    
+    setIsLoading(true);
+
     try {
       const credentials = localStorage.getItem('userCredentials');
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");
       }
 
-      // Get current user's organization unit
       const orgUnitId = await getCurrentUserOrgUnit();
-      
-      // Store the organization unit ID in localStorage for other components to use
-      localStorage.setItem('userOrgUnitId', orgUnitId);
 
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Create data values array based on form data
       const dataValues = [];
       
-      // Add boolean/checkbox values
+      // Add boolean/checkbox values only if they are true
       if (formData.coreEmergencyServices) dataValues.push({ dataElement: "j57HXXX4Ijz", value: "true" });
       if (formData.coreGeneralPracticeServices) dataValues.push({ dataElement: "ECjGkIq0Deq", value: "true" });
       if (formData.coreTreatmentAndCare) dataValues.push({ dataElement: "aM41KiGDJAs", value: "true" });
@@ -112,115 +148,120 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       if (formData.supportPharmacy) dataValues.push({ dataElement: "yecnkdC7HtM", value: "true" });
       if (formData.additionalCounseling) dataValues.push({ dataElement: "i0QXYWMOUjy", value: "true" });
       if (formData.additionalCommunityBased) dataValues.push({ dataElement: "e48W7983nBs", value: "true" });
-      
+
       const payload = {
-        trackedEntityInstance: trackedEntityInstanceId,
+        event: event.event,
         eventDate: today,
         orgUnit: orgUnitId,
         program: "EE8yeLVo6cN", // Same program as Facility Ownership
         programStage: "uL262bA2IP3", // Services Offered program stage
         status: "COMPLETED",
-        dataValues: dataValues
+        dataValues: dataValues,
       };
-      
-      const eventRes = await fetch("/api/events", {
-        method: "POST",
+
+      console.log("Services Offered Update Payload:", payload);
+
+      const eventRes = await fetch(`/api/events/${event.event}`, {
+        method: "PUT",
         headers: {
           Authorization: `Basic ${credentials}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-      
+
       if (!eventRes.ok) {
         const errorText = await eventRes.text();
-        throw new Error(`Event creation failed: ${eventRes.status} - ${errorText}`);
+        throw new Error(`Event update failed: ${eventRes.status} - ${errorText}`);
       }
+
+      console.log("Services offered updated successfully!");
       
-      console.log("Service offering added successfully!");
-      
-      // Call success callback to reload data in parent
-      // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
       if (typeof onSuccess === 'function') {
         onSuccess();
-      } else if (typeof onAddSuccess === 'function') {
-        onAddSuccess();
       }
       
-      onClose(); // Close modal on successful addition
+      onClose();
+
     } catch (error) {
-      console.error("Error adding service offering:", error);
-      setErrorMessage(`Failed to add service offering: ${error.message}`);
+      console.error("Error updating services offered:", error);
+      setErrorMessage(`Failed to update services offered: ${error.message}`);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-  
+
+  const handleCancel = () => {
+    if (!isLoading) {
+      onClose();
+    }
+  };
+
   // Form is always valid since all fields are optional checkboxes
   const isFormValid = true;
-  
+
   return (
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Add Services Offered</h5>
+          <h5 className="modal-title">Edit Services Offered</h5>
           <button 
             type="button" 
             className="close-btn" 
-            onClick={onClose}
-            disabled={isSubmitting}
+            onClick={handleCancel}
+            disabled={isLoading}
           >
             &times;
           </button>
         </div>
         <div className="modal-body">
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
-          <form onSubmit={handleSubmit} className="service-offering-form">
+          <form onSubmit={handleUpdateSubmit} className="service-offering-form">
             <h6 className="service-category">Core Services</h6>
             <div className="services-grid">
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="coreEmergencyServices"
+                  id="coreEmergencyServices-edit"
                   name="coreEmergencyServices"
                   checked={formData.coreEmergencyServices}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="coreEmergencyServices">Core Emergency Services</label>
+                <label htmlFor="coreEmergencyServices-edit">Core Emergency Services</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="coreGeneralPracticeServices"
+                  id="coreGeneralPracticeServices-edit"
                   name="coreGeneralPracticeServices"
                   checked={formData.coreGeneralPracticeServices}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="coreGeneralPracticeServices">Core General Practice Services</label>
+                <label htmlFor="coreGeneralPracticeServices-edit">Core General Practice Services</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="coreTreatmentAndCare"
+                  id="coreTreatmentAndCare-edit"
                   name="coreTreatmentAndCare"
                   checked={formData.coreTreatmentAndCare}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="coreTreatmentAndCare">Core Treatment and Care</label>
+                <label htmlFor="coreTreatmentAndCare-edit">Core Treatment and Care</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="coreUrgentCare"
+                  id="coreUrgentCare-edit"
                   name="coreUrgentCare"
                   checked={formData.coreUrgentCare}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="coreUrgentCare">Core Urgent Care</label>
+                <label htmlFor="coreUrgentCare-edit">Core Urgent Care</label>
               </div>
             </div>
             
@@ -229,46 +270,46 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="specialisedMaternityAndReproductiveHealth"
+                  id="specialisedMaternityAndReproductiveHealth-edit"
                   name="specialisedMaternityAndReproductiveHealth"
                   checked={formData.specialisedMaternityAndReproductiveHealth}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="specialisedMaternityAndReproductiveHealth">Maternity & Reproductive Health</label>
+                <label htmlFor="specialisedMaternityAndReproductiveHealth-edit">Maternity & Reproductive Health</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="specialisedMentalHealthAndSubstanceAbuse"
+                  id="specialisedMentalHealthAndSubstanceAbuse-edit"
                   name="specialisedMentalHealthAndSubstanceAbuse"
                   checked={formData.specialisedMentalHealthAndSubstanceAbuse}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="specialisedMentalHealthAndSubstanceAbuse">Mental Health & Substance Abuse</label>
+                <label htmlFor="specialisedMentalHealthAndSubstanceAbuse-edit">Mental Health & Substance Abuse</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="specialisedRadiology"
+                  id="specialisedRadiology-edit"
                   name="specialisedRadiology"
                   checked={formData.specialisedRadiology}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="specialisedRadiology">Radiology</label>
+                <label htmlFor="specialisedRadiology-edit">Radiology</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="specialisedRehabilitation"
+                  id="specialisedRehabilitation-edit"
                   name="specialisedRehabilitation"
                   checked={formData.specialisedRehabilitation}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="specialisedRehabilitation">Rehabilitation</label>
+                <label htmlFor="specialisedRehabilitation-edit">Rehabilitation</label>
               </div>
             </div>
             
@@ -277,90 +318,90 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportAmbulatoryCare"
+                  id="supportAmbulatoryCare-edit"
                   name="supportAmbulatoryCare"
                   checked={formData.supportAmbulatoryCare}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportAmbulatoryCare">Ambulatory Care</label>
+                <label htmlFor="supportAmbulatoryCare-edit">Ambulatory Care</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportDialysisCenters"
+                  id="supportDialysisCenters-edit"
                   name="supportDialysisCenters"
                   checked={formData.supportDialysisCenters}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportDialysisCenters">Dialysis Centers</label>
+                <label htmlFor="supportDialysisCenters-edit">Dialysis Centers</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportHospices"
+                  id="supportHospices-edit"
                   name="supportHospices"
                   checked={formData.supportHospices}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportHospices">Hospices</label>
+                <label htmlFor="supportHospices-edit">Hospices</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportLabServices"
+                  id="supportLabServices-edit"
                   name="supportLabServices"
                   checked={formData.supportLabServices}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportLabServices">Lab Services</label>
+                <label htmlFor="supportLabServices-edit">Lab Services</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportNursingHomes"
+                  id="supportNursingHomes-edit"
                   name="supportNursingHomes"
                   checked={formData.supportNursingHomes}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportNursingHomes">Nursing Homes</label>
+                <label htmlFor="supportNursingHomes-edit">Nursing Homes</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportOutpatientDepartment"
+                  id="supportOutpatientDepartment-edit"
                   name="supportOutpatientDepartment"
                   checked={formData.supportOutpatientDepartment}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportOutpatientDepartment">Outpatient Department</label>
+                <label htmlFor="supportOutpatientDepartment-edit">Outpatient Department</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportPatientTransportation"
+                  id="supportPatientTransportation-edit"
                   name="supportPatientTransportation"
                   checked={formData.supportPatientTransportation}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportPatientTransportation">Patient Transportation</label>
+                <label htmlFor="supportPatientTransportation-edit">Patient Transportation</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="supportPharmacy"
+                  id="supportPharmacy-edit"
                   name="supportPharmacy"
                   checked={formData.supportPharmacy}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="supportPharmacy">Pharmacy</label>
+                <label htmlFor="supportPharmacy-edit">Pharmacy</label>
               </div>
             </div>
             
@@ -369,35 +410,35 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="additionalHealthEducation"
+                  id="additionalHealthEducation-edit"
                   name="additionalHealthEducation"
                   checked={formData.additionalHealthEducation}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="additionalHealthEducation">Health Education</label>
+                <label htmlFor="additionalHealthEducation-edit">Health Education</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="additionalCounseling"
+                  id="additionalCounseling-edit"
                   name="additionalCounseling"
                   checked={formData.additionalCounseling}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="additionalCounseling">Counseling</label>
+                <label htmlFor="additionalCounseling-edit">Counseling</label>
               </div>
               <div className="checkbox-group">
                 <input
                   type="checkbox"
-                  id="additionalCommunityBased"
+                  id="additionalCommunityBased-edit"
                   name="additionalCommunityBased"
                   checked={formData.additionalCommunityBased}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                 />
-                <label htmlFor="additionalCommunityBased">Community-Based Services</label>
+                <label htmlFor="additionalCommunityBased-edit">Community-Based Services</label>
               </div>
             </div>
             
@@ -405,17 +446,17 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
               <button 
                 type="button" 
                 className="btn-secondary" 
-                onClick={onClose}
-                disabled={isSubmitting}
+                onClick={handleCancel}
+                disabled={isLoading}
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
                 className="btn-primary"
-                disabled={isSubmitting || !isFormValid}
+                disabled={isLoading || !isFormValid}
               >
-                {isSubmitting ? "Adding..." : "Add Services"}
+                {isLoading ? "Updating..." : "Update Services"}
               </button>
             </div>
           </form>
@@ -425,4 +466,4 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
   );
 };
 
-export default AddServiceOfferingDialog; 
+export default EditServiceOfferingDialog; 

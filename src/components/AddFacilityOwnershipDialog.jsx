@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './AddFacilityOwnershipDialog.css'; // We'll create this CSS file next
 import ModalPortal from './ModalPortal';
 
-const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntityInstanceId }) => {
+const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
   const [newFormData, setNewFormData] = useState({
     firstName: "",
     surname: "",
@@ -19,6 +19,7 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
   });
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   
   // Prevent scrolling on the main body when the modal is open
   useEffect(() => {
@@ -33,11 +34,81 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
     }
   }, [open]);
 
-  // Function to generate a unique event ID (simplified for now)
-  const generateEventId = () => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  };
+  // Note: We let DHIS2 generate UIDs on the server side
 
+  // Function to get the current user's organization unit
+  const getCurrentUserOrgUnit = async () => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required. Please log in again.");
+    }
+    
+    try {
+      const response = await fetch("/api/me.json", {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user information: ${response.status}`);
+      }
+      
+      const userData = await response.json();
+      
+      // Check if the user has an organization unit
+      if (!userData.organisationUnits || userData.organisationUnits.length === 0) {
+        throw new Error("User has no associated organization units");
+      }
+      
+      // Return the ID of the first organization unit (primary org unit)
+      return userData.organisationUnits[0].id;
+    } catch (error) {
+      console.error("Error fetching user organization unit:", error);
+      throw error;
+    }
+  };
+  
+  // Function to get the tracked entity instance ID for the current organization unit
+  const getTrackedEntityInstanceId = async (orgUnitId) => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required. Please log in again.");
+    }
+    
+    try {
+      // Use the API to fetch tracked entity instances for the given org unit and program
+      const url = `/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
+      console.log("Fetching tracked entity instances from:", url);
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tracked entity instances: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Tracked entity instances response:", data);
+      
+      // Check if any tracked entity instances were found
+      if (!data.trackedEntityInstances || data.trackedEntityInstances.length === 0) {
+        throw new Error("No tracked entity instances found for this organization unit and program");
+      }
+      
+      // Return the ID of the first tracked entity instance
+      return data.trackedEntityInstances[0].trackedEntityInstance;
+    } catch (error) {
+      console.error("Error fetching tracked entity instance ID:", error);
+      throw error;
+    }
+  };
+  
   // Function to upload file and get file resource ID
   const uploadFileAndGetId = async (file) => {
     if (!file) return null;
@@ -77,17 +148,34 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(""); // Clear previous errors
+    setIsLoading(true);
+    
     const credentials = localStorage.getItem('userCredentials');
-    const orgUnitId = localStorage.getItem('userOrgUnitId');
 
-    if (!credentials || !orgUnitId) {
+    if (!credentials) {
       setErrorMessage("Authentication required. Please log in again.");
-      console.error("Missing credentials or organization unit ID.");
-      // Optionally redirect to login page
+      setIsLoading(false);
       return;
     }
 
     try {
+      // Get the organization unit ID from the API instead of localStorage
+      const orgUnitId = await getCurrentUserOrgUnit();
+      console.log("Retrieved organization unit ID:", orgUnitId);
+      
+      // Get the tracked entity instance ID from the API instead of props
+      let teiId = trackedEntityInstanceId;
+      if (!teiId) {
+        try {
+          teiId = await getTrackedEntityInstanceId(orgUnitId);
+          console.log("Retrieved tracked entity instance ID:", teiId);
+        } catch (error) {
+          console.error("Could not fetch tracked entity instance ID:", error);
+          setErrorMessage(`Could not fetch facility information: ${error.message}`);
+          return;
+        }
+      }
+      
       // 1. Upload all files in parallel
       const [ 
         copyOfIdPassportId,
@@ -105,37 +193,39 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
         uploadFileAndGetId(newFormData.workPermitWaiver),
       ]);
 
-      const eventId = generateEventId();
+      // We'll let DHIS2 generate the event ID
       const today = new Date().toISOString().split('T')[0];
 
+      // Create the payload following DHIS2 standard format
       const payload = {
-        event: eventId,
-        eventDate: today,
-        orgUnit: orgUnitId,
-        program: "EE8yeLVo6cN",
-        programStage: "MuJubgTzJrY",
-        status: "ACTIVE",
-        trackedEntityInstance: trackedEntityInstanceId,
-        dataValues: [
-          { dataElement: "HMk4LZ9ESOq", value: newFormData.firstName },
-          { dataElement: "ykwhsQQPVH0", value: newFormData.surname },
-          { dataElement: "zVmmto7HwOc", value: newFormData.citizen },
-          { dataElement: "aUGSyyfbUVI", value: newFormData.id },
-          { dataElement: "FLcrCfTNcQi", value: newFormData.idType },
-          { dataElement: "vAHHXaW0Pna", value: newFormData.ownershipType },
-          // Add file references if they exist
-          ...(copyOfIdPassportId ? [{ dataElement: "KRj1TOR5cVM", value: copyOfIdPassportId }] : []),
-          ...(professionalReference1Id ? [{ dataElement: "yP49GKSQxPl", value: professionalReference1Id }] : []),
-          ...(professionalReference2Id ? [{ dataElement: "lC217zTgC6C", value: professionalReference2Id }] : []),
-          ...(qualificationCertificatesId ? [{ dataElement: "pelCBFPIFY1", value: qualificationCertificatesId }] : []),
-          ...(validRecentPermitId ? [{ dataElement: "cUObXSGtCuD", value: validRecentPermitId }] : []),
-          ...(workPermitWaiverId ? [{ dataElement: "g9jXH9LJyxU", value: workPermitWaiverId }] : []),
-        ],
+        events: [{
+          eventDate: today,
+          orgUnit: orgUnitId,
+          program: "EE8yeLVo6cN",
+          programStage: "MuJubgTzJrY",
+          status: "ACTIVE",
+          trackedEntityInstance: teiId,
+          dataValues: [
+            { dataElement: "HMk4LZ9ESOq", value: newFormData.firstName },
+            { dataElement: "ykwhsQQPVH0", value: newFormData.surname },
+            { dataElement: "zVmmto7HwOc", value: newFormData.citizen },
+            { dataElement: "aUGSyyfbUVI", value: newFormData.id },
+            { dataElement: "FLcrCfTNcQi", value: newFormData.idType },
+            { dataElement: "vAHHXaW0Pna", value: newFormData.ownershipType },
+            // Add file references if they exist
+            ...(copyOfIdPassportId ? [{ dataElement: "KRj1TOR5cVM", value: copyOfIdPassportId }] : []),
+            ...(professionalReference1Id ? [{ dataElement: "yP49GKSQxPl", value: professionalReference1Id }] : []),
+            ...(professionalReference2Id ? [{ dataElement: "lC217zTgC6C", value: professionalReference2Id }] : []),
+            ...(qualificationCertificatesId ? [{ dataElement: "pelCBFPIFY1", value: qualificationCertificatesId }] : []),
+            ...(validRecentPermitId ? [{ dataElement: "cUObXSGtCuD", value: validRecentPermitId }] : []),
+            ...(workPermitWaiverId ? [{ dataElement: "g9jXH9LJyxU", value: workPermitWaiverId }] : []),
+          ]
+        }]
       };
 
       console.log("Event creation payload:", payload);
 
-      const eventRes = await fetch("/api/events", {
+      const eventRes = await fetch("/api/events.json", {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -150,12 +240,25 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
       }
 
       console.log("Event created successfully!");
-      onAddSuccess(); // Call success callback to reload data in parent
+      
+      // Store the organization unit ID in localStorage for other components to use
+      localStorage.setItem('userOrgUnitId', orgUnitId);
+      
+      // Call success callback to reload data in parent
+      // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      } else if (typeof onAddSuccess === 'function') {
+        onAddSuccess();
+      }
+      
       onClose(); // Close modal on successful addition
 
     } catch (error) {
       console.error("Error creating new facility ownership:", error);
       setErrorMessage(`Failed to add facility ownership: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -266,8 +369,21 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onAddSuccess, trackedEntity
             </div>
 
             <div className="button-container">
-              <button type="submit" className="btn-primary" disabled={!isFormValid}>Add</button>
-              <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={!isFormValid || isLoading}
+              >
+                {isLoading ? "Adding..." : "Add"}
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={onClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>

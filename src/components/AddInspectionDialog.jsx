@@ -1,0 +1,1052 @@
+import React, { useState, useEffect } from 'react';
+import './AddInspectionDialog.css';
+import ModalPortal from './ModalPortal';
+
+const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
+  const [formData, setFormData] = useState({
+    // Inspection Schedule Details
+    inspectionDateTime: "",
+    inspectionCode: "",
+    
+    // Inspection
+    inspectionCoordinates: "",
+    inspectionService: "",
+    inspectionType: "",
+    
+    // ORGANISATION AND MANAGEMENT
+    hasOrganisationalStructure: "",
+    organisationalStructureComments: "",
+    isDirectorMedicallyTrained: "",
+    directorMedicallyTrainedComments: "",
+    hasPoliciesForPatientAssessment: "",
+    policiesForPatientAssessmentComments: "",
+    hasPoliciesForPatientReferral: "",
+    policiesForPatientReferralComments: "",
+    hasPoliciesForPatientConsent: "",
+    policiesForPatientConsentComments: "",
+    
+    // FACILITY: Environment
+    hasWheelchairAccessibility: "",
+    wheelchairAccessibilityComments: "",
+    isFencedAndSecure: "",
+    fencedAndSecureComments: "",
+    hasAdequateParking: "",
+    adequateParkingComments: "",
+    isCleanAndNeat: "",
+    cleanAndNeatComments: "",
+    areSurfacesDustFree: "",
+    surfacesDustFreeComments: "",
+    hasAdequateLighting: "",
+    adequateLightingComments: "",
+    hasAirConditioning: "",
+    airConditioningComments: "",
+    hasEnoughVentilation: "",
+    enoughVentilationComments: "",
+    hasCleanableFlooring: "",
+    cleanableFlooringComments: "",
+    hasRestrictionSigns: "",
+    restrictionSignsComments: "",
+    hasDisabilityParking: "",
+    disabilityParkingComments: "",
+    hasDirectionalSignage: "",
+    directionalSignageComments: "",
+    hasBackupSystems: "",
+    backupSystemsComments: "",
+    
+    // FACILITY: Reception/waiting area
+    hasAdequateReceptionSpace: "",
+    adequateReceptionSpaceComments: "",
+    hasTelephone: "",
+    telephoneComments: "",
+    hasReceptionDesk: "",
+    receptionDeskComments: "",
+    isMannedAtAllTimes: "",
+    mannedAtAllTimesComments: "",
+    hasRegistrationSystem: "",
+    registrationSystemComments: "",
+    hasAdequateWaitingArea: "",
+    adequateWaitingAreaComments: "",
+    hasWasteBin: "",
+    wasteBinComments: "",
+    
+    // Inspectors Details
+    inspectorFullname: ""
+  });
+  
+  const [activeSection, setActiveSection] = useState("scheduleDetails");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eventId, setEventId] = useState(null);
+  const [fieldUpdateStatus, setFieldUpdateStatus] = useState({});
+  
+  // Map of field names to their DHIS2 data element IDs
+  const fieldToDataElementMap = {
+    inspectionDateTime: "e4MmMJ3zrhK",
+    inspectionCode: "wS6bfV1hrU0",
+    inspectionCoordinates: "i9kOWg5uQTz",
+    inspectionService: "y1VwuES8M22",
+    inspectionType: "Pl4RdRtKErd",
+    hasOrganisationalStructure: "WCys8b95Qrw",
+    organisationalStructureComments: "teFycnNHffg",
+    isDirectorMedicallyTrained: "IjNRqWzYbJV",
+    directorMedicallyTrainedComments: "v4DWRidWHX9",
+    hasPoliciesForPatientAssessment: "pCxcolinfQ0",
+    policiesForPatientAssessmentComments: "FOW8R4nw0dk",
+    hasPoliciesForPatientReferral: "D6yET9Rm3Ql",
+    policiesForPatientReferralComments: "edNRtSgmfRp",
+    hasPoliciesForPatientConsent: "qxWs7aK3qGZ",
+    policiesForPatientConsentComments: "fFkxEotqKMr",
+    hasWheelchairAccessibility: "wjLqyKpPclD",
+    wheelchairAccessibilityComments: "LRbe4LXH2WL",
+    isFencedAndSecure: "uiwrRhfPUX9",
+    fencedAndSecureComments: "BO2pHqfNnqe",
+    hasAdequateParking: "bWVuvn0rN0W",
+    adequateParkingComments: "I6ufJBs2eOj",
+    isCleanAndNeat: "mE0keb9FteW",
+    cleanAndNeatComments: "AZYYyEXBPdq",
+    areSurfacesDustFree: "B5nBVnHXJEI",
+    surfacesDustFreeComments: "JXVYLrXU2Vf",
+    hasAdequateLighting: "K3me4A3CyVO",
+    adequateLightingComments: "VqYw0Gpvrz7",
+    hasAirConditioning: "cZKJjxPFoww",
+    airConditioningComments: "j78xuAxLOth",
+    hasEnoughVentilation: "UVjFGL8YxgN",
+    enoughVentilationComments: "fzh0jqLsAYY",
+    hasCleanableFlooring: "RJpcV1quGsc",
+    cleanableFlooringComments: "MJkboKCSgga",
+    hasRestrictionSigns: "H7kdjWG5fJg",
+    restrictionSignsComments: "eeRbQoKbcSb",
+    hasDisabilityParking: "yHuVCptuYIz",
+    disabilityParkingComments: "wVNQ7Zr0P93",
+    hasDirectionalSignage: "TwRB3UCkOsj",
+    directionalSignageComments: "gLmK1C8qN1l",
+    hasBackupSystems: "kEMGyPm8YgH",
+    backupSystemsComments: "BG25OkY21ax",
+    hasAdequateReceptionSpace: "djiYFyxGWZg",
+    adequateReceptionSpaceComments: "LEghzfULkDb",
+    hasTelephone: "pn9KD7DP06F",
+    telephoneComments: "UjVkPqvlOzU",
+    hasReceptionDesk: "VVDIUCrOZhk",
+    receptionDeskComments: "ugMMaTRPFPh",
+    isMannedAtAllTimes: "YjmaVOE6X5z",
+    mannedAtAllTimesComments: "eP8lVpOLrmy",
+    hasRegistrationSystem: "SbZYLXje1tY",
+    registrationSystemComments: "gWvs8M5mHAc",
+    hasAdequateWaitingArea: "Ei1Yc8vwgWU",
+    adequateWaitingAreaComments: "T6ttPAEWAXj",
+    hasWasteBin: "GUHm0ghp9Tc",
+    wasteBinComments: "ov9luioZOzD",
+    inspectorFullname: "VOjM6ArpORU"
+  };
+  
+  // Note: We let DHIS2 generate UIDs on the server side
+  
+  // Function to get the current user's organization unit
+  const getCurrentUserOrgUnit = async () => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required. Please log in again.");
+    }
+    
+    try {
+      const response = await fetch("/api/me.json", {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user information: ${response.status}`);
+      }
+      
+      const userData = await response.json();
+      
+      // Check if the user has an organization unit
+      if (!userData.organisationUnits || userData.organisationUnits.length === 0) {
+        throw new Error("User has no associated organization units");
+      }
+      
+      // Return the ID of the first organization unit (primary org unit)
+      return userData.organisationUnits[0].id;
+    } catch (error) {
+      console.error("Error fetching user organization unit:", error);
+      throw error;
+    }
+  };
+  
+  // Function to get the tracked entity instance ID for the current organization unit
+  const getTrackedEntityInstanceId = async (orgUnitId) => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required. Please log in again.");
+    }
+    
+    try {
+      // Use the API to fetch tracked entity instances for the given org unit and program
+      const url = `/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
+      console.log("Fetching tracked entity instances from:", url);
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tracked entity instances: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Tracked entity instances response:", data);
+      
+      // Check if any tracked entity instances were found
+      if (!data.trackedEntityInstances || data.trackedEntityInstances.length === 0) {
+        throw new Error("No tracked entity instances found for this organization unit and program");
+      }
+      
+      // Return the ID of the first tracked entity instance
+      return data.trackedEntityInstances[0].trackedEntityInstance;
+    } catch (error) {
+      console.error("Error fetching tracked entity instance ID:", error);
+      throw error;
+    }
+  };
+  
+  // Create the initial event when the component mounts
+  useEffect(() => {
+    if (open && !eventId) {
+      createInitialEvent();
+    }
+    
+    // Cleanup function
+    return () => {
+      // Reset state when component unmounts or closes
+      if (!open) {
+        setEventId(null);
+        setFieldUpdateStatus({});
+      }
+    };
+  }, [open]);
+  
+  // Create the initial event
+  const createInitialEvent = async () => {
+    try {
+      console.log("Creating initial inspection event...");
+      
+      const orgUnitId = await getCurrentUserOrgUnit();
+      console.log("Retrieved organization unit ID:", orgUnitId);
+      
+      // Get the tracked entity instance ID from the API instead of props
+      let teiId = trackedEntityInstanceId;
+      if (!teiId) {
+        try {
+          teiId = await getTrackedEntityInstanceId(orgUnitId);
+          console.log("Retrieved tracked entity instance ID:", teiId);
+        } catch (error) {
+          console.error("Could not fetch tracked entity instance ID:", error);
+          setErrorMessage(`Could not fetch facility information: ${error.message}`);
+          return;
+        }
+      }
+      
+      if (!orgUnitId || !teiId) {
+        const missingItems = [];
+        if (!orgUnitId) missingItems.push("organization unit ID");
+        if (!teiId) missingItems.push("tracked entity instance ID");
+        
+        const errorMsg = `Authentication required: Missing ${missingItems.join(", ")}`;
+        console.error(errorMsg);
+        setErrorMessage(errorMsg);
+        return;
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      const enrollmentId = localStorage.getItem('enrollmentId') || "foVETTd80BM"; // Use stored enrollment ID or default
+      
+      // Using the exact payload structure from the screenshot
+      const payload = {
+        events: [{
+          trackedEntityInstance: teiId,
+          program: "EE8yeLVo6cN",
+          programStage: "upjm3J0dt2", // Using the exact program stage ID from the screenshot
+          enrollment: enrollmentId,
+          orgUnit: orgUnitId,
+          notes: [],
+          dataValues: [],
+          status: "ACTIVE",
+          eventDate: today
+        }]
+      };
+      
+      console.log("Creating event with payload:", payload);
+      
+      // Use the exact endpoint from the screenshot
+      const eventRes = await fetch("/api/events.json", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${localStorage.getItem('userCredentials')}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!eventRes.ok) {
+        const errorText = await eventRes.text();
+        console.error("Event creation API error:", {
+          status: eventRes.status,
+          statusText: eventRes.statusText,
+          responseBody: errorText
+        });
+        throw new Error(`Event creation failed: ${eventRes.status} - ${errorText}`);
+      }
+      
+      const responseData = await eventRes.json();
+      console.log("Event creation response:", responseData);
+      
+      // Extract the event ID from the response
+      let createdEventId;
+      if (responseData.response && responseData.response.importSummaries && responseData.response.importSummaries.length > 0) {
+        createdEventId = responseData.response.importSummaries[0].reference;
+      } else if (responseData.importSummaries && responseData.importSummaries.length > 0) {
+        createdEventId = responseData.importSummaries[0].reference;
+      } else if (responseData.reference) {
+        createdEventId = responseData.reference;
+      }
+      
+      console.log("Initial inspection event created with ID:", createdEventId);
+      
+      if (!createdEventId) {
+        console.error("Could not extract event ID from response:", responseData);
+        throw new Error("Failed to get event ID from response");
+      }
+      
+      // Store the organization unit ID in localStorage for other components to use
+      localStorage.setItem('userOrgUnitId', orgUnitId);
+      
+      setEventId(createdEventId);
+
+      // After creating the event, immediately update the inspection date field
+      if (fieldToDataElementMap && fieldToDataElementMap.inspectionDateTime) {
+        submitFieldValue('inspectionDateTime', today);
+      }
+    } catch (error) {
+      console.error("Error creating initial event:", error);
+      setErrorMessage(`Failed to initialize form: ${error.message}`);
+    }
+  };
+  
+  // Handle input change and immediate submission
+  const handleInputChange = async (e) => {
+    const { name, value } = e.target;
+    
+    // Update local state
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+    
+    // Don't submit if we don't have an event ID yet
+    if (!eventId) {
+      console.log("Event ID not yet available, waiting to submit field:", name);
+      return;
+    }
+    
+    // Set this field as updating
+    setFieldUpdateStatus(prev => ({ ...prev, [name]: 'updating' }));
+    
+    try {
+      await submitFieldValue(name, value);
+      // Mark field as successfully updated
+      setFieldUpdateStatus(prev => ({ ...prev, [name]: 'success' }));
+      
+      // Clear success status after 2 seconds
+      setTimeout(() => {
+        setFieldUpdateStatus(prev => {
+          const newStatus = { ...prev };
+          if (newStatus[name] === 'success') {
+            delete newStatus[name];
+          }
+          return newStatus;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error(`Error updating field ${name}:`, error);
+      // Mark field as failed
+      setFieldUpdateStatus(prev => ({ ...prev, [name]: 'error' }));
+    }
+  };
+  
+     // Submit a single field value to DHIS2
+   const submitFieldValue = async (fieldName, value) => {
+     const dataElementId = fieldToDataElementMap[fieldName];
+     if (!dataElementId) {
+       console.error("No data element ID found for field:", fieldName);
+       return;
+     }
+     
+     const credentials = localStorage.getItem('userCredentials');
+     
+     if (!credentials) {
+       throw new Error("Authentication required");
+     }
+     
+     // We'll use the dataElementId in the URL path and value in the request body
+     // DHIS2 expects { value: "theValue" } in the request body
+     
+     // Use the DHIS2 API to update a single data value with .json suffix
+     const url = `/api/events/${eventId}/dataValues/${dataElementId}.json`;
+     console.log(`Updating field ${fieldName} (${dataElementId}) with value:`, value);
+     
+     const response = await fetch(url, {
+       method: "PUT", // DHIS2 uses PUT for updating data values
+       headers: {
+         Authorization: `Basic ${credentials}`,
+         "Content-Type": "application/json",
+       },
+       body: JSON.stringify({ value: value }),
+     });
+     
+     if (!response.ok) {
+       const errorText = await response.text();
+       console.error("Field update API error:", {
+         status: response.status,
+         statusText: response.statusText,
+         url: url,
+         responseBody: errorText
+       });
+       throw new Error(`Field update failed: ${response.status} - ${errorText}`);
+     }
+     
+     const responseData = await response.json();
+     console.log(`Field ${fieldName} updated successfully:`, responseData);
+     return responseData;
+  };
+  
+  // Complete the form and close the dialog
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      // Mark the event as complete
+      const credentials = localStorage.getItem('userCredentials');
+      
+      if (!credentials || !eventId) {
+        throw new Error("Authentication required or event not created");
+      }
+      
+      // Store the organization unit ID in localStorage for other components to use
+      try {
+        const orgUnitId = await getCurrentUserOrgUnit();
+        localStorage.setItem('userOrgUnitId', orgUnitId);
+      } catch (error) {
+        console.warn("Could not update organization unit ID in localStorage:", error);
+      }
+      
+             const completeUrl = `/api/events/${eventId}/complete.json`;
+       console.log("Completing inspection event:", eventId);
+       const completeRes = await fetch(completeUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          "Content-Type": "application/json",
+        }
+      });
+      
+      if (!completeRes.ok) {
+        const errorText = await completeRes.text();
+        throw new Error(`Event completion failed: ${completeRes.status} - ${errorText}`);
+      }
+      
+      console.log("Inspection completed successfully!");
+      // Set inspection complete in localStorage
+      localStorage.setItem('situationalAnalysisComplete', 'true');
+      
+      // Call success callback to reload data in parent
+      // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      } else if (typeof onAddSuccess === 'function') {
+        onAddSuccess();
+      }
+      
+      onClose(); // Close modal on successful completion
+    } catch (error) {
+      console.error("Error completing inspection:", error);
+      setErrorMessage(`Failed to complete inspection: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Get status indicator for a field
+  const getFieldStatusIndicator = (fieldName) => {
+    const status = fieldUpdateStatus[fieldName];
+    if (!status) return null;
+    
+    switch (status) {
+      case 'updating':
+        return <span className="field-status updating">Saving...</span>;
+      case 'success':
+        return <span className="field-status success">✓</span>;
+      case 'error':
+        return <span className="field-status error">Failed to save</span>;
+      default:
+        return null;
+    }
+  };
+  
+  const renderSection = () => {
+    switch (activeSection) {
+      case "scheduleDetails":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Inspection Schedule Details</h6>
+            <div className="form-group">
+              <label>Inspection Date and Time:</label>
+              <div className="input-with-status">
+                <input
+                  type="datetime-local"
+                  name="inspectionDateTime"
+                  value={formData.inspectionDateTime}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange} // Also trigger on blur for better UX
+                  className="form-control"
+                  required
+                />
+                {getFieldStatusIndicator('inspectionDateTime')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Inspection Code:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="inspectionCode"
+                  value={formData.inspectionCode}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  required
+                />
+                {getFieldStatusIndicator('inspectionCode')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "inspection":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Inspection</h6>
+            <div className="form-group">
+              <label>Coordinates:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="inspectionCoordinates"
+                  value={formData.inspectionCoordinates}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  placeholder="e.g. 24.6859, 25.9089"
+                />
+                {getFieldStatusIndicator('inspectionCoordinates')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Service:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="inspectionService"
+                  value={formData.inspectionService}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                />
+                {getFieldStatusIndicator('inspectionService')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Type:</label>
+              <div className="input-with-status">
+                <select
+                  name="inspectionType"
+                  value={formData.inspectionType}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select Type</option>
+                  <option value="Initial">Initial</option>
+                  <option value="Follow-up">Follow-up</option>
+                  <option value="Routine">Routine</option>
+                  <option value="Special">Special</option>
+                </select>
+                {getFieldStatusIndicator('inspectionType')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "organization":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Organisation and Management</h6>
+            
+            <div className="form-group">
+              <label>Does the clinic have an organisational structure?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasOrganisationalStructure"
+                  value={formData.hasOrganisationalStructure}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasOrganisationalStructure')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="organisationalStructureComments"
+                  value={formData.organisationalStructureComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('organisationalStructureComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Is the director a medically trained person?</label>
+              <div className="input-with-status">
+                <select
+                  name="isDirectorMedicallyTrained"
+                  value={formData.isDirectorMedicallyTrained}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('isDirectorMedicallyTrained')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="directorMedicallyTrainedComments"
+                  value={formData.directorMedicallyTrainedComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('directorMedicallyTrainedComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Does the clinic have policies and procedures for assessment of patients?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasPoliciesForPatientAssessment"
+                  value={formData.hasPoliciesForPatientAssessment}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasPoliciesForPatientAssessment')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="policiesForPatientAssessmentComments"
+                  value={formData.policiesForPatientAssessmentComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('policiesForPatientAssessmentComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Does the clinic have policies and procedures for patient referral?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasPoliciesForPatientReferral"
+                  value={formData.hasPoliciesForPatientReferral}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasPoliciesForPatientReferral')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="policiesForPatientReferralComments"
+                  value={formData.policiesForPatientReferralComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('policiesForPatientReferralComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Does the clinic have policies and procedures for patient consent?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasPoliciesForPatientConsent"
+                  value={formData.hasPoliciesForPatientConsent}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasPoliciesForPatientConsent')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="policiesForPatientConsentComments"
+                  value={formData.policiesForPatientConsentComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('policiesForPatientConsentComments')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "environment":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Facility: Environment</h6>
+            
+            <div className="form-group">
+              <label>Does the facility have wheelchair accessibility?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasWheelchairAccessibility"
+                  value={formData.hasWheelchairAccessibility}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasWheelchairAccessibility')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="wheelchairAccessibilityComments"
+                  value={formData.wheelchairAccessibilityComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('wheelchairAccessibilityComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Is it fenced, secure and easily accessible?</label>
+              <div className="input-with-status">
+                <select
+                  name="isFencedAndSecure"
+                  value={formData.isFencedAndSecure}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('isFencedAndSecure')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="fencedAndSecureComments"
+                  value={formData.fencedAndSecureComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('fencedAndSecureComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Is there adequate space for parking?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasAdequateParking"
+                  value={formData.hasAdequateParking}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasAdequateParking')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="adequateParkingComments"
+                  value={formData.adequateParkingComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('adequateParkingComments')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "reception":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Facility: Reception/waiting area</h6>
+            
+            <div className="form-group">
+              <label>Does reception area have adequate space?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasAdequateReceptionSpace"
+                  value={formData.hasAdequateReceptionSpace}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasAdequateReceptionSpace')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="adequateReceptionSpaceComments"
+                  value={formData.adequateReceptionSpaceComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('adequateReceptionSpaceComments')}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Is the telephone/cell phone available?</label>
+              <div className="input-with-status">
+                <select
+                  name="hasTelephone"
+                  value={formData.hasTelephone}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {getFieldStatusIndicator('hasTelephone')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Comments:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="telephoneComments"
+                  value={formData.telephoneComments}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('telephoneComments')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "inspector":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Inspector Details</h6>
+            <div className="form-group">
+              <label>Inspector's Full Name:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="inspectorFullname"
+                  value={formData.inspectorFullname}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  required
+                />
+                {getFieldStatusIndicator('inspectorFullname')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+  
+  const isFormValid = () => {
+    // Basic validation - at minimum require inspection date/time and inspector name
+    return formData.inspectionDateTime && formData.inspectorFullname;
+  };
+  
+  return (
+    <ModalPortal open={open} onClose={onClose}>
+      <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
+        <div className="modal-header">
+          <h5 className="modal-title">Add Inspection</h5>
+          <button 
+            type="button" 
+            className="close-btn" 
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            &times;
+          </button>
+        </div>
+        <div className="modal-body">
+          {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
+          {!eventId && <div className="alert alert-info">Initializing form...</div>}
+          
+          <div className="section-tabs">
+            <button 
+              className={`section-tab ${activeSection === "scheduleDetails" ? "active" : ""}`}
+              onClick={() => setActiveSection("scheduleDetails")}
+            >
+              Schedule Details
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "inspection" ? "active" : ""}`}
+              onClick={() => setActiveSection("inspection")}
+            >
+              Inspection
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "organization" ? "active" : ""}`}
+              onClick={() => setActiveSection("organization")}
+            >
+              Organization
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "environment" ? "active" : ""}`}
+              onClick={() => setActiveSection("environment")}
+            >
+              Environment
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "reception" ? "active" : ""}`}
+              onClick={() => setActiveSection("reception")}
+            >
+              Reception
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "inspector" ? "active" : ""}`}
+              onClick={() => setActiveSection("inspector")}
+            >
+              Inspector
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="inspection-form">
+            {renderSection()}
+            
+            <div className="button-container">
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={isSubmitting || !isFormValid() || !eventId}
+              >
+                {isSubmitting ? "Completing..." : "Complete Inspection"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+};
+
+export default AddInspectionDialog; 

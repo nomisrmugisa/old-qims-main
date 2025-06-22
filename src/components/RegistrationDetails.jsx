@@ -3,7 +3,10 @@ import './RegistrationDetails.css'; // We'll create this CSS file next
 import AddFacilityOwnershipDialog from './AddFacilityOwnershipDialog';
 import EditFacilityOwnershipDialog from './EditFacilityOwnershipDialog';
 import AddEmployeeRegistrationDialog from './AddEmployeeRegistrationDialog';
+import EditEmployeeRegistrationDialog from './EditEmployeeRegistrationDialog';
 import AddServiceOfferingDialog from './AddServiceOfferingDialog';
+import EditServiceOfferingDialog from './EditServiceOfferingDialog';
+import AddInspectionDialog from './AddInspectionDialog';
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 // import { useTheme } from '@mui/material/styles';
@@ -22,9 +25,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
+  const [openInspectionDialog, setOpenInspectionDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [openEmployeeDialog, setOpenEmployeeDialog] = useState(false);
+  const [selectedEmployeeEvent, setSelectedEmployeeEvent] = useState(null);
+  const [showEditEmployeeDialog, setShowEditEmployeeDialog] = useState(false);
+  const [selectedServiceEvent, setSelectedServiceEvent] = useState(null);
+  const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
 
   const StepContainer = styled(Box)(({ theme }) => ({
@@ -283,15 +291,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingServices(true);
-      // Use a unique program stage ID for services - the mTuN7RTnmaB value is a placeholder
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=mTuN7RTnmaB&paging=false`;
+      // Use the correct program stage ID for Services Offered
+      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
       
       console.log("Services Offered API Request:");
       console.log("- Full URL:", url);
       console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
-      console.log("- programStage: mTuN7RTnmaB");
+      console.log("- programStage: uL262bA2IP3");
 
       const response = await fetch(url, {
         headers: {
@@ -338,6 +346,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const handleRowClick = (event) => {
     setSelectedEvent(event);
     setShowEditDialog(true);
+  };
+
+  const handleEmployeeRowClick = (event) => {
+    setSelectedEmployeeEvent(event);
+    setShowEditEmployeeDialog(true);
+  };
+
+  const handleServiceRowClick = (event) => {
+    setSelectedServiceEvent(event);
+    setShowEditServiceDialog(true);
   };
 
   const handleAddEmployee = (e) => {
@@ -471,6 +489,25 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     setOpenServiceDialog(false);
     fetchServiceData();
   };
+  
+  const handleAddInspection = () => {
+    console.log("Opening inspection dialog...");
+    setOpenInspectionDialog(true);
+  };
+
+  const handleCloseInspectionDialog = () => {
+    console.log("Closing inspection dialog");
+    setOpenInspectionDialog(false);
+  };
+
+  const handleInspectionAddSuccess = () => {
+    console.log("Inspection added successfully");
+    setOpenInspectionDialog(false);
+    // Mark the situational analysis as complete
+    localStorage.setItem('situationalAnalysisComplete', 'true');
+    // Force a re-render to update the tab status
+    setActiveTab(activeTab);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -590,7 +627,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         };
 
                         return (
-                          <tr key={event.event || index}>
+                          <tr 
+                            key={event.event || index}
+                            onClick={() => handleEmployeeRowClick(event)}
+                            style={{ cursor: 'pointer' }}
+                            className="hover-row"
+                          >
                             <td>{getFormattedValue("IIxbad41cH6")}</td>
                             <td>{getFormattedValue("VFTRgPnvSHV")}</td>
                             <td>{getFormattedValue("xcTxmEUy6g6")}</td>
@@ -692,7 +734,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         ].filter(Boolean).join(", ");
 
                         return (
-                          <tr key={event.event || index}>
+                          <tr 
+                            key={event.event || index}
+                            onClick={() => handleServiceRowClick(event)}
+                            style={{ cursor: 'pointer' }}
+                            className="hover-row"
+                          >
                             <td>{getFormattedValue("IR8eO63QKKe")}</td>
                             <td>{getFormattedValue("pRPw37nqZQ3")}</td>
                             <td>{coreServices || "None"}</td>
@@ -713,48 +760,53 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="inspection-schedule-details">
-              <h2>Situational Analysis <span className="add-icon">+</span></h2>
+              <h2>
+                Situational Analysis 
+                <button 
+                  className="add-icon" 
+                  onClick={handleAddInspection}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
+                  }}
+                >
+                  +
+                </button>
+              </h2>
               <div className="table-responsive">
                 <table className="table table-hover">
                   <thead>
                     <tr>
                       <th>Inspection Date</th>
-                      <th>Facility Name</th>
+                      <th>Inspection Code</th>
                       <th>Inspector</th>
-                      <th>Status</th>
-                      <th>Findings</th>
-                      <th>Recommendations</th>
-                      <th>Follow-up Date</th>
+                      <th>Type</th>
+                      <th>Organization Structure</th>
+                      <th>Patient Policies</th>
+                      <th>Facility Environment</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>2024-03-20</td>
-                      <td>Central Clinic</td>
-                      <td>John Doe</td>
-                      <td>Completed</td>
-                      <td>Minor non-compliance</td>
-                      <td>Update fire extinguishers</td>
-                      <td>2024-04-20</td>
-                    </tr>
-                    <tr>
-                      <td>2024-03-22</td>
-                      <td>City Hospital</td>
-                      <td>Jane Smith</td>
-                      <td>Pending</td>
-                      <td>N/A</td>
-                      <td>N/A</td>
-                      <td>2024-04-22</td>
-                    </tr>
-                    <tr>
-                      <td>2024-03-25</td>
-                      <td>Rural Health Post</td>
-                      <td>Peter Jones</td>
-                      <td>Completed</td>
-                      <td>Good compliance</td>
-                      <td>None</td>
-                      <td>N/A</td>
-                    </tr>
+                    {localStorage.getItem('situationalAnalysisComplete') === 'true' ? (
+                      <tr>
+                        <td>{new Date().toLocaleDateString()}</td>
+                        <td>INSP-{Math.floor(Math.random() * 1000)}</td>
+                        <td>Inspector Name</td>
+                        <td>Initial</td>
+                        <td>Yes</td>
+                        <td>Yes</td>
+                        <td>Compliant</td>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="text-center">No inspection records found. Click the + button to add an inspection.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -771,18 +823,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   >
                     Reset Situational Analysis Status (Testing Only)
                   </button>
-                ) : (
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => {
-                      localStorage.setItem('situationalAnalysisComplete', 'true');
-                      // Force a re-render to update the tab status
-                      setActiveTab(activeTab);
-                    }}
-                  >
-                    Mark Situational Analysis as Complete
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -886,12 +927,48 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         />
       )}
 
+      {/* Edit Employee Registration Dialog - only render when showEditEmployeeDialog is true */}
+      {showEditEmployeeDialog && selectedEmployeeEvent && (
+        <EditEmployeeRegistrationDialog
+          open={showEditEmployeeDialog}
+          onClose={() => setShowEditEmployeeDialog(false)}
+          onSuccess={() => {
+            setShowEditEmployeeDialog(false);
+            fetchEmployeeData();
+          }}
+          event={selectedEmployeeEvent}
+        />
+      )}
+
       {/* Add Service Offering Dialog - only render when openServiceDialog is true */}
       {openServiceDialog && (
         <AddServiceOfferingDialog
           open={openServiceDialog}
           onClose={handleCloseServiceDialog}
-          onAddSuccess={handleServiceAddSuccess}
+          onSuccess={handleServiceAddSuccess}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+        />
+      )}
+
+      {/* Edit Service Offering Dialog - only render when showEditServiceDialog is true */}
+      {showEditServiceDialog && selectedServiceEvent && (
+        <EditServiceOfferingDialog
+          open={showEditServiceDialog}
+          onClose={() => setShowEditServiceDialog(false)}
+          onSuccess={() => {
+            setShowEditServiceDialog(false);
+            fetchServiceData();
+          }}
+          event={selectedServiceEvent}
+        />
+      )}
+
+      {/* Add Inspection Dialog - only render when openInspectionDialog is true */}
+      {openInspectionDialog && (
+        <AddInspectionDialog
+          open={openInspectionDialog}
+          onClose={handleCloseInspectionDialog}
+          onAddSuccess={handleInspectionAddSuccess}
           trackedEntityInstanceId={trackedEntityInstanceId}
         />
       )}

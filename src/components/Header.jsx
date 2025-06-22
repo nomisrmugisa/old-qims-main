@@ -14,8 +14,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
   // Monitor localStorage for changes to situationalAnalysisComplete
   useEffect(() => {
     const checkSituationalAnalysisStatus = () => {
+      // Clear console to avoid cluttering with status logs
+      console.clear();
       const status = localStorage.getItem('situationalAnalysisComplete') === 'true';
-      console.log("Situational Analysis Status:", status);
+      // Removed console.log to prevent console spam
       setSituationalAnalysisComplete(status);
     };
     
@@ -117,12 +119,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   href="#overview" 
                   className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
                   onClick={(e) => {
-                    console.log("Overview clicked, isLoggedIn:", isLoggedIn, "SA Green:", isSituationalAnalysisGreen());
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
                       setActiveDashboardSection('overview');
                     } else {
                       e.preventDefault();
-                      console.log("Navigation prevented");
                     }
                   }}
                 >
@@ -138,7 +138,6 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       setActiveDashboardSection('reports');
                     } else {
                       e.preventDefault();
-                      console.log("Reports navigation prevented");
                     }
                   }}
                 >
@@ -154,7 +153,6 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       setActiveDashboardSection('tasks');
                     } else {
                       e.preventDefault();
-                      console.log("Tasks navigation prevented");
                     }
                   }}
                 >
@@ -167,7 +165,6 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   onClick={(e) => {
                     if (!isLoggedIn || !isSituationalAnalysisGreen()) {
                       e.preventDefault();
-                      console.log("Documents navigation prevented");
                     }
                   }}
                 >

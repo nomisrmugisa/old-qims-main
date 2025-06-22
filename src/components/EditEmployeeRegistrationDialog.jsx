@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import './AddEmployeeRegistrationDialog.css';
+import './EditEmployeeRegistrationDialog.css';
 import ModalPortal from './ModalPortal';
 
-const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
-  const [newFormData, setNewFormData] = useState({
+const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => {
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     bhpcNmcNumber: "",
@@ -17,15 +17,30 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
   // Prevent scrolling on the main body when the modal is open
   useEffect(() => {
     if (open) {
-      // Disable scrolling on the body when modal is open
       document.body.style.overflow = 'hidden';
-      
-      // Re-enable scrolling when component is unmounted or closed
       return () => {
         document.body.style.overflow = 'auto';
       };
     }
   }, [open]);
+
+  // Populate form with existing data when event changes
+  useEffect(() => {
+    if (event && event.dataValues) {
+      const getDataValue = (dataElementId) => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === dataElementId);
+        return dataValue ? dataValue.value : '';
+      };
+
+      setFormData({
+        firstName: getDataValue("IIxbad41cH6"), // Employee First Name
+        lastName: getDataValue("VFTRgPnvSHV"), // Employee Last Name
+        bhpcNmcNumber: getDataValue("xcTxmEUy6g6"), // BHPC/NMC Number
+        position: getDataValue("FClCncccLzw"), // Position
+        contractType: getDataValue("F3h1A96t3uL") // Officer Contract Type
+      });
+    }
+  }, [event]);
 
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
@@ -48,12 +63,10 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
       
       const userData = await response.json();
       
-      // Check if the user has an organization unit
       if (!userData.organisationUnits || userData.organisationUnits.length === 0) {
         throw new Error("User has no associated organization units");
       }
       
-      // Return the ID of the first organization unit (primary org unit)
       return userData.organisationUnits[0].id;
     } catch (error) {
       console.error("Error fetching user organization unit:", error);
@@ -63,7 +76,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
-    setNewFormData((prevData) => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: type === 'file' ? files[0] : value,
     }));
@@ -71,7 +84,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
 
 
-  const handleAddSubmit = async (e) => {
+  const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
@@ -82,25 +95,21 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
         throw new Error("Authentication required. Please log in again.");
       }
 
-      // Get current user's organization unit
       const orgUnitId = await getCurrentUserOrgUnit();
-      
-      // Store the organization unit ID in localStorage for other components to use
-      localStorage.setItem('userOrgUnitId', orgUnitId);
 
       // Prepare data values for Employee Registration program stage - only the 5 configured fields
       const dataValues = [
-        { dataElement: "IIxbad41cH6", value: newFormData.firstName }, // Employee First Name
-        { dataElement: "VFTRgPnvSHV", value: newFormData.lastName }, // Employee Last Name
-        { dataElement: "xcTxmEUy6g6", value: newFormData.bhpcNmcNumber }, // BHPC/NMC Number
-        { dataElement: "FClCncccLzw", value: newFormData.position }, // Position
-        { dataElement: "F3h1A96t3uL", value: newFormData.contractType }, // Officer Contract Type
+        { dataElement: "IIxbad41cH6", value: formData.firstName }, // Employee First Name
+        { dataElement: "VFTRgPnvSHV", value: formData.lastName }, // Employee Last Name
+        { dataElement: "xcTxmEUy6g6", value: formData.bhpcNmcNumber }, // BHPC/NMC Number
+        { dataElement: "FClCncccLzw", value: formData.position }, // Position
+        { dataElement: "F3h1A96t3uL", value: formData.contractType }, // Officer Contract Type
       ];
 
       const today = new Date().toISOString().split('T')[0];
 
       const payload = {
-        trackedEntityInstance: trackedEntityInstanceId,
+        event: event.event,
         eventDate: today,
         orgUnit: orgUnitId,
         program: "EE8yeLVo6cN", // Same program as Facility Ownership
@@ -109,10 +118,10 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
         dataValues: dataValues,
       };
 
-      console.log("Employee Registration Payload:", payload);
+      console.log("Employee Registration Update Payload:", payload);
 
-      const eventRes = await fetch("/api/events", {
-        method: "POST",
+      const eventRes = await fetch(`/api/events/${event.event}`, {
+        method: "PUT",
         headers: {
           Authorization: `Basic ${credentials}`,
           "Content-Type": "application/json",
@@ -122,24 +131,20 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
       if (!eventRes.ok) {
         const errorText = await eventRes.text();
-        throw new Error(`Event creation failed: ${eventRes.status} - ${errorText}`);
+        throw new Error(`Event update failed: ${eventRes.status} - ${errorText}`);
       }
 
-      console.log("Employee registration event created successfully!");
+      console.log("Employee registration updated successfully!");
       
-      // Call success callback to reload data in parent
-      // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
       if (typeof onSuccess === 'function') {
         onSuccess();
-      } else if (typeof onAddSuccess === 'function') {
-        onAddSuccess();
       }
       
-      onClose(); // Close modal on successful addition
+      onClose();
 
     } catch (error) {
-      console.error("Error creating new employee registration:", error);
-      setErrorMessage(`Failed to add employee registration: ${error.message}`);
+      console.error("Error updating employee registration:", error);
+      setErrorMessage(`Failed to update employee registration: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -152,18 +157,18 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
   };
 
   const isFormValid = (
-    newFormData.firstName &&
-    newFormData.lastName &&
-    newFormData.bhpcNmcNumber &&
-    newFormData.position &&
-    newFormData.contractType
+    formData.firstName &&
+    formData.lastName &&
+    formData.bhpcNmcNumber &&
+    formData.position &&
+    formData.contractType
   );
 
   return (
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Add New Employee Registration</h5>
+          <h5 className="modal-title">Edit Employee Registration</h5>
           <button 
             type="button" 
             className="close-btn" 
@@ -175,13 +180,13 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
         </div>
         <div className="modal-body">
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
-          <form onSubmit={handleAddSubmit} className="employee-registration-form">
+          <form onSubmit={handleUpdateSubmit} className="employee-registration-form">
             <div className="form-group">
               <label>First Name:</label>
               <input
                 type="text"
                 name="firstName"
-                value={newFormData.firstName}
+                value={formData.firstName}
                 onChange={handleInputChange}
                 className="form-control"
                 required
@@ -193,7 +198,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
               <input
                 type="text"
                 name="lastName"
-                value={newFormData.lastName}
+                value={formData.lastName}
                 onChange={handleInputChange}
                 className="form-control"
                 required
@@ -205,7 +210,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
               <input
                 type="text"
                 name="bhpcNmcNumber"
-                value={newFormData.bhpcNmcNumber}
+                value={formData.bhpcNmcNumber}
                 onChange={handleInputChange}
                 className="form-control"
                 required
@@ -216,7 +221,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
               <label>Position:</label>
               <select
                 name="position"
-                value={newFormData.position}
+                value={formData.position}
                 onChange={handleInputChange}
                 className="form-control"
                 required
@@ -235,7 +240,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
               <label>Contract Type:</label>
               <select
                 name="contractType"
-                value={newFormData.contractType}
+                value={formData.contractType}
                 onChange={handleInputChange}
                 className="form-control"
                 required
@@ -262,7 +267,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
                 className="btn-primary"
                 disabled={isLoading || !isFormValid}
               >
-                {isLoading ? "Adding..." : "Add Employee"}
+                {isLoading ? "Updating..." : "Update Employee"}
               </button>
             </div>
           </form>
@@ -272,4 +277,4 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
   );
 };
 
-export default AddEmployeeRegistrationDialog; 
+export default EditEmployeeRegistrationDialog; 

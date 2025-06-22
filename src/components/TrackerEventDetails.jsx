@@ -32,9 +32,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [eventData, setEventData] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [updating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError, setUpdateError] = useState(null);
+  const [updateError] = useState(null);
   const [organisationalUnits, setOrganisationalUnits] = useState([]);
   const [filteredOrgUnits, setFilteredOrgUnits] = useState([]);
   const [isLoadingOrgUnits, setIsLoadingOrgUnits] = useState(false);
