@@ -164,7 +164,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     }
     
     try {
-      const response = await fetch("/api/me.json", {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -199,7 +199,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     
     try {
       // Use the API to fetch tracked entity instances for the given org unit and program
-      const url = `/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
       console.log("Fetching tracked entity instances from:", url);
       
       const response = await fetch(url, {
@@ -310,7 +310,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       console.log("Creating event with payload:", payload);
       
       // Use the exact endpoint from the screenshot
-      const eventRes = await fetch("/api/events.json", {
+      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events.json`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${localStorage.getItem('userCredentials')}`,
@@ -474,11 +474,11 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
      
      // Use the DHIS2 API to update event data values
      // Need to send a complete event payload with dataValues array
-     const url = `/api/events/${targetEventId}.json`;
+     const url = `${import.meta.env.VITE_DHIS2_URL}/api/events/${targetEventId}.json`;
      console.log(`Updating field ${fieldName} (${dataElementId}) with value:`, value, `for event:`, targetEventId);
      
      // Get current event data to build the payload
-     const eventResponse = await fetch(`/api/events/${targetEventId}.json`, {
+     const eventResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${targetEventId}.json`, {
        headers: {
          Authorization: `Basic ${credentials}`,
        },
@@ -567,7 +567,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
         console.warn("Could not update organization unit ID in localStorage:", error);
       }
       
-             const completeUrl = `/api/events/${eventId}/complete.json`;
+             const completeUrl = `${import.meta.env.VITE_DHIS2_URL}/api/events/${eventId}/complete.json`;
        console.log("Completing inspection event:", eventId);
        const completeRes = await fetch(completeUrl, {
         method: "POST",

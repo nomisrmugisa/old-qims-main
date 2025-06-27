@@ -51,7 +51,7 @@ const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => 
     }
     
     try {
-      const response = await fetch("/api/me.json", {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -120,7 +120,7 @@ const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => 
 
       console.log("Employee Registration Update Payload:", payload);
 
-      const eventRes = await fetch(`/api/events/${event.event}`, {
+      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
         method: "PUT",
         headers: {
           Authorization: `Basic ${credentials}`,

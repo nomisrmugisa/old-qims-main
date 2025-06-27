@@ -220,7 +220,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
             const credentials = btoa(`${username}:${password}`);
 
             // First API call to authenticate
-            const response = await fetch("/api/me", {
+            const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
                 headers: {
                     Authorization: `Basic ${credentials}`,
                     // TEMPORARILY DISABLED 2FA FOR DEVELOPMENT
@@ -258,7 +258,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
             // If authentication successful, fetch organization units
             const orgUnitsResponse = await fetch(
-                "/api/me?fields=organisationUnits[id,displayName]",
+                `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,displayName]`,
                 {
                     headers: {
                         Authorization: `Basic ${credentials}`,

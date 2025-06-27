@@ -89,7 +89,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         }
 
         // Fetch user data to get the twitter value (DHIS2 Registration Code)
-        const meResponse = await fetch('/api/me', {
+        const meResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
           headers: {
             Authorization: `Basic ${credentials}`,
           },
@@ -117,7 +117,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         // Try to fetch events using the direct endpoint with twitter value
         try {
           // Use the specified endpoint: /api/events/{twitter}
-          const eventsUrl = `/api/events/${registrationCode}`;
+          const eventsUrl = `${import.meta.env.VITE_DHIS2_URL}/api/events/${registrationCode}`;
 
           const eventsResponse = await fetch(eventsUrl, {
             headers: {
@@ -239,7 +239,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
       
       try {
-        const apiUrl = `/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`;
+        const apiUrl = `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`;
         
         const response = await fetch(
           apiUrl,
@@ -282,7 +282,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
 
       const response = await fetch(
-        "/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false",
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`,
         {
           headers: {
             Authorization: `Basic ${credentials}`,
@@ -413,7 +413,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             const credentials = localStorage.getItem('userCredentials');
             try {
               const response = await fetch(
-                `/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`,
+                `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`,
                 {
                   headers: {
                     Authorization: `Basic ${credentials}`,

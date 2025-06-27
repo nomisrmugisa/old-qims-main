@@ -48,7 +48,7 @@ function RegistrationForm() {
 
       try {
         const response = await fetch(
-          `${API_URL}/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`,
+          `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`,
           {
             headers: {
               Authorization: `Basic ${credentials}`,
@@ -148,7 +148,7 @@ function RegistrationForm() {
         email: formData.email
       };
 
-      const userResponse = await fetch(`${API_URL}/api/40/users`, {
+      const userResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/40/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -221,7 +221,7 @@ function RegistrationForm() {
       };
 
       const trackerResponse = await fetch(
-        `${API_URL}/api/40/tracker?async=false`,
+        `${import.meta.env.VITE_DHIS2_URL}/api/40/tracker?async=false`,
         {
           method: "POST",
           headers: {

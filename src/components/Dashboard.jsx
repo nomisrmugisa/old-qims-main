@@ -21,7 +21,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         }
 
         try {
-            const url = `/api/trackedEntityInstances?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
+            const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
             const response = await fetch(url, {
                 headers: {
                     Authorization: `Basic ${credentials}`,

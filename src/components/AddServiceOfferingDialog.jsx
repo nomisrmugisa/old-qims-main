@@ -45,7 +45,7 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
     }
     
     try {
-      const response = await fetch("/api/me.json", {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -123,7 +123,7 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
         dataValues: dataValues
       };
       
-      const eventRes = await fetch("/api/events", {
+      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
