@@ -125,6 +125,24 @@
   background-color: #f8d7da;
 }
 
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+  flex: none;
+}
+
+.checkbox-group label {
+  margin: 0;
+  cursor: pointer;
+  flex: 1;
+}
+
 .button-container {
   display: flex;
   justify-content: flex-end;

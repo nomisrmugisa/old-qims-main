@@ -7,7 +7,8 @@ import EditEmployeeRegistrationDialog from './EditEmployeeRegistrationDialog';
 import AddServiceOfferingDialog from './AddServiceOfferingDialog';
 import EditServiceOfferingDialog from './EditServiceOfferingDialog';
 import AddInspectionDialog from './AddInspectionDialog';
-import EditInspectionDialog from './EditInspectionDialog';
+import AddStatutoryComplianceDialog from './AddStatutoryComplianceDialog';
+
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 // import { useTheme } from '@mui/material/styles';
@@ -41,6 +42,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [isLoadingInspections, setIsLoadingInspections] = useState(true);
   const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
   const [showEditInspectionDialog, setShowEditInspectionDialog] = useState(false);
+
+  // Statutory Compliance state
+  const [statutoryComplianceEvents, setStatutoryComplianceEvents] = useState([]);
+  const [isLoadingStatutoryCompliance, setIsLoadingStatutoryCompliance] = useState(true);
+  const [openStatutoryComplianceDialog, setOpenStatutoryComplianceDialog] = useState(false);
+  const [selectedStatutoryComplianceEvent, setSelectedStatutoryComplianceEvent] = useState(null);
+  const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
 
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -147,6 +155,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return serviceEvents.length > 0;
       case 'inspectionSchedule':
         return inspectionEvents.length > 0;
+      case 'statutoryCompliance':
+        return statutoryComplianceEvents.length > 0;
       default:
         return false;
     }
@@ -154,12 +164,23 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   
   // Handle tab click with validation
   const handleTabClick = (tabKey) => {
+    console.log("=== TAB CLICKED ===", tabKey);
+    console.log("- completeApplicationStatus:", completeApplicationStatus);
+    
     // If Complete Application is not complete and trying to access another tab, don't allow it
     if (!completeApplicationStatus && tabKey !== 'completeApplication') {
+      console.log("- Tab click blocked - application not complete");
       return; // Don't change tabs
     }
     
+    console.log("- Setting active tab to:", tabKey);
     setActiveTab(tabKey);
+    
+    // Manually trigger fetch for inspection data when clicking on inspectionSchedule tab
+    if (tabKey === 'inspectionSchedule') {
+      console.log("- Manually triggering fetchInspectionData for Situational Analysis tab");
+      fetchInspectionData();
+    }
   };
 
   const fetchFacilityOwnershipData = async () => {
@@ -453,7 +474,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   const fetchInspectionData = async () => {
+    console.log("=== DEBUGGING INSPECTION DATA FETCH ===");
+    console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+    console.log("- userCredentials exists:", !!localStorage.getItem('userCredentials'));
+    console.log("- userOrgUnitId:", localStorage.getItem('userOrgUnitId'));
+    
     if (!trackedEntityInstanceId) {
+      console.log("- EARLY RETURN: No trackedEntityInstanceId");
       setIsLoadingInspections(false);
       return;
     }
@@ -462,14 +489,17 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
+      console.log("- EARLY RETURN: Missing credentials or userOrgUnitId");
+      console.log("  - credentials:", !!credentials);
+      console.log("  - userOrgUnitId:", !!userOrgUnitId);
       setIsLoadingInspections(false);
       return;
     }
 
     try {
       setIsLoadingInspections(true);
-      // Use the correct program stage ID for Situational Analysis (Inspection)
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=Eupjm3J0dt2&paging=false`;
+      // Fetch all events and filter by program stage in JavaScript since API filter might not work correctly
+      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Situational Analysis API Request:");
       console.log("- Full URL:", url);
@@ -504,12 +534,37 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           console.log(`  - Events in inspection enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
             console.log(`  - First inspection event programStage:`, enrollment.events[0].programStage);
+            // Filter events to only include Situational Analysis program stage (Eupjm3J0dt2)
+            const inspectionEvents = enrollment.events.filter(event => event.programStage === "Eupjm3J0dt2");
+            console.log(`  - Filtered inspection events (Eupjm3J0dt2):`, inspectionEvents.length);
+            fetchedEvents = fetchedEvents.concat(inspectionEvents);
           }
-          fetchedEvents = fetchedEvents.concat(enrollment.events || []);
         });
       }
       
-      console.log("- Total inspection events extracted:", fetchedEvents.length);
+      console.log("- Total inspection events extracted (Eupjm3J0dt2 only):", fetchedEvents.length);
+      
+      // Enhanced debugging - log the actual events
+      if (fetchedEvents.length > 0) {
+        console.log("- Sample inspection event:", fetchedEvents[0]);
+        console.log("- All inspection events:", fetchedEvents);
+      } else {
+        console.log("- No inspection events found. Checking all events in enrollments:");
+        if (data.enrollments && data.enrollments.length > 0) {
+          data.enrollments.forEach((enrollment, index) => {
+            if (enrollment.events && enrollment.events.length > 0) {
+              enrollment.events.forEach((event, eventIndex) => {
+                console.log(`    - Event ${eventIndex + 1} in enrollment ${index + 1}:`, {
+                  event: event.event,
+                  programStage: event.programStage,
+                  status: event.status,
+                  eventDate: event.eventDate
+                });
+              });
+            }
+          });
+        }
+      }
 
       setInspectionEvents(fetchedEvents);
       setIsLoadingInspections(false);
@@ -523,8 +578,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Add fetch function for service offerings
     // Add useEffect to fetch service data
   useEffect(() => {
-    fetchServiceData();
-    fetchInspectionData();
+    if (trackedEntityInstanceId) {
+      fetchServiceData();
+      fetchInspectionData();
+      fetchStatutoryComplianceData();
+    }
   }, [trackedEntityInstanceId]);
   
   // Add useEffect to check for and handle the automatic tab switching flag
@@ -574,12 +632,109 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const handleCloseInspectionDialog = () => {
     console.log("Closing inspection dialog");
     setOpenInspectionDialog(false);
+    // Also trigger a fetch when dialog closes, just in case
+    console.log("Triggering fetchInspectionData after dialog close");
+    fetchInspectionData();
   };
 
   const handleInspectionAddSuccess = () => {
     console.log("Inspection added successfully");
     setOpenInspectionDialog(false);
     fetchInspectionData();
+  };
+
+  // Statutory Compliance handlers
+  const handleAddStatutoryCompliance = () => {
+    console.log("Opening statutory compliance dialog...");
+    setOpenStatutoryComplianceDialog(true);
+  };
+
+  const handleCloseStatutoryComplianceDialog = () => {
+    console.log("Closing statutory compliance dialog");
+    setOpenStatutoryComplianceDialog(false);
+  };
+
+  const handleStatutoryComplianceAddSuccess = () => {
+    console.log("Statutory compliance record added successfully");
+    setOpenStatutoryComplianceDialog(false);
+    fetchStatutoryComplianceData();
+  };
+
+  const handleStatutoryComplianceRowClick = (event) => {
+    setSelectedStatutoryComplianceEvent(event);
+    setShowEditStatutoryComplianceDialog(true);
+  };
+
+  // Fetch statutory compliance data
+  const fetchStatutoryComplianceData = async () => {
+    if (!trackedEntityInstanceId) {
+      setIsLoadingStatutoryCompliance(false);
+      return;
+    }
+
+    const credentials = localStorage.getItem('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+
+    if (!credentials || !userOrgUnitId) {
+      setIsLoadingStatutoryCompliance(false);
+      return;
+    }
+
+    try {
+      setIsLoadingStatutoryCompliance(true);
+      // Fetch all events and filter by program stage in JavaScript
+      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      
+      console.log("Statutory Compliance API Request:");
+      console.log("- Full URL:", url);
+      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- organizationUnitId:", userOrgUnitId);
+      console.log("- programId: EE8yeLVo6cN");
+      console.log("- programStage: vyv7zncjCmV");
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      console.log("Statutory Compliance API Response:");
+      console.log("- Response data:", data);
+      console.log("- Has enrollments:", Boolean(data.enrollments));
+      console.log("- Number of enrollments:", data.enrollments?.length || 0);
+      
+      let fetchedEvents = [];
+
+      if (data.enrollments && data.enrollments.length > 0) {
+        console.log("- Processing statutory compliance enrollments...");
+        data.enrollments.forEach((enrollment, index) => {
+          console.log(`  - Statutory Compliance Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in statutory compliance enrollment #${index+1}:`, enrollment.events?.length || 0);
+          if (enrollment.events && enrollment.events.length > 0) {
+            console.log(`  - First statutory compliance event programStage:`, enrollment.events[0].programStage);
+            // Filter events to only include Statutory Compliance program stage (vyv7zncjCmV)
+            const complianceEvents = enrollment.events.filter(event => event.programStage === "vyv7zncjCmV");
+            console.log(`  - Filtered statutory compliance events (vyv7zncjCmV):`, complianceEvents.length);
+            fetchedEvents = fetchedEvents.concat(complianceEvents);
+          }
+        });
+      }
+      
+      console.log("- Total statutory compliance events extracted (vyv7zncjCmV only):", fetchedEvents.length);
+
+      setStatutoryComplianceEvents(fetchedEvents);
+      setIsLoadingStatutoryCompliance(false);
+
+    } catch (error) {
+      console.error("Error fetching statutory compliance data:", error);
+      setIsLoadingStatutoryCompliance(false);
+    }
   };
 
   const renderTabContent = () => {
@@ -854,12 +1009,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingInspections ? (
                 <p>Loading inspection data...</p>
               ) : inspectionEvents.length === 0 ? (
-                <p>No inspection records found.</p>
+                <div>
+                  <p>No inspection records found.</p>
+                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
+                    Debug: isLoadingInspections={isLoadingInspections.toString()}, 
+                    inspectionEvents.length={inspectionEvents.length}, 
+                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
+                  </p>
+                </div>
               ) : (
                 <div className="table-responsive">
                   <table className="table table-hover">
                     <thead>
                       <tr>
+                        <th>Event ID</th>
                         <th>Inspection Date</th>
                         <th>Inspection Code</th>
                         <th>Inspector</th>
@@ -923,6 +1086,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                              style={{ cursor: 'pointer' }}
                              className="hover-row"
                            >
+                             <td>{event.event || 'N/A'}</td>
                              <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
                              <td>{getFormattedValue("wS6bfV1hrU0")}</td>
                              <td>{getFormattedValue("VOjM6ArpORU")}</td>
@@ -932,6 +1096,90 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                              <td>{facilityStatus}</td>
                            </tr>
                          );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'statutoryCompliance':
+        return (
+          <div className="tab-content">
+            <div className="statutory-compliance-details">
+              <h2>
+                Statutory Compliance Details 
+                <button 
+                  className="add-icon" 
+                  onClick={handleAddStatutoryCompliance}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
+                  }}
+                >
+                  +
+                </button>
+              </h2>
+              {isLoadingStatutoryCompliance ? (
+                <p>Loading statutory compliance data...</p>
+              ) : statutoryComplianceEvents.length === 0 ? (
+                <p>No statutory compliance records found.</p>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Application Type</th>
+                        <th>Facility Name</th>
+                        <th>License Holder</th>
+                        <th>Payment Number</th>
+                        <th>Phone Number</th>
+                        <th>Registration Status</th>
+                        <th>Event ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {statutoryComplianceEvents.map((event, index) => {
+                        const dataValues = event.dataValues || [];
+                        const getFormattedValue = (dataElementId) => {
+                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                          return dataValue ? dataValue.value : 'N/A';
+                        };
+
+                        // Helper function to format boolean values
+                        const formatBoolean = (value) => {
+                          if (value === 'true') return 'Yes';
+                          if (value === 'false') return 'No';
+                          return 'N/A';
+                        };
+
+                        // Build license holder name
+                        const firstName = getFormattedValue("HMk4LZ9ESOq");
+                        const surname = getFormattedValue("ykwhsQQPVH0");
+                        const licenseHolderName = `${firstName} ${surname}`.trim() || 'N/A';
+
+                        return (
+                          <tr 
+                            key={event.event || index}
+                            onClick={() => handleStatutoryComplianceRowClick(event)}
+                            style={{ cursor: 'pointer' }}
+                            className="hover-row"
+                          >
+                            <td>{getFormattedValue("JSwAq5HRQa8")}</td>
+                            <td>{getFormattedValue("D707dj4Rpjz")}</td>
+                            <td>{licenseHolderName}</td>
+                            <td>{getFormattedValue("LAHlCWh18bP")}</td>
+                            <td>{getFormattedValue("SReqZgQk0RY")}</td>
+                            <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
+                            <td>{event.event || 'N/A'}</td>
+                          </tr>
+                        );
                       })}
                     </tbody>
                   </table>
@@ -958,7 +1206,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
             { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
             { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-            { number: 5, title: 'Situational Analysis', key: 'inspectionSchedule' }
+            { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+            { number: 6, title: 'Situational Analysis', key: 'inspectionSchedule' }
           ].map((step, index) => {
             // Determine if the tab should be disabled
             const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
@@ -994,7 +1243,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 4 && <StyledDivider disabled={isDisabled} />}
+                {index < 5 && <StyledDivider disabled={isDisabled} />}
               </React.Fragment>
             );
           })}
@@ -1087,14 +1336,41 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       {/* Edit Inspection Dialog - only render when showEditInspectionDialog is true */}
       {showEditInspectionDialog && selectedInspectionEvent && (
-        <EditInspectionDialog
+        <AddInspectionDialog
           open={showEditInspectionDialog}
           onClose={() => setShowEditInspectionDialog(false)}
           onSuccess={() => {
             setShowEditInspectionDialog(false);
             fetchInspectionData();
           }}
-          event={selectedInspectionEvent}
+          existingEvent={selectedInspectionEvent}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+          isEditMode={true}
+        />
+      )}
+
+      {/* Add Statutory Compliance Dialog - only render when openStatutoryComplianceDialog is true */}
+      {openStatutoryComplianceDialog && (
+        <AddStatutoryComplianceDialog
+          open={openStatutoryComplianceDialog}
+          onClose={handleCloseStatutoryComplianceDialog}
+          onSuccess={handleStatutoryComplianceAddSuccess}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+        />
+      )}
+
+      {/* Edit Statutory Compliance Dialog - only render when showEditStatutoryComplianceDialog is true */}
+      {showEditStatutoryComplianceDialog && selectedStatutoryComplianceEvent && (
+        <AddStatutoryComplianceDialog
+          open={showEditStatutoryComplianceDialog}
+          onClose={() => setShowEditStatutoryComplianceDialog(false)}
+          onSuccess={() => {
+            setShowEditStatutoryComplianceDialog(false);
+            fetchStatutoryComplianceData();
+          }}
+          existingEvent={selectedStatutoryComplianceEvent}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+          isEditMode={true}
         />
       )}
     </div>

@@ -14,10 +14,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
   // Monitor localStorage for changes to situationalAnalysisComplete
   useEffect(() => {
     const checkSituationalAnalysisStatus = () => {
-      // Clear console to avoid cluttering with status logs
-      console.clear();
       const status = localStorage.getItem('situationalAnalysisComplete') === 'true';
-      // Removed console.log to prevent console spam
       setSituationalAnalysisComplete(status);
     };
     

@@ -69,6 +69,52 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       throw error;
     }
   };
+
+  // Get enrollment ID for the specific program from the tracked entity instance
+  const getEnrollmentIdForProgram = async (teiId, programId = "EE8yeLVo6cN") => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required");
+    }
+
+    if (!teiId) {
+      throw new Error("Tracked entity instance ID is required");
+    }
+
+    console.log(`Fetching enrollment ID for TEI: ${teiId} and program: ${programId}`);
+    
+    const enrollmentUrl = `/api/trackedEntityInstances/${teiId}?fields=enrollments[program,enrollment]`;
+    
+    const enrollmentRes = await fetch(enrollmentUrl, {
+      headers: {
+        Authorization: `Basic ${credentials}`,
+      },
+    });
+    
+    if (!enrollmentRes.ok) {
+      throw new Error(`Failed to fetch enrollments: ${enrollmentRes.status}`);
+    }
+    
+    const enrollmentData = await enrollmentRes.json();
+    console.log("Enrollment API response:", enrollmentData);
+    
+    if (!enrollmentData.enrollments || enrollmentData.enrollments.length === 0) {
+      throw new Error("No enrollments found for this tracked entity instance");
+    }
+    
+    // Filter for the specific program
+    const programEnrollment = enrollmentData.enrollments.find(enrollment => 
+      enrollment.program === programId
+    );
+    
+    if (!programEnrollment) {
+      throw new Error(`No enrollment found for program ${programId}`);
+    }
+    
+    console.log("Found enrollment for program:", programEnrollment);
+    return programEnrollment.enrollment;
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,6 +132,10 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       
       // Store the organization unit ID in localStorage for other components to use
       localStorage.setItem('userOrgUnitId', orgUnitId);
+
+      // Get the enrollment ID for this TEI and program
+      const enrollmentId = await getEnrollmentIdForProgram(trackedEntityInstanceId);
+      console.log("Retrieved enrollment ID:", enrollmentId);
 
       const today = new Date().toISOString().split('T')[0];
       
@@ -119,6 +169,7 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
         orgUnit: orgUnitId,
         program: "EE8yeLVo6cN", // Same program as Facility Ownership
         programStage: "uL262bA2IP3", // Services Offered program stage
+        enrollment: enrollmentId,
         status: "COMPLETED",
         dataValues: dataValues
       };

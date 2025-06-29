@@ -96,6 +96,22 @@
     gap: 10px;
 }
 
+.statutory-compliance-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.statutory-compliance-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
 .inspection-schedule-details .add-icon {
     font-size: 28px;
     color: #28a745;

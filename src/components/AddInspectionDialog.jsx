@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './AddInspectionDialog.css';
 import ModalPortal from './ModalPortal';
 
-const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
+const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId, existingEvent, isEditMode = false }) => {
   const [formData, setFormData] = useState({
     // Inspection Schedule Details
     inspectionDateTime: "",
@@ -68,6 +68,16 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     adequateWaitingAreaComments: "",
     hasWasteBin: "",
     wasteBinComments: "",
+    
+    // Statutory Compliance
+    applicationRequestType: "",
+    facilityName: "",
+    licenseHolderFirstName: "",
+    licenseHolderSurname: "",
+    bhpcRegistrationNumber: "",
+    checkApplicationLetter: false,
+    checkPrimaryQualification: false,
+    checkRegistrationValid: false,
     
     // Inspectors Details
     inspectorFullname: ""
@@ -139,6 +149,14 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     adequateWaitingAreaComments: "T6ttPAEWAXj",
     hasWasteBin: "GUHm0ghp9Tc",
     wasteBinComments: "ov9luioZOzD",
+    applicationRequestType: "JSwAq5HRQa8",
+    facilityName: "D707dj4Rpjz",
+    licenseHolderFirstName: "HMk4LZ9ESOq",
+    licenseHolderSurname: "ykwhsQQPVH0",
+    bhpcRegistrationNumber: "SVzSsDiZMN5",
+    checkApplicationLetter: "Bz0oYRvSypS",
+    checkPrimaryQualification: "lOpMngOe2yY",
+    checkRegistrationValid: "b8gm7x8JcLO",
     inspectorFullname: "VOjM6ArpORU"
   };
   
@@ -227,10 +245,130 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       throw error;
     }
   };
+
+  // Get enrollment ID for the specific program from the tracked entity instance
+  const getEnrollmentIdForProgram = async (teiId) => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required");
+    }
+
+    if (!teiId) {
+      throw new Error("Tracked entity instance ID is required");
+    }
+
+    console.log("Fetching enrollment ID for TEI:", teiId, "and program: EE8yeLVo6cN");
+    
+    // Use the API endpoint you specified to get enrollments for this TEI
+    const enrollmentUrl = `/api/trackedEntityInstances/${teiId}?fields=enrollments[program,enrollment]`;
+    
+    const enrollmentRes = await fetch(enrollmentUrl, {
+      headers: {
+        Authorization: `Basic ${credentials}`,
+      },
+    });
+    
+    if (!enrollmentRes.ok) {
+      throw new Error(`Failed to fetch enrollments: ${enrollmentRes.status}`);
+    }
+    
+    const enrollmentData = await enrollmentRes.json();
+    console.log("Enrollment API response:", enrollmentData);
+    
+    if (!enrollmentData.enrollments || enrollmentData.enrollments.length === 0) {
+      throw new Error("No enrollments found for this tracked entity instance");
+    }
+    
+    // Filter for the specific program (EE8yeLVo6cN)
+    const programEnrollment = enrollmentData.enrollments.find(enrollment => 
+      enrollment.program === "EE8yeLVo6cN"
+    );
+    
+    if (!programEnrollment) {
+      throw new Error("No enrollment found for program EE8yeLVo6cN");
+    }
+    
+    console.log("Found enrollment for program:", programEnrollment);
+    return programEnrollment.enrollment;
+  };
+
+  // Common function to get enrollment ID for any TEI and program
+  // This can be copied to other dialog components
+  const getEnrollmentIdForTEI = async (teiId, programId = "EE8yeLVo6cN") => {
+    const credentials = localStorage.getItem('userCredentials');
+    
+    if (!credentials) {
+      throw new Error("Authentication required");
+    }
+
+    if (!teiId) {
+      throw new Error("Tracked entity instance ID is required");
+    }
+
+    console.log(`Fetching enrollment ID for TEI: ${teiId} and program: ${programId}`);
+    
+    const enrollmentUrl = `/api/trackedEntityInstances/${teiId}?fields=enrollments[program,enrollment]`;
+    
+    const enrollmentRes = await fetch(enrollmentUrl, {
+      headers: {
+        Authorization: `Basic ${credentials}`,
+      },
+    });
+    
+    if (!enrollmentRes.ok) {
+      throw new Error(`Failed to fetch enrollments: ${enrollmentRes.status}`);
+    }
+    
+    const enrollmentData = await enrollmentRes.json();
+    console.log("Enrollment API response:", enrollmentData);
+    
+    if (!enrollmentData.enrollments || enrollmentData.enrollments.length === 0) {
+      throw new Error("No enrollments found for this tracked entity instance");
+    }
+    
+    // Filter for the specific program
+    const programEnrollment = enrollmentData.enrollments.find(enrollment => 
+      enrollment.program === programId
+    );
+    
+    if (!programEnrollment) {
+      throw new Error(`No enrollment found for program ${programId}`);
+    }
+    
+    console.log("Found enrollment for program:", programEnrollment);
+    return programEnrollment.enrollment;
+  };
   
-  // Create the initial event when the component mounts
+  // Populate form with existing data when in edit mode
   useEffect(() => {
-    if (open && !initializationAttempted.current) {
+    if (isEditMode && existingEvent && existingEvent.dataValues) {
+      const getDataValue = (dataElementId) => {
+        const dataValue = existingEvent.dataValues.find(dv => dv.dataElement === dataElementId);
+        return dataValue ? dataValue.value : '';
+      };
+
+      const populatedFormData = {};
+      Object.entries(fieldToDataElementMap).forEach(([fieldName, dataElementId]) => {
+        let value = getDataValue(dataElementId);
+        // Handle boolean fields (checkboxes)
+        if (fieldName.startsWith('check')) {
+          populatedFormData[fieldName] = value === 'true';
+        } else {
+          populatedFormData[fieldName] = value;
+        }
+      });
+
+      setFormData(populatedFormData);
+      setEventId(existingEvent.event);
+      setIsInitializing(false);
+      setIsSettingInitialDateTime(false);
+    }
+  }, [isEditMode, existingEvent, fieldToDataElementMap]);
+
+  // Create the initial event when the component mounts (only for add mode)
+  useEffect(() => {
+    if (open && !isEditMode && !initializationAttempted.current) {
       // Start loading immediately when dialog opens
       setIsSettingInitialDateTime(true);
       initializationAttempted.current = true;
@@ -248,7 +386,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
         initializationAttempted.current = false;
       }
     };
-  }, [open]); // Only depend on 'open' to prevent multiple initializations
+  }, [open, isEditMode]); // Add isEditMode to dependencies
   
   // Create the initial event
   const createInitialEvent = async () => {
@@ -285,7 +423,10 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
       
       const today = new Date().toISOString().split('T')[0];
       const todayDateTime = new Date().toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
-      const enrollmentId = localStorage.getItem('enrollmentId') || "foVETTd80BM"; // Use stored enrollment ID or default
+      
+      // Fetch the enrollment ID for the specific program instead of using localStorage or default
+      const enrollmentId = await getEnrollmentIdForProgram(teiId);
+      console.log("Retrieved enrollment ID:", enrollmentId);
       
       // Generate a DHIS2 UID for the event
       const generatedEventId = generateDHIS2UID();
@@ -381,12 +522,15 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
   
   // Handle input change and immediate submission
   const handleInputChange = async (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    
+    // Determine the value based on input type
+    const inputValue = type === 'checkbox' ? checked : value;
     
     // Update local state
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: inputValue,
     }));
     
     // Don't submit if we're still initializing or don't have an event ID yet
@@ -404,7 +548,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     setFieldUpdateStatus(prev => ({ ...prev, [name]: 'updating' }));
     
     try {
-      await submitFieldValue(name, value);
+      await submitFieldValue(name, inputValue);
       // Mark field as successfully updated
       setFieldUpdateStatus(prev => ({ ...prev, [name]: 'success' }));
       
@@ -436,6 +580,11 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
 
    // Helper function to format datetime values for DHIS2
    const formatDateTimeForDHIS2 = (value, fieldName) => {
+     // Handle boolean values (for checkboxes)
+     if (typeof value === 'boolean') {
+       return value.toString();
+     }
+     
      // For datetime fields, ensure proper format
      if (fieldName === 'inspectionDateTime' && value) {
        // If it's already in ISO format (from datetime-local input), use as is
@@ -552,7 +701,6 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     setIsSubmitting(true);
     
     try {
-      // Mark the event as complete
       const credentials = localStorage.getItem('userCredentials');
       
       if (!credentials || !eventId) {
@@ -567,37 +715,52 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
         console.warn("Could not update organization unit ID in localStorage:", error);
       }
       
-             const completeUrl = `/api/events/${eventId}/complete.json`;
-       console.log("Completing inspection event:", eventId);
-       const completeRes = await fetch(completeUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
+      if (isEditMode) {
+        // For edit mode, just update the event (don't complete it)
+        console.log("Inspection updated successfully!");
+        
+        // Call success callback to reload data in parent
+        if (typeof onSuccess === 'function') {
+          onSuccess();
+        } else if (typeof onAddSuccess === 'function') {
+          onAddSuccess();
         }
-      });
-      
-      if (!completeRes.ok) {
-        const errorText = await completeRes.text();
-        throw new Error(`Event completion failed: ${completeRes.status} - ${errorText}`);
+        
+        onClose(); // Close modal on successful update
+      } else {
+        // For add mode, mark the event as complete
+        const completeUrl = `/api/events/${eventId}/complete.json`;
+        console.log("Completing inspection event:", eventId);
+        const completeRes = await fetch(completeUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/json",
+          }
+        });
+        
+        if (!completeRes.ok) {
+          const errorText = await completeRes.text();
+          throw new Error(`Event completion failed: ${completeRes.status} - ${errorText}`);
+        }
+        
+        console.log("Inspection completed successfully!");
+        // Set inspection complete in localStorage
+        localStorage.setItem('situationalAnalysisComplete', 'true');
+        
+        // Call success callback to reload data in parent
+        // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
+        if (typeof onSuccess === 'function') {
+          onSuccess();
+        } else if (typeof onAddSuccess === 'function') {
+          onAddSuccess();
+        }
+        
+        onClose(); // Close modal on successful completion
       }
-      
-      console.log("Inspection completed successfully!");
-      // Set inspection complete in localStorage
-      localStorage.setItem('situationalAnalysisComplete', 'true');
-      
-      // Call success callback to reload data in parent
-      // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
-      if (typeof onSuccess === 'function') {
-        onSuccess();
-      } else if (typeof onAddSuccess === 'function') {
-        onAddSuccess();
-      }
-      
-      onClose(); // Close modal on successful completion
     } catch (error) {
-      console.error("Error completing inspection:", error);
-      setErrorMessage(`Failed to complete inspection: ${error.message}`);
+      console.error(`Error ${isEditMode ? 'updating' : 'completing'} inspection:`, error);
+      setErrorMessage(`Failed to ${isEditMode ? 'update' : 'complete'} inspection: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -671,6 +834,131 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
                   required
                 />
                 {getFieldStatusIndicator('inspectionCode')}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "statutoryCompliance":
+        return (
+          <div className="form-section">
+            <h6 className="section-title">Statutory Compliance</h6>
+            <div className="form-group">
+              <label>Application Request Type:</label>
+              <div className="input-with-status">
+                <select
+                  name="applicationRequestType"
+                  value={formData.applicationRequestType}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="">Select Type</option>
+                  <option value="New Application">New Application</option>
+                  <option value="Renewal">Renewal</option>
+                  <option value="Amendment">Amendment</option>
+                </select>
+                {getFieldStatusIndicator('applicationRequestType')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Facility Name:</label>
+              <div className="input-with-status">
+                <textarea
+                  name="facilityName"
+                  value={formData.facilityName}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                  rows="2"
+                />
+                {getFieldStatusIndicator('facilityName')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>License Holder First Name:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="licenseHolderFirstName"
+                  value={formData.licenseHolderFirstName}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                />
+                {getFieldStatusIndicator('licenseHolderFirstName')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>License Holder Surname:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="licenseHolderSurname"
+                  value={formData.licenseHolderSurname}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                />
+                {getFieldStatusIndicator('licenseHolderSurname')}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>B.H.P.C Registration Number:</label>
+              <div className="input-with-status">
+                <input
+                  type="text"
+                  name="bhpcRegistrationNumber"
+                  value={formData.bhpcRegistrationNumber}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                  className="form-control"
+                />
+                {getFieldStatusIndicator('bhpcRegistrationNumber')}
+              </div>
+            </div>
+            
+            <h6 className="section-title">Compliance Checks</h6>
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="checkApplicationLetter"
+                  name="checkApplicationLetter"
+                  checked={formData.checkApplicationLetter}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                />
+                <label htmlFor="checkApplicationLetter">Application Letter Checked</label>
+                {getFieldStatusIndicator('checkApplicationLetter')}
+              </div>
+            </div>
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="checkPrimaryQualification"
+                  name="checkPrimaryQualification"
+                  checked={formData.checkPrimaryQualification}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                />
+                <label htmlFor="checkPrimaryQualification">Primary Qualification Checked</label>
+                {getFieldStatusIndicator('checkPrimaryQualification')}
+              </div>
+            </div>
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="checkRegistrationValid"
+                  name="checkRegistrationValid"
+                  checked={formData.checkRegistrationValid}
+                  onChange={handleInputChange}
+                  onBlur={handleInputChange}
+                />
+                <label htmlFor="checkRegistrationValid">Registration Valid Checked</label>
+                {getFieldStatusIndicator('checkRegistrationValid')}
               </div>
             </div>
           </div>
@@ -1108,7 +1396,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Add Inspection</h5>
+          <h5 className="modal-title">{isEditMode ? 'Edit Inspection' : 'Add Inspection'}</h5>
           <button 
             type="button" 
             className="close-btn" 
@@ -1120,7 +1408,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
         </div>
         <div className="modal-body">
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
-          {!eventId && <div className="alert alert-info">Initializing form...</div>}
+          {!eventId && !isEditMode && <div className="alert alert-info">Initializing form...</div>}
           {isSettingInitialDateTime && (
             <div className="loading-container" style={{ 
               marginBottom: '20px',
@@ -1156,6 +1444,12 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
               onClick={() => setActiveSection("scheduleDetails")}
             >
               Schedule Details
+            </button>
+            <button 
+              className={`section-tab ${activeSection === "statutoryCompliance" ? "active" : ""}`}
+              onClick={() => setActiveSection("statutoryCompliance")}
+            >
+              Statutory Compliance
             </button>
             <button 
               className={`section-tab ${activeSection === "inspection" ? "active" : ""}`}
@@ -1206,7 +1500,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
                 className="btn-primary"
                 disabled={isSubmitting || !isFormValid() || !eventId}
               >
-                {isSubmitting ? "Completing..." : "Complete Inspection"}
+                {isSubmitting ? (isEditMode ? "Updating..." : "Completing...") : (isEditMode ? "Update Inspection" : "Complete Inspection")}
               </button>
             </div>
           </form>
