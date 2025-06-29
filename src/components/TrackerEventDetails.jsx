@@ -32,9 +32,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [eventData, setEventData] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [updating] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError] = useState(null);
+  const [updateError, setUpdateError] = useState(null);
   const [organisationalUnits, setOrganisationalUnits] = useState([]);
   const [filteredOrgUnits, setFilteredOrgUnits] = useState([]);
   const [isLoadingOrgUnits, setIsLoadingOrgUnits] = useState(false);
@@ -446,12 +446,90 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
 
   const handleSubmit = async () => {
-    console.log('Update functionality temporarily disabled');
-    // Simple update functionality - just log the form values
-    console.log('Form values to update:', formValues);
-    
-    // Exit edit mode
-    setIsEditing(false);
+    setUpdating(true);
+    setUpdateError("");
+
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+
+      if (!eventData || !eventData.event) {
+        throw new Error("No event data available for update.");
+      }
+
+      // Build updated dataValues array - only include the editable fields
+      const dataValues = [
+        { dataElement: "aMFg2iq9VIg", value: formValues['aMFg2iq9VIg'] || "" }, // Private Practice Number
+        { dataElement: "HMk4LZ9ESOq", value: formValues['HMk4LZ9ESOq'] || "" }, // License Holder First Name
+        { dataElement: "ykwhsQQPVH0", value: formValues['ykwhsQQPVH0'] || "" }, // License Holder Surname
+        { dataElement: "PdtizqOqE6Q", value: formValues['PdtizqOqE6Q'] || "" }, // Facility Name
+        { dataElement: "VJzk8OdFJKA", value: formValues['VJzk8OdFJKA'] || "" }  // Location
+      ].filter(dv => dv.value.trim() !== ""); // Only include non-empty values
+
+      // Prepare update payload - preserve existing event structure
+      const payload = {
+        event: eventData.event,
+        eventDate: eventData.eventDate || new Date().toISOString().split('T')[0],
+        orgUnit: eventData.orgUnit,
+        program: eventData.program,
+        programStage: eventData.programStage,
+        enrollment: eventData.enrollment,
+        trackedEntityInstance: eventData.trackedEntityInstance,
+        status: eventData.status || "COMPLETED",
+        dataValues: dataValues
+      };
+
+      console.log("Updating application details with payload:", payload);
+
+      // Send PUT request to update the event
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${eventData.event}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Update failed:", errorText);
+        throw new Error(`Update failed: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log("Update response:", responseData);
+
+      // Show success message and exit edit mode
+      setUpdateSuccess(true);
+      setIsEditing(false);
+      console.log("Application details updated successfully!");
+
+      // Update the local eventData with new values to reflect changes immediately
+      const updatedEventData = { ...eventData };
+      if (updatedEventData.dataValues) {
+        // Update existing dataValues or add new ones
+        dataValues.forEach(newDv => {
+          const existingIndex = updatedEventData.dataValues.findIndex(dv => dv.dataElement === newDv.dataElement);
+          if (existingIndex >= 0) {
+            updatedEventData.dataValues[existingIndex].value = newDv.value;
+          } else {
+            updatedEventData.dataValues.push(newDv);
+          }
+        });
+      } else {
+        updatedEventData.dataValues = dataValues;
+      }
+      setEventData(updatedEventData);
+
+    } catch (error) {
+      console.error("Error updating application details:", error);
+      setUpdateError(`Failed to update application details: ${error.message}`);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   // ------------------- End --------------------
