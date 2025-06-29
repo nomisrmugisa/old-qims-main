@@ -45,7 +45,7 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
     }
     
     try {
-      const response = await fetch("/api/me.json", {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -80,7 +80,7 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
     
     try {
       // Use the API to fetch tracked entity instances for the given org unit and program
-      const url = `/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=${orgUnitId}&fields=trackedEntityInstance&program=EE8yeLVo6cN`;
       console.log("Fetching tracked entity instances from:", url);
       
       const response = await fetch(url, {
@@ -163,7 +163,7 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
     fileData.append("file", file);
     
     try {
-      const fileRes = await fetch("/api/fileResources", {
+      const fileRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/fileResources`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -276,7 +276,7 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
 
       console.log("Event creation payload:", payload);
 
-      const eventRes = await fetch("/api/events.json", {
+      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events.json`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,

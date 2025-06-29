@@ -200,7 +200,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoading(true);
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false`;
       
       // Log the endpoint and parameters for debugging
       console.log("Facility Ownership API Request:");
@@ -315,7 +315,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingServices(true);
       // Use the correct program stage ID for Services Offered
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
       
       console.log("Services Offered API Request:");
       console.log("- Full URL:", url);
@@ -420,7 +420,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingEmployees(true);
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
       
       // Log the endpoint and parameters for debugging
       console.log("Employee Registration API Request:");
@@ -498,8 +498,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingInspections(true);
-      // Fetch all events and filter by program stage in JavaScript since API filter might not work correctly
-      const url = `/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      // Use the correct program stage ID for Situational Analysis (Inspection)
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Situational Analysis API Request:");
       console.log("- Full URL:", url);

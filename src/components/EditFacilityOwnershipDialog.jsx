@@ -78,7 +78,7 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
     fileData.append("file", file);
     
     try {
-      const fileRes = await fetch("/api/fileResources", {
+      const fileRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/fileResources`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,

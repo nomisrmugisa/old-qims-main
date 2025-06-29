@@ -38,7 +38,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
             return;
           }
 
-          const response = await fetch('/api/me?fields=organisationUnits[displayName]', {
+          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName]`, {
             headers: {
               Authorization: `Basic ${credentials}`
             }
