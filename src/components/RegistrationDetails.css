@@ -162,4 +162,36 @@
 
 .table tbody tr:hover {
     background-color: #e2e6ea;
+}
+
+.facility-ownership-details .table-responsive {
+    margin-top: 20px;
+}
+
+/* Status Indicator Styles */
+.status-indicator {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.pending-application {
+    background-color: #dc3545; /* Red */
+}
+
+.status-indicator.in-progress {
+    background-color: #ffc107; /* Yellow */
+    color: #212529; /* Dark text for yellow bg */
+}
+
+.status-indicator.completed {
+    background-color: #28a745; /* Green */
+}
+
+.status-indicator.unknown {
+    background-color: #6c757d; /* Grey */
 } 

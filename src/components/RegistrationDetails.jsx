@@ -49,6 +49,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [openStatutoryComplianceDialog, setOpenStatutoryComplianceDialog] = useState(false);
   const [selectedStatutoryComplianceEvent, setSelectedStatutoryComplianceEvent] = useState(null);
   const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
+  const [registrationStatus, setRegistrationStatus] = useState("Unknown"); // New state for overall status
 
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -161,6 +162,35 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return false;
     }
   };
+  
+  // New useEffect to determine overall registration status
+  useEffect(() => {
+    const steps = [
+      { key: 'completeApplication', hasData: completeApplicationStatus },
+      { key: 'facilityOwnership', hasData: events.length > 0 },
+      { key: 'employeeRegistration', hasData: employeeEvents.length > 0 },
+      { key: 'servicesOffered', hasData: serviceEvents.length > 0 },
+      { key: 'statutoryCompliance', hasData: statutoryComplianceEvents.length > 0 },
+      { key: 'inspectionSchedule', hasData: inspectionEvents.length > 0 }
+    ];
+
+    const allStepsComplete = steps.every(step => step.hasData);
+
+    if (allStepsComplete) {
+      setRegistrationStatus("Completed");
+    } else if (steps[0].hasData) {
+      setRegistrationStatus("In Progress");
+    } else {
+      setRegistrationStatus("Pending Application");
+    }
+  }, [
+    completeApplicationStatus,
+    events,
+    employeeEvents,
+    serviceEvents,
+    inspectionEvents,
+    statutoryComplianceEvents
+  ]);
   
   // Handle tab click with validation
   const handleTabClick = (tabKey) => {
@@ -1311,9 +1341,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 'bold' }}>
-          Registration Details
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
+            Registration Details
+          </Typography>
+          <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`}>
+            Status: {registrationStatus}
+          </span>
+        </Box>
         
         <StepContainer>
           {[
@@ -1475,7 +1510,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             console.log("AddInspectionDialog onClose called - reloading inspection data");
             handleCloseInspectionDialog();
           }}
-          onAddSuccess={handleInspectionAddSuccess}
+          onSuccess={handleInspectionAddSuccess}
           trackedEntityInstanceId={trackedEntityInstanceId}
         />
       )}
