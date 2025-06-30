@@ -4,74 +4,30 @@ import ModalPortal from './ModalPortal';
 
 const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId, existingEvent, isEditMode = false }) => {
   const [formData, setFormData] = useState({
-    // Basic Information
-    applicationRequestType: "",
-    paymentNumber: "",
-    type: "",
-    facilityName: "",
-    licenseHolderFirstName: "",
-    licenseHolderSurname: "",
-    physicalAddress: "",
-    phoneNumber: "",
-    emailAddress: "",
-    bhpcRegistrationNumber: "",
-    correspondenceAddress: "",
-    privatesPracticeNumber: "",
-    
-    // Files
-    requestLetter: null,
-    attachments: null,
-    
-    // Application Details
-    applicationPages: "",
-    locationInBotswana: "",
-    
-    // Compliance Checks
-    checkApplicationLetter: false,
-    checkPostBasicQualification: false,
-    checkPracticeValid: false,
-    checkPrimaryQualification: false,
-    checkRegistrationValid: false,
-    qualifiesForLogs: false,
-    
-    // Comments and Additional Info
-    logsComments: "",
-    requestForRegistrationAccepted: false,
-    teiOfLicenseHolder: "",
-    employeeUserName: ""
+    companyRegistrationDocuments: null,
+    companyTaxRegistrationDocuments: null,
+    facilityHealthRecognitionDocuments: null,
+    facilityCompanyLeaseAgreement: null
   });
   
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState({});
 
   // Map of field names to their DHIS2 data element IDs
   const fieldToDataElementMap = {
-    applicationRequestType: "JSwAq5HRQa8",
-    paymentNumber: "LAHlCWh18bP",
-    type: "oVOArpnxVd1",
-    facilityName: "D707dj4Rpjz",
-    licenseHolderFirstName: "HMk4LZ9ESOq",
-    licenseHolderSurname: "ykwhsQQPVH0",
-    physicalAddress: "dRkX5jmHEIM",
-    phoneNumber: "SReqZgQk0RY",
-    emailAddress: "NVlLoMZbXIW",
-    bhpcRegistrationNumber: "SVzSsDiZMN5",
-    correspondenceAddress: "p7y0vqpP0W2",
-    privatesPracticeNumber: "aMFg2iq9VIg",
-    requestLetter: "lKon9xsRktH",
-    attachments: "gMh3ZYRnTlb",
-    applicationPages: "z7nj0Ci7iy8",
-    locationInBotswana: "VJzk8OdFJKA",
-    checkApplicationLetter: "Bz0oYRvSypS",
-    checkPostBasicQualification: "fD7DQkmT1im",
-    checkPracticeValid: "XcWt8b12E85",
-    checkPrimaryQualification: "lOpMngOe2yY",
-    checkRegistrationValid: "b8gm7x8JcLO",
-    qualifiesForLogs: "kP7rQwnufiY",
-    logsComments: "p5kq4anYRdT",
-    requestForRegistrationAccepted: "jV5Y8XOfkgb",
-    teiOfLicenseHolder: "PdtizqOqE6Q",
-    employeeUserName: "g3J1CH26hSA"
+    companyRegistrationDocuments: "fSGzyNOvsn3",
+    companyTaxRegistrationDocuments: "mooXtirlse9",
+    facilityHealthRecognitionDocuments: "Yv2HUJvSDKB",
+    facilityCompanyLeaseAgreement: "aa4jP4GCtin"
+  };
+
+  // Field display names for better UX
+  const fieldDisplayNames = {
+    companyRegistrationDocuments: "Company Registration Documents",
+    companyTaxRegistrationDocuments: "Company Tax Registration Documents",
+    facilityHealthRecognitionDocuments: "Facility / Company Health Recognition Documents (affiliations etc)",
+    facilityCompanyLeaseAgreement: "Facility / Company Lease Agreement"
   };
 
   // Populate form with existing data when in edit mode
@@ -82,38 +38,25 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
         return dataValue ? dataValue.value : '';
       };
 
-      const populatedFormData = {};
+      const existingFiles = {};
       Object.entries(fieldToDataElementMap).forEach(([fieldName, dataElementId]) => {
-        let value = getDataValue(dataElementId);
-        // Handle boolean fields
-        if (fieldName.startsWith('check') || fieldName === 'qualifiesForLogs' || fieldName === 'requestForRegistrationAccepted') {
-          populatedFormData[fieldName] = value === 'true';
-        } else {
-          populatedFormData[fieldName] = value;
+        const fileId = getDataValue(dataElementId);
+        if (fileId) {
+          existingFiles[fieldName] = fileId;
         }
       });
 
-      setFormData(populatedFormData);
+      setUploadedFiles(existingFiles);
     }
-  }, [isEditMode, existingEvent, fieldToDataElementMap]);
+  }, [isEditMode, existingEvent]);
   
   const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+    const { name, files } = e.target;
     
-    if (type === 'file') {
+    if (files && files[0]) {
       setFormData((prevData) => ({
         ...prevData,
-        [name]: files[0] || null,
-      }));
-    } else if (type === 'checkbox') {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: checked,
-      }));
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
+        [name]: files[0],
       }));
     }
   };
@@ -127,7 +70,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
     }
     
     try {
-      const response = await fetch("/api/me.json", {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -164,7 +107,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
 
     console.log(`Fetching enrollment ID for TEI: ${teiId} and program: ${programId}`);
     
-    const enrollmentUrl = `/api/trackedEntityInstances/${teiId}?fields=enrollments[program,enrollment]`;
+    const enrollmentUrl = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${teiId}?fields=enrollments[program,enrollment]`;
     
     const enrollmentRes = await fetch(enrollmentUrl, {
       headers: {
@@ -195,6 +138,37 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
     console.log("Found enrollment for program:", programEnrollment);
     return programEnrollment.enrollment;
   };
+
+  // Upload file to DHIS2 and get the file resource ID
+  const uploadFileAndGetId = async (file) => {
+    if (!file) return null;
+    
+    const credentials = localStorage.getItem('userCredentials');
+    const fileData = new FormData();
+    fileData.append("file", file);
+    
+    try {
+      const fileRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/fileResources`, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+        body: fileData,
+      });
+
+      if (!fileRes.ok) {
+        const errorText = await fileRes.text();
+        throw new Error(`File upload failed: ${fileRes.status} - ${errorText}`);
+      }
+      
+      const responseJson = await fileRes.json();
+      console.log("File upload response:", responseJson);
+      return responseJson.response.fileResource.id;
+    } catch (error) {
+      console.error("Error uploading file:", file.name, error);
+      throw error;
+    }
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -216,32 +190,34 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
       
       const today = new Date().toISOString().split('T')[0];
       
-      // Build data values array
+      // Upload files and build data values array
       const dataValues = [];
       
-      Object.entries(formData).forEach(([fieldName, value]) => {
+      for (const [fieldName, file] of Object.entries(formData)) {
         const dataElementId = fieldToDataElementMap[fieldName];
-        if (dataElementId && value !== null && value !== "" && value !== false) {
-          // Handle different value types
-          let formattedValue = value;
-          if (typeof value === 'boolean') {
-            formattedValue = value.toString();
-          } else if (fieldName === 'requestLetter' || fieldName === 'attachments') {
-            // For file resources, we would need to upload the file first
-            // For now, we'll skip file uploads or handle them as text placeholders
-            if (value && value.name) {
-              formattedValue = value.name;
-            } else {
-              return; // Skip if no file
-            }
+        
+        if (dataElementId) {
+          let fileResourceId = null;
+          
+          // If there's a new file, upload it
+          if (file) {
+            console.log(`Uploading ${fieldName}:`, file.name);
+            fileResourceId = await uploadFileAndGetId(file);
+          } 
+          // If in edit mode and no new file, preserve existing file ID
+          else if (isEditMode && uploadedFiles[fieldName]) {
+            fileResourceId = uploadedFiles[fieldName];
           }
           
-          dataValues.push({
-            dataElement: dataElementId,
-            value: formattedValue.toString()
-          });
+          // Only add to dataValues if we have a file resource ID
+          if (fileResourceId) {
+            dataValues.push({
+              dataElement: dataElementId,
+              value: fileResourceId
+            });
+          }
         }
-      });
+      }
       
       if (isEditMode) {
         // Update existing event
@@ -258,7 +234,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
         
         console.log("Statutory Compliance Update Payload:", payload);
         
-        const eventRes = await fetch(`/api/events/${existingEvent.event}`, {
+        const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${existingEvent.event}`, {
           method: "PUT",
           headers: {
             Authorization: `Basic ${credentials}`,
@@ -272,7 +248,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
           throw new Error(`Event update failed: ${eventRes.status} - ${errorText}`);
         }
         
-        console.log("Statutory compliance record updated successfully!");
+        console.log("Statutory compliance documents updated successfully!");
       } else {
         // Create new event
         const payload = {
@@ -288,7 +264,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
         
         console.log("Statutory Compliance Payload:", payload);
         
-        const eventRes = await fetch("/api/events", {
+        const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
           method: "POST",
           headers: {
             Authorization: `Basic ${credentials}`,
@@ -302,7 +278,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
           throw new Error(`Event creation failed: ${eventRes.status} - ${errorText}`);
         }
         
-        console.log("Statutory compliance record added successfully!");
+        console.log("Statutory compliance documents added successfully!");
       }
       
       // Call success callback to reload data in parent
@@ -314,23 +290,25 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
       
       onClose(); // Close modal on successful operation
     } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'adding'} statutory compliance record:`, error);
-      setErrorMessage(`Failed to ${isEditMode ? 'update' : 'add'} statutory compliance record: ${error.message}`);
+      console.error(`Error ${isEditMode ? 'updating' : 'adding'} statutory compliance documents:`, error);
+      setErrorMessage(`Failed to ${isEditMode ? 'update' : 'add'} statutory compliance documents: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
   
   const isFormValid = () => {
-    // At minimum require facility name and license holder information
-    return formData.facilityName && formData.licenseHolderFirstName && formData.licenseHolderSurname;
+    // At least one document should be uploaded or already exist
+    const hasNewFiles = Object.values(formData).some(file => file !== null);
+    const hasExistingFiles = Object.keys(uploadedFiles).length > 0;
+    return hasNewFiles || (isEditMode && hasExistingFiles);
   };
   
   return (
     <ModalPortal open={open} onClose={onClose}>
-      <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
+      <div className="modal-content" style={{ padding: '0', maxWidth: '800px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">{isEditMode ? 'Edit Statutory Compliance Record' : 'Add Statutory Compliance Record'}</h5>
+          <h5 className="modal-title">{isEditMode ? 'Edit Statutory Compliance Documents' : 'Add Statutory Compliance Documents'}</h5>
           <button 
             type="button" 
             className="close-btn" 
@@ -344,338 +322,36 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
           <form onSubmit={handleSubmit} className="statutory-compliance-form">
             
-            {/* Application Details Section */}
-            <h6 className="section-title">Application Details</h6>
-            <div className="form-group">
-              <label>Application Request Type</label>
-              <select
-                name="applicationRequestType"
-                value={formData.applicationRequestType}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              >
-                <option value="">Select Request Type</option>
-                <option value="New Facility Application">New Facility Application</option>
-                <option value="Renewal">Renewal</option>
-              </select>
-            </div>
+            <h6 className="section-title">Required Documents</h6>
+            <p className="section-description">Please upload the following company/facility documents:</p>
             
-            <div className="form-group">
-              <label>Payment Number</label>
-              <input
-                type="number"
-                name="paymentNumber"
-                value={formData.paymentNumber}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Type</label>
-              <input
-                type="text"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Application Pages</label>
-              <input
-                type="text"
-                name="applicationPages"
-                value={formData.applicationPages}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Facility Information Section */}
-            <h6 className="section-title">Facility Information</h6>
-            <div className="form-group">
-              <label>Facility Name *</label>
-              <textarea
-                name="facilityName"
-                value={formData.facilityName}
-                onChange={handleInputChange}
-                className="form-control"
-                rows="3"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Physical Address</label>
-              <input
-                type="text"
-                name="physicalAddress"
-                value={formData.physicalAddress}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Correspondence Address (Town/Village)</label>
-              <input
-                type="text"
-                name="correspondenceAddress"
-                value={formData.correspondenceAddress}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Location in Botswana</label>
-              <input
-                type="text"
-                name="locationInBotswana"
-                value={formData.locationInBotswana}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-                placeholder="Organization Unit ID"
-              />
-            </div>
-
-            {/* License Holder Information Section */}
-            <h6 className="section-title">License Holder Information</h6>
-            <div className="form-group">
-              <label>First Name *</label>
-              <input
-                type="text"
-                name="licenseHolderFirstName"
-                value={formData.licenseHolderFirstName}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Surname *</label>
-              <input
-                type="text"
-                name="licenseHolderSurname"
-                value={formData.licenseHolderSurname}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>B.H.P.C Registration Number</label>
-              <input
-                type="text"
-                name="bhpcRegistrationNumber"
-                value={formData.bhpcRegistrationNumber}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Private Practice Number</label>
-              <input
-                type="text"
-                name="privatesPracticeNumber"
-                value={formData.privatesPracticeNumber}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Phone Number</label>
-              <input
-                type="text"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="emailAddress"
-                value={formData.emailAddress}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Document Uploads Section */}
-            <h6 className="section-title">Document Uploads</h6>
-            <div className="form-group">
-              <label>Request Letter</label>
-              <input
-                type="file"
-                name="requestLetter"
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-                accept=".pdf,.doc,.docx"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Attachments</label>
-              <input
-                type="file"
-                name="attachments"
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-                accept=".pdf,.doc,.docx,.jpg,.png"
-              />
-            </div>
-
-            {/* Compliance Checks Section */}
-            <h6 className="section-title">Compliance Checks</h6>
-            <div className="checkbox-grid">
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="checkApplicationLetter"
-                  name="checkApplicationLetter"
-                  checked={formData.checkApplicationLetter}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="checkApplicationLetter">Check Application Letter</label>
+            {Object.entries(fieldToDataElementMap).map(([fieldName, dataElementId]) => (
+              <div key={fieldName} className="form-group document-upload-group">
+                <label>{fieldDisplayNames[fieldName]}</label>
+                <div className="file-input-wrapper">
+                  <input
+                    type="file"
+                    name={fieldName}
+                    id={fieldName}
+                    onChange={handleInputChange}
+                    className="form-control-file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    disabled={isSubmitting}
+                  />
+                  <label htmlFor={fieldName} className="custom-file-upload">
+                    Choose File
+                  </label>
+                  <span className="file-name">
+                    {formData[fieldName] ? formData[fieldName].name : 
+                     uploadedFiles[fieldName] ? 'Document already uploaded' : 
+                     'No file chosen'}
+                  </span>
+                </div>
+                {uploadedFiles[fieldName] && !formData[fieldName] && (
+                  <small className="text-success">✓ Document previously uploaded</small>
+                )}
               </div>
-              
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="checkPostBasicQualification"
-                  name="checkPostBasicQualification"
-                  checked={formData.checkPostBasicQualification}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="checkPostBasicQualification">Check Post Basic Qualification</label>
-              </div>
-              
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="checkPracticeValid"
-                  name="checkPracticeValid"
-                  checked={formData.checkPracticeValid}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="checkPracticeValid">Check Practice Valid</label>
-              </div>
-              
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="checkPrimaryQualification"
-                  name="checkPrimaryQualification"
-                  checked={formData.checkPrimaryQualification}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="checkPrimaryQualification">Check Primary Qualification</label>
-              </div>
-              
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="checkRegistrationValid"
-                  name="checkRegistrationValid"
-                  checked={formData.checkRegistrationValid}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="checkRegistrationValid">Check Registration Valid</label>
-              </div>
-              
-              <div className="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="qualifiesForLogs"
-                  name="qualifiesForLogs"
-                  checked={formData.qualifiesForLogs}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <label htmlFor="qualifiesForLogs">Qualifies for Letter of Good Standing?</label>
-              </div>
-            </div>
-
-            {/* Additional Information Section */}
-            <h6 className="section-title">Additional Information</h6>
-            <div className="form-group">
-              <label>LOGS Comments</label>
-              <textarea
-                name="logsComments"
-                value={formData.logsComments}
-                onChange={handleInputChange}
-                className="form-control"
-                rows="4"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>TEI of the License Holder</label>
-              <input
-                type="text"
-                name="teiOfLicenseHolder"
-                value={formData.teiOfLicenseHolder}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Employee User Name</label>
-              <input
-                type="text"
-                name="employeeUserName"
-                value={formData.employeeUserName}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div className="checkbox-group">
-              <input
-                type="checkbox"
-                id="requestForRegistrationAccepted"
-                name="requestForRegistrationAccepted"
-                checked={formData.requestForRegistrationAccepted}
-                onChange={handleInputChange}
-                disabled={isSubmitting}
-              />
-              <label htmlFor="requestForRegistrationAccepted">Request for Registration of the License Holder: Accepted</label>
-            </div>
+            ))}
             
             <div className="button-container">
               <button 
@@ -691,7 +367,8 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
                 className="btn-primary"
                 disabled={isSubmitting || !isFormValid()}
               >
-                {isSubmitting ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update Record" : "Add Record")}
+                {isSubmitting ? `${isEditMode ? 'Updating' : 'Uploading'} Documents...` : 
+                 `${isEditMode ? 'Update' : 'Upload'} Documents`}
               </button>
             </div>
           </form>

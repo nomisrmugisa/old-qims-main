@@ -738,6 +738,31 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
     }
   };
   
+  // Handle cancel action - refresh parent and close dialog
+  const handleCancel = () => {
+    console.log("AddInspectionDialog handleCancel called");
+    console.log("- onSuccess exists:", typeof onSuccess === 'function');
+    console.log("- onAddSuccess exists:", typeof onAddSuccess === 'function');
+    console.log("- onClose exists:", typeof onClose === 'function');
+    
+    if (!isSubmitting) {
+      // Refresh the parent table to reflect any real-time updates made during editing
+      if (typeof onSuccess === 'function') {
+        console.log("- Calling onSuccess to refresh table");
+        onSuccess();
+      } else if (typeof onAddSuccess === 'function') {
+        console.log("- Calling onAddSuccess to refresh table");
+        onAddSuccess();
+      }
+      
+      // Call onClose to close the dialog
+      if (typeof onClose === 'function') {
+        console.log("- Calling onClose to close dialog");
+        onClose();
+      }
+    }
+  };
+  
   const renderSection = () => {
     switch (activeSection) {
       case "scheduleDetails":
@@ -1348,14 +1373,14 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
   };
   
   return (
-    <ModalPortal open={open} onClose={onClose}>
+    <ModalPortal open={open} onClose={handleCancel}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
         <div className="modal-header">
           <h5 className="modal-title">{isEditMode ? 'Edit Inspection' : 'Add Inspection'}</h5>
           <button 
             type="button" 
             className="close-btn" 
-            onClick={onClose}
+            onClick={handleCancel}
             disabled={isSubmitting}
           >
             &times;
@@ -1445,7 +1470,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEn
               <button 
                 type="button" 
                 className="btn-secondary" 
-                onClick={onClose}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel

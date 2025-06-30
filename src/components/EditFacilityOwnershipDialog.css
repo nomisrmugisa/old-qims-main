@@ -68,6 +68,7 @@
 
 .form-group {
   margin-bottom: 20px;
+  position: relative;
 }
 
 .form-group label {
@@ -154,4 +155,169 @@
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   color: #721c24;
+}
+
+/* Real-time field update status indicators */
+.input-with-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-with-status .form-control {
+  flex: 1;
+}
+
+.field-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.field-status.updating {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.field-status.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  font-weight: bold;
+}
+
+.field-status.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.field-status.saving {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+.field-status.saved {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Form group positioning for status indicators */
+.form-group .field-status {
+  margin-top: 4px;
+  display: inline-block;
+}
+
+/* File input wrapper adjustments */
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Enhanced file display styles to match DHIS2 */
+.file-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 12px;
+  max-width: 200px;
+}
+
+.file-name {
+  color: #666;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.file-name.has-file {
+  color: #333;
+  font-weight: normal;
+}
+
+.file-icon {
+  font-size: 14px;
+  color: #666;
+  margin-right: 2px;
+}
+
+.download-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.download-link:hover {
+  opacity: 1;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.file-info:hover .download-link {
+  opacity: 1;
+}
+
+/* Custom file upload button to match DHIS2 style */
+.custom-file-upload {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  color: #495057;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-file-upload:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.file-input-wrapper .field-status {
+  margin-left: auto;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
 } 

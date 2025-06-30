@@ -192,8 +192,22 @@ const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
   };
 
   const handleCancel = () => {
+    console.log("EditServiceOfferingDialog handleCancel called");
+    console.log("- onSuccess exists:", typeof onSuccess === 'function');
+    console.log("- onClose exists:", typeof onClose === 'function');
+    
     if (!isLoading) {
-      onClose();
+      // Refresh the parent table to reflect any real-time updates made during editing
+      if (typeof onSuccess === 'function') {
+        console.log("- Calling onSuccess to refresh table");
+        onSuccess();
+      }
+      
+      // Call onClose to close the dialog
+      if (typeof onClose === 'function') {
+        console.log("- Calling onClose to close dialog");
+        onClose();
+      }
     }
   };
 
@@ -201,7 +215,7 @@ const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
   const isFormValid = true;
 
   return (
-    <ModalPortal open={open} onClose={onClose}>
+    <ModalPortal open={open} onClose={handleCancel}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
         <div className="modal-header">
           <h5 className="modal-title">Edit Services Offered</h5>
