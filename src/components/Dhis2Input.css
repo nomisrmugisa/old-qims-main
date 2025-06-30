@@ -1,0 +1,51 @@
+.dhis2-input-container {
+  width: 100%;
+}
+
+.dhis2-input, .dhis2-input-container select, .dhis2-input-container textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background-color: #fff;
+  color: #333;
+  font-size: 14px;
+}
+
+.dhis2-input::placeholder, .dhis2-input-container textarea::placeholder {
+  color: #999;
+}
+
+/* Specific styling for split datetime input */
+.dhis2-datetime-container {
+  display: flex;
+  gap: 8px;
+}
+
+.dhis2-datetime-container .date-part {
+  flex-grow: 2;
+}
+
+.dhis2-datetime-container .time-part {
+  flex-grow: 1;
+}
+
+/* Styling for checkboxes to look more like DHIS2 */
+.dhis2-checkbox-group {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.dhis2-checkbox-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dhis2-checkbox-group input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+} 

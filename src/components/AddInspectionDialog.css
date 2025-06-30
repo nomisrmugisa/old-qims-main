@@ -241,4 +241,54 @@
   .form-control {
     grid-column: 1;
   }
+}
+
+.inspection-form .checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.inspection-form .checkbox-group input {
+  margin-right: 8px;
+}
+
+/* New styles for vertical tab layout */
+.inspection-layout-container {
+  display: flex;
+  gap: 20px;
+}
+
+.section-tabs-vertical {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 200px; /* Adjust width as needed */
+  border-right: 1px solid #dee2e6;
+  padding-right: 20px;
+}
+
+.section-tabs-vertical .section-tab {
+  text-align: left;
+  padding: 10px 15px;
+  border: none;
+  background-color: transparent;
+  width: 100%;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.section-tabs-vertical .section-tab:hover {
+  background-color: #f8f9fa;
+}
+
+.section-tabs-vertical .section-tab.active {
+  background-color: #007bff;
+  color: white;
+  font-weight: 500;
+}
+
+.inspection-form {
+  flex-grow: 1; /* Allows form to take remaining space */
 } 
