@@ -110,53 +110,68 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           <nav id="navmenu" className="navmenu">
             <ul>
-              <li><a href="#registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>
+              {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
               <li>
                 <a 
-                  href="#overview" 
-                  className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#home"
+                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('overview');
+                      setActiveDashboardSection('home');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Overview
+                  Home
                 </a>
               </li>
               <li>
                 <a 
-                  href="#reports" 
-                  className={`${activeDashboardSection === 'reports' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#about"
+                  className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
                   onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('reports');
+                    if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                      setActiveDashboardSection('about');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Report
+                  About Us
                 </a>
               </li>
               <li>
                 <a 
-                  href="#tasks" 
-                  className={`${activeDashboardSection === 'tasks' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#check-validity"
+                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('tasks');
+                      setActiveDashboardSection('check-validity');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Tasks
+                  Check Validity
                 </a>
               </li>
-              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-dropdown' : ''}`}>
+              <li>
+                <a
+                    href="#report-incident"
+                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                    onClick={(e) => {
+                      if (isLoggedIn && isSituationalAnalysisGreen()) {
+                        setActiveDashboardSection('report-incident');
+                      } else {
+                        e.preventDefault();
+                      }
+                    }}
+                >
+                  Report Incident
+                </a>
+              </li>
+              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
                 <a 
                   href="#"
                   onClick={(e) => {
@@ -185,24 +200,34 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li><a href="#">Dropdown 4</a></li>
                 </ul>
               </li>
-              <li>
-                {isLoggedIn ? (
-                  <button className="login-button" onClick={onLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <button className="login-button" onClick={onLoginClick}>
-                    Login
-                  </button>
-                )}
-              </li>
+              {/*<li>*/}
+              {/*  {isLoggedIn ? (*/}
+              {/*    <button className="login-button" onClick={onLogout}>*/}
+              {/*      Logout*/}
+              {/*    </button>*/}
+              {/*  ) : (*/}
+              {/*    <button className="login-button" onClick={onLoginClick}>*/}
+              {/*      Login*/}
+              {/*    </button>*/}
+              {/*  )}*/}
+              {/*</li>*/}
             </ul>
             <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
           </nav>
-
-          {!isLoggedIn && (
-            <a className="cta-btn d-none d-sm-block" href="#Registration">Apply</a>
-          )}
+          <div className="d-flex align-items-center justify-content-between">
+            {isLoggedIn ? (
+                <button className="cta-btn" onClick={onLogout}>
+                  Logout
+                </button>
+            ) : (
+                <button className="cta-btn" onClick={onLoginClick}>
+                  Login
+                </button>
+            )}
+            {!isLoggedIn && (
+                <a className="cta-btn d-none d-sm-block" href="#Registration">Apply</a>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -67,13 +67,13 @@
 
 .branding {
     background: #fff;
-    padding: 15px 0;
+    /*padding: 15px 0;*/
     box-shadow: 0px 0 18px rgba(55, 66, 59, 0.08);
 }
 
 .header .logo img.header-logo {
-    height: 180px !important;
-    max-height: 180px !important;
+    height: 100px !important;
+    max-height: 100px !important;
     width: auto;
     margin-bottom: 5px;
 }
@@ -108,7 +108,7 @@
 .navmenu a:focus {
     display: flex;
     align-items: center;
-    color: #444444;
+    color: #1677ff;
     padding: 0 4px;
     font-size: 15px;
     font-weight: 500;
@@ -120,7 +120,7 @@
 .navmenu a:hover,
 .navmenu .active,
 .navmenu li:hover>a {
-    color: #1977cc;
+    color: #1677ff;
 }
 
 .navmenu .dropdown ul {
@@ -214,7 +214,7 @@
         display: block;
         position: relative;
         cursor: pointer;
-        color: #444444;
+        color: #1677ff;
         font-size: 28px;
     }
     
