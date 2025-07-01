@@ -286,9 +286,9 @@ function RegistrationForm() {
 
   return (
     <>
-      <Button variant="contained" onClick={handleClickOpen}>
-        Register
-      </Button>
+      <button className="cta-btn" variant="contained" onClick={handleClickOpen}>
+        Apply for License
+      </button>
 
       <Dialog
         open={open}

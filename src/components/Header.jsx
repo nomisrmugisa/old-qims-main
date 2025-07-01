@@ -110,11 +110,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           <nav id="navmenu" className="navmenu">
             <ul>
-              <li><a href="#registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>
+              {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
               <li>
                 <a 
                   href="#home"
-                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
+                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
                       setActiveDashboardSection('home');
@@ -128,11 +128,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               </li>
               <li>
                 <a 
-                  href="#about-us"
-                  className={`${activeDashboardSection === 'about-us' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
+                  href="#about"
+                  className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
                   onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('about-us');
+                    if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                      setActiveDashboardSection('about');
                     } else {
                       e.preventDefault();
                     }
@@ -144,7 +144,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               <li>
                 <a 
                   href="#check-validity"
-                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
+                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
                       setActiveDashboardSection('check-validity');
@@ -159,7 +159,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               <li>
                 <a
                     href="#report-incident"
-                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
+                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
                     onClick={(e) => {
                       if (isLoggedIn && isSituationalAnalysisGreen()) {
                         setActiveDashboardSection('report-incident');
@@ -171,7 +171,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   Report Incident
                 </a>
               </li>
-              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-dropdown' : ''}`}>
+              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
                 <a 
                   href="#"
                   onClick={(e) => {
@@ -200,24 +200,34 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li><a href="#">Dropdown 4</a></li>
                 </ul>
               </li>
-              <li>
-                {isLoggedIn ? (
-                  <button className="login-button" onClick={onLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <button className="login-button" onClick={onLoginClick}>
-                    Login
-                  </button>
-                )}
-              </li>
+              {/*<li>*/}
+              {/*  {isLoggedIn ? (*/}
+              {/*    <button className="login-button" onClick={onLogout}>*/}
+              {/*      Logout*/}
+              {/*    </button>*/}
+              {/*  ) : (*/}
+              {/*    <button className="login-button" onClick={onLoginClick}>*/}
+              {/*      Login*/}
+              {/*    </button>*/}
+              {/*  )}*/}
+              {/*</li>*/}
             </ul>
             <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
           </nav>
-
-          {!isLoggedIn && (
-            <a className="cta-btn d-none d-sm-block" href="#Registration">Apply</a>
-          )}
+          <div className="d-flex align-items-center justify-content-between">
+            {isLoggedIn ? (
+                <button className="cta-btn" onClick={onLogout}>
+                  Logout
+                </button>
+            ) : (
+                <button className="cta-btn" onClick={onLoginClick}>
+                  Login
+                </button>
+            )}
+            {!isLoggedIn && (
+                <a className="cta-btn d-none d-sm-block" href="#Registration">Apply</a>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -39,23 +39,23 @@ const Main = () => {
             <section id="hero" className="hero section">
                 <img src="/assets/img/hero-bg.jpg" alt="" data-aos="fade-in" style={{opacity: 0.7}}/>
                 <div className="container position-relative">
-                    <div className="welcome position-relative" data-aos="fade-down" data-aos-delay="100"
-                         style={{textAlign: 'center'}}>
-                        <h2>GOVERNMENT FACILITY REGISTRY, SURVEY AND<br/>ASSESSMENT SYSTEM</h2>
-                        <p style={{color: 'rgba(255, 255, 255, 0.8)'}}>Health Facility survey and assessment platform to
-                            facilitate the planning, execution, and reporting of health-related surveys and assessments.
-                            The module supports national health assessments, facility-based surveys, and specialized
-                            research studies conducted by the HI, DHS, and other relevant stakeholders.</p>
-                    </div>
+                    {/*<div className="welcome position-relative" data-aos="fade-down" data-aos-delay="100"*/}
+                    {/*     style={{textAlign: 'center'}}>*/}
+                    {/*    <h2>GOVERNMENT FACILITY REGISTRY, SURVEY AND<br/>ASSESSMENT SYSTEM</h2>*/}
+                    {/*    <p style={{color: 'rgba(255, 255, 255, 0.8)'}}>Health Facility survey and assessment platform to*/}
+                    {/*        facilitate the planning, execution, and reporting of health-related surveys and assessments.*/}
+                    {/*        The module supports national health assessments, facility-based surveys, and specialized*/}
+                    {/*        research studies conducted by the HI, DHS, and other relevant stakeholders.</p>*/}
+                    {/*</div>*/}
 
                     <div className="content row gy-4">
                         <div className="col-lg-4 d-flex align-items-stretch">
                             <div className="why-box" data-aos="zoom-out" data-aos-delay="200">
-                                <h3 style={{color: 'white'}}>PRIVATE FACILITY INSPECTION & LICENSING</h3>
+                                <h3 style={{color: 'white'}}>HEALTH FACILITY INSPECTION, ASSESSMENT & LICENSING</h3>
                                 <p style={{color: 'rgba(255, 255, 255, 0.9)'}}>
-                                    The Health Facility Licensing Platform is an innovative system that revolutionizes
+                                    The Health Facility Management Platform is an innovative system that revolutionizes
                                     the licensing process for health facilities. It offers a user-friendly solution,
-                                    enhancing accessibility, transparency, and efficiency. This platform reduces
+                                    enhancing accessibility, transparency, and efficiency. </p><p>This platform reduces
                                     processing time, minimizes required documentation, and eliminates physical visits to
                                     regulatory offices.
                                 </p>
@@ -122,7 +122,7 @@ const Main = () => {
                                             }}
                                         >
                                             <i className="bi bi-inboxes" style={{color: 'white'}}></i>
-                                            <h4>Inspection Request</h4>
+                                            <h4>Request for Inspection</h4>
                                             <p>Request for Inspection of New Health Facility. This service is for an
                                                 entity holding provisional authorization for the registration of a
                                                 health facility. Inspections shall be conducted twice a year</p>
@@ -145,6 +145,23 @@ const Main = () => {
                                             <h4>Request to amment Staff list</h4>
                                             <p>Request to Add Staff. This is done when there is a changing in
                                                 staffing.</p>
+                                        </div>
+                                    </div>
+                                    <div className="col-xl-4 d-flex align-items-stretch">
+                                        <div
+                                            className="icon-box"
+                                            data-aos="zoom-out"
+                                            data-aos-delay="500"
+                                            onMouseEnter={() => handleMouseEnter(3)}
+                                            onMouseLeave={() => handleMouseLeave(3)}
+                                            style={{
+                                                transform: hoveredCards[3] ? 'translateY(-5px)' : 'translateY(0px)',
+                                                transition: 'transform 0.3s ease-in-out',
+                                            }}
+                                        >
+                                            <i className="bi bi-inboxes" style={{color: 'white'}}></i>
+                                            <h4>Request for public facility assessment</h4>
+                                            <p>Module to conducts quality improvement and accreditation.</p>
                                         </div>
                                     </div>
                                 </div>
