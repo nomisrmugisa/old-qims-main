@@ -21,7 +21,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
       setIsLoading(false);
       return;
     }
-
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_DHIS2_URL}/api/programStages/Eupjm3J0dt2?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`,
@@ -29,11 +29,11 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
           headers: { Authorization: `Basic ${credentials}` },
         }
       );
-
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch metadata: ${response.status}`);
       }
-
+      
       const metadata = await response.json();
       setProgramStageMetadata(metadata);
       
@@ -72,8 +72,8 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const credentials = localStorage.getItem('userCredentials');
-    if (!credentials) {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsSubmitting(false);
       return;
@@ -141,7 +141,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
       </div>
     );
   };
-  
+
   return (
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
@@ -172,7 +172,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
                 );
               })}
             </div>
-            
+
             <form onSubmit={handleUpdateSubmit} className="inspection-form">
               {renderFormBody()}
               
@@ -180,9 +180,9 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
                   {isSubmitting ? 'Updating...' : 'Update Inspection'}
-                </button>
-              </div>
-            </form>
+              </button>
+            </div>
+          </form>
           </div>
         </div>
       </div>

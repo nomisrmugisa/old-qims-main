@@ -21,7 +21,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
       setIsLoading(false);
       return;
     }
-
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_DHIS2_URL}/api/programStages/Eupjm3J0dt2?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`,
@@ -29,7 +29,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
           headers: { Authorization: `Basic ${credentials}` },
         }
       );
-
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch metadata: ${response.status}`);
       }
@@ -100,7 +100,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
 
       let payload = {
         orgUnit: orgUnitId,
-        program: "EE8yeLVo6cN",
+          program: "EE8yeLVo6cN",
         programStage: "Eupjm3J0dt2",
         status: "COMPLETED",
         dataValues,
@@ -112,7 +112,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
         response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${eventId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Basic ${credentials}` },
-          body: JSON.stringify(payload),
+        body: JSON.stringify(payload),
         });
       } else {
         payload = { ...payload, trackedEntityInstance: trackedEntityInstanceId, eventDate: today };
@@ -122,13 +122,13 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
           body: JSON.stringify(payload),
         });
       }
-
-      if (!response.ok) {
-        const errorText = await response.text();
+     
+     if (!response.ok) {
+       const errorText = await response.text();
         throw new Error(`Submission failed: ${response.status} - ${errorText}`);
       }
       
-      onSuccess();
+          onSuccess();
       onClose();
 
     } catch (error) {
@@ -137,7 +137,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
       setIsSubmitting(false);
     }
   };
-
+  
   const renderFormBody = () => {
     if (isLoading) return <Loading message="Loading inspection form..." />;
     if (errorMessage) return <div className="alert alert-danger">{errorMessage}</div>;
@@ -145,19 +145,19 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
 
     const currentSectionData = programStageMetadata.programStageSections.find(s => s.id === activeSection);
 
-    return (
+        return (
       <div className="dynamic-form-body">
         {currentSectionData && currentSectionData.dataElements.map(de => (
           <div key={de.id} className="form-group-dhis2">
             <Dhis2Input
               dataElement={de}
               value={formData[de.id] || ''}
-              onChange={handleInputChange}
-            />
+                  onChange={handleInputChange}
+                />
           </div>
         ))}
-      </div>
-    );
+          </div>
+        );
   };
   
   return (
@@ -180,27 +180,27 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
                 };
                 
                 return (
-                  <button
+            <button 
                     key={section.id}
                     className={`section-tab ${activeSection === section.id ? "active" : ""}`}
                     onClick={() => setActiveSection(section.id)}
-                  >
+            >
                     {getDisplayName(section.name)}
-                  </button>
+            </button>
                 );
               })}
-            </div>
-            
-            <form onSubmit={handleSubmit} className="inspection-form">
+          </div>
+          
+          <form onSubmit={handleSubmit} className="inspection-form">
               {renderFormBody()}
-              
-              <div className="button-container">
+            
+            <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
                   {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
-                </button>
-              </div>
-            </form>
+              </button>
+            </div>
+          </form>
           </div>
         </div>
       </div>
@@ -208,4 +208,4 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
   );
 };
 
-export default AddInspectionDialog;
+export default AddInspectionDialog; 

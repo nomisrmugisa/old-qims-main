@@ -206,7 +206,7 @@ const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
       // Call onClose to close the dialog
       if (typeof onClose === 'function') {
         console.log("- Calling onClose to close dialog");
-        onClose();
+      onClose();
       }
     }
   };

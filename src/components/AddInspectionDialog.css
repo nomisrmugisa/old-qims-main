@@ -241,7 +241,7 @@
   .form-control {
     grid-column: 1;
   }
-}
+} 
 
 .inspection-form .checkbox-group {
   display: flex;
