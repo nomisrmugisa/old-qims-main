@@ -113,47 +113,62 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               <li><a href="#registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>
               <li>
                 <a 
-                  href="#overview" 
-                  className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#home"
+                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('overview');
+                      setActiveDashboardSection('home');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Overview
+                  Home
                 </a>
               </li>
               <li>
                 <a 
-                  href="#reports" 
-                  className={`${activeDashboardSection === 'reports' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#about-us"
+                  className={`${activeDashboardSection === 'about-us' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('reports');
+                      setActiveDashboardSection('about-us');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Report
+                  About Us
                 </a>
               </li>
               <li>
                 <a 
-                  href="#tasks" 
-                  className={`${activeDashboardSection === 'tasks' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`} 
+                  href="#check-validity"
+                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
                   onClick={(e) => {
                     if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('tasks');
+                      setActiveDashboardSection('check-validity');
                     } else {
                       e.preventDefault();
                     }
                   }}
                 >
-                  Tasks
+                  Check Validity
+                </a>
+              </li>
+              <li>
+                <a
+                    href="#report-incident"
+                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-link' : ''}`}
+                    onClick={(e) => {
+                      if (isLoggedIn && isSituationalAnalysisGreen()) {
+                        setActiveDashboardSection('report-incident');
+                      } else {
+                        e.preventDefault();
+                      }
+                    }}
+                >
+                  Report Incident
                 </a>
               </li>
               <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'disabled-dropdown' : ''}`}>
