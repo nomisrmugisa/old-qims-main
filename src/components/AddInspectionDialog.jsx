@@ -170,15 +170,25 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
         <div className="modal-body">
           <div className="inspection-layout-container">
             <div className="section-tabs-vertical">
-              {programStageMetadata && programStageMetadata.programStageSections.map(section => (
-                <button
-                  key={section.id}
-                  className={`section-tab ${activeSection === section.id ? "active" : ""}`}
-                  onClick={() => setActiveSection(section.id)}
-                >
-                  {section.name}
-                </button>
-              ))}
+              {programStageMetadata && programStageMetadata.programStageSections.map(section => {
+                // Override display name for specific sections
+                const getDisplayName = (sectionName) => {
+                  if (sectionName === "Inspection Schedule Details") {
+                    return "Date and Time";
+                  }
+                  return sectionName;
+                };
+                
+                return (
+                  <button
+                    key={section.id}
+                    className={`section-tab ${activeSection === section.id ? "active" : ""}`}
+                    onClick={() => setActiveSection(section.id)}
+                  >
+                    {getDisplayName(section.name)}
+                  </button>
+                );
+              })}
             </div>
             
             <form onSubmit={handleSubmit} className="inspection-form">

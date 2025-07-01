@@ -72,7 +72,7 @@ function RegistrationForm() {
   }, [credentials]);
 
   const [formData, setFormData] = useState({
-    BHPCRegistrationNumber: "",
+    BHPCRegistrationNumber: "AUTO-GENERATED", // Auto-filled since hidden from user
     cellNumber: "",
     userName: "",
     dhisRegistrationCode: "",
@@ -372,6 +372,7 @@ function RegistrationForm() {
               }}
             />
 
+            {/* B.H.P.C License Number - Hidden from user but still functional */}
             <TextField
               fullWidth
               label="B.H.P.C License Number"
@@ -381,6 +382,7 @@ function RegistrationForm() {
               variant="outlined"
               margin="dense"
               required
+              sx={{ display: 'none' }}
               InputLabelProps={{
                 sx: {
                   "& .MuiFormLabel-asterisk": {
@@ -390,6 +392,7 @@ function RegistrationForm() {
               }}
             />
 
+            {/* DHIS2 Registration Code - Hidden from user but still generated */}
             <TextField
               fullWidth
               label="DHIS2-Registration CODE"
@@ -399,6 +402,7 @@ function RegistrationForm() {
               variant="outlined"
               margin="dense"
               required
+              sx={{ display: 'none' }}
               InputLabelProps={{
                 sx: {
                   "& .MuiFormLabel-asterisk": {
