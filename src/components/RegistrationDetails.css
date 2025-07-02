@@ -210,4 +210,13 @@
 
 .status-indicator.unknown {
     background-color: #6c757d; /* Grey */
+}
+
+.blink-orange {
+    animation: blink-orange 1s step-start 0s infinite;
+    color: orange !important;
+}
+
+@keyframes blink-orange {
+    50% { opacity: 0; }
 } 

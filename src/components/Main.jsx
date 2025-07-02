@@ -8,6 +8,8 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './Main.css';
 import RegistrationForm from './RegistrationForm';
+import heroBg from '../assets/hero-bg.jpg';
+import aboutImg from '../assets/about.jpg';
 
 const Main = () => {
     useEffect(() => {
@@ -36,8 +38,8 @@ const Main = () => {
     return (
         <main className="main">
             {/* QIMS Section */}
-            <section id="hero" className="hero section">
-                <img src="/assets/img/hero-bg.jpg" alt="" data-aos="fade-in" style={{opacity: 0.7}}/>
+            <section id="hero" className="hero section" style={{ background: `url(${heroBg}) center center/cover no-repeat` }}>
+                {/* <img src={heroBg} alt="" data-aos="fade-in" style={{opacity: 0.7}}/> */}
                 <div className="container position-relative">
                     {/*<div className="welcome position-relative" data-aos="fade-down" data-aos-delay="100"*/}
                     {/*     style={{textAlign: 'center'}}>*/}
@@ -198,7 +200,7 @@ const Main = () => {
                              data-aos-delay="200">
                             <div style={{position: 'relative', borderRadius: '8px', overflow: 'hidden'}}>
                                 <img
-                                    src="/assets/img/about.jpg"
+                                    src={aboutImg}
                                     className="img-fluid"
                                     alt="Senior doctor performing facility inspection"
                                     style={{

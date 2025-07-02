@@ -1,6 +1,7 @@
 // components/Header.jsx
 import React, { useEffect, useState } from 'react';
 import './Header.css';
+import logo from '../assets/logo.png';
 
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
@@ -105,7 +106,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
       <div className="branding d-flex align-items-center">
         <div className="container position-relative d-flex align-items-center justify-content-between">
           <div className="logo d-flex flex-column align-items-center">
-            <img src="/assets/img/moh-bots-log.jpg" alt="Ministry of Health Logo" className="header-logo"></img>
+            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '180px', height: 'auto' }} />
           </div>
 
           <nav id="navmenu" className="navmenu">

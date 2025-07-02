@@ -60,11 +60,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState("Unknown"); // New state for overall status
   
-  // Preferred Inspection Date state
-  const [preferredStartDate, setPreferredStartDate] = useState(null);
-  const [preferredEndDate, setPreferredEndDate] = useState(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  
   // Tab validation states
   const [tabValidationStates, setTabValidationStates] = useState({
     facilityOwnership: false,
@@ -471,9 +466,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     ];
 
     const allStepsComplete = steps.every(step => step.hasData);
-
+    const firstFiveComplete = steps.slice(0, 5).every(step => step.hasData);
     if (allStepsComplete) {
       setRegistrationStatus("Completed");
+    } else if (firstFiveComplete) {
+      setRegistrationStatus("Application Sent to MOH and is Under Review");
     } else if (steps[0].hasData) {
       setRegistrationStatus("In Progress");
     } else {
@@ -1935,48 +1932,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 'medium' }}>
-              Preferred Inspection Date:
-            </Typography>
-            
-            <Box 
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
-                padding: '8px 12px',
-                backgroundColor: '#fafafa',
-                cursor: 'pointer',
-                minWidth: '280px',
-                '&:hover': {
-                  borderColor: '#1976d2',
-                  backgroundColor: '#fff'
-                }
-              }}
-            >
-              <Typography variant="body2" sx={{ fontSize: '0.85rem', color: preferredStartDate ? '#000' : '#999' }}>
-                {preferredStartDate && preferredEndDate 
-                  ? `${preferredStartDate.toLocaleDateString()} — ${preferredEndDate.toLocaleDateString()}`
-                  : 'Select date range'
-                }
-              </Typography>
-            </Box>
-
-            {showDatePicker && (
-              <CustomDateRangePicker
-                startDate={preferredStartDate}
-                endDate={preferredEndDate}
-                onChange={(start, end) => {
-                  setPreferredStartDate(start);
-                  setPreferredEndDate(end);
-                }}
-                onClose={() => setShowDatePicker(false)}
-                restrictToSecondWeek={true}
-              />
-            )}
+            {/* Removed Preferred Inspection Date label and date picker UI */}
           </Box>
         </Box>
         
@@ -1996,7 +1952,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             return (
               <React.Fragment key={step.number}>
                 <Tooltip 
-                  title={isDisabled ? "Complete the Application details first" : ""}
+                  title={step.key === 'inspectionSchedule' ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted" : (isDisabled ? "Complete the Application details first" : "")}
                   arrow
                   placement="top"
                 >
@@ -2004,11 +1960,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     <Step 
                       active={activeTab === step.key}
                       hasdata={hasTabData(step.key)}
-                      disabled={isDisabled}
-                      onClick={() => handleTabClick(step.key)}
+                      disabled={isDisabled || step.key === 'inspectionSchedule'}
+                      onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
                     >
                       <span className="step-number">{step.number}</span>
-                      <Typography variant="subtitle1" className="step-title">
+                      <Typography 
+                        variant="subtitle1" 
+                        className={`step-title${step.title === 'Situational Analysis' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
+                      >
                         {step.title}
                       </Typography>
                       <span 
@@ -2024,7 +1983,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 6 && <StyledDivider disabled={isDisabled} />}
+                {index < 5 && <StyledDivider disabled={isDisabled} />}
+                {index === 5 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
               </React.Fragment>
             );
           })}
