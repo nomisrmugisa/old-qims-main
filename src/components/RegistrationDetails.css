@@ -119,6 +119,22 @@
     font-weight: bold;
 }
 
+.equipment-machinery-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.equipment-machinery-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
 /* Add hover effect for table rows */
 .hover-row:hover {
     background-color: #e3f2fd;

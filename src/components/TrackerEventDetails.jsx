@@ -26,7 +26,7 @@ const requiredOtherDetailsFields = [
   'VJzk8OdFJKA'  // Location in Botswana
 ];
 
-const TrackerEventDetails = ({ onFormStatusChange }) => {
+const TrackerEventDetails = ({ onFormStatusChange, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [eventData, setEventData] = useState(null);
@@ -35,6 +35,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [updating, setUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateError, setUpdateError] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showFailureMessage, setShowFailureMessage] = useState(false);
   const [organisationalUnits, setOrganisationalUnits] = useState([]);
   const [filteredOrgUnits, setFilteredOrgUnits] = useState([]);
   const [isLoadingOrgUnits, setIsLoadingOrgUnits] = useState(false);
@@ -459,14 +461,39 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         throw new Error("No event data available for update.");
       }
 
-      // Build updated dataValues array - only include the editable fields
-      const dataValues = [
-        { dataElement: "aMFg2iq9VIg", value: formValues['aMFg2iq9VIg'] || "" }, // Private Practice Number
-        { dataElement: "HMk4LZ9ESOq", value: formValues['HMk4LZ9ESOq'] || "" }, // License Holder First Name
-        { dataElement: "ykwhsQQPVH0", value: formValues['ykwhsQQPVH0'] || "" }, // License Holder Surname
-        { dataElement: "PdtizqOqE6Q", value: formValues['PdtizqOqE6Q'] || "" }, // Facility Name
-        { dataElement: "VJzk8OdFJKA", value: formValues['VJzk8OdFJKA'] || "" }  // Location
-      ].filter(dv => dv.value.trim() !== ""); // Only include non-empty values
+      // Build updated dataValues array - include ALL existing data values to preserve data
+      const dataValues = [];
+      
+      // First, add all existing dataValues to preserve non-editable fields
+      if (eventData.dataValues) {
+        eventData.dataValues.forEach(existingDv => {
+          dataValues.push({
+            dataElement: existingDv.dataElement,
+            value: existingDv.value
+          });
+        });
+      }
+      
+      // Then update/add the editable fields
+      const editableFields = {
+        "aMFg2iq9VIg": formValues['aMFg2iq9VIg'] || "", // Private Practice Number
+        "HMk4LZ9ESOq": formValues['HMk4LZ9ESOq'] || "", // License Holder First Name
+        "ykwhsQQPVH0": formValues['ykwhsQQPVH0'] || "", // License Holder Surname
+        "PdtizqOqE6Q": formValues['PdtizqOqE6Q'] || "", // Facility Name
+        "VJzk8OdFJKA": formValues['VJzk8OdFJKA'] || ""  // Location
+      };
+      
+      // Update existing fields or add new ones
+      Object.entries(editableFields).forEach(([dataElement, value]) => {
+        const existingIndex = dataValues.findIndex(dv => dv.dataElement === dataElement);
+        if (existingIndex >= 0) {
+          // Update existing field
+          dataValues[existingIndex].value = value;
+        } else if (value.trim() !== "") {
+          // Add new field if it has a value
+          dataValues.push({ dataElement, value });
+        }
+      });
 
       // Prepare update payload - preserve existing event structure
       const payload = {
@@ -507,6 +534,18 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       setIsEditing(false);
       console.log("Application details updated successfully!");
 
+      // Show custom success message before switching tabs
+      setShowSuccessMessage(true);
+      
+      // Wait for 2 seconds to show the message, then call parent callback
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        // Call the onUpdateSuccess callback to notify parent component
+        if (onUpdateSuccess) {
+          onUpdateSuccess();
+        }
+      }, 2000);
+
       // Update the local eventData with new values to reflect changes immediately
       const updatedEventData = { ...eventData };
       if (updatedEventData.dataValues) {
@@ -527,6 +566,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     } catch (error) {
       console.error("Error updating application details:", error);
       setUpdateError(`Failed to update application details: ${error.message}`);
+      
+      // Show custom failure message
+      setShowFailureMessage(true);
+      
+      // Hide failure message after 4 seconds
+      setTimeout(() => {
+        setShowFailureMessage(false);
+      }, 4000);
     } finally {
       setUpdating(false);
     }
@@ -559,9 +606,63 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, px: { xs: 1, sm: 2 } }}>
-      {/* Success message */}
+      {/* Custom Success Message */}
       <Snackbar
-        open={updateSuccess}
+        open={showSuccessMessage}
+        autoHideDuration={2000}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '20px !important'
+        }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(46, 125, 50, 0.4)',
+            border: '2px solid #2e7d32',
+            background: 'linear-gradient(45deg, #4caf50, #66bb6a)'
+          }}
+          icon={<span style={{ fontSize: '1.5rem' }}>✅</span>}
+        >
+          🎉 Other details submitted successfully! 🎉
+        </Alert>
+      </Snackbar>
+
+      {/* Custom Failure Message */}
+      <Snackbar
+        open={showFailureMessage}
+        autoHideDuration={4000}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '20px !important'
+        }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(211, 47, 47, 0.4)',
+            border: '2px solid #d32f2f',
+            background: 'linear-gradient(45deg, #f44336, #ef5350)'
+          }}
+          icon={<span style={{ fontSize: '1.5rem' }}>❌</span>}
+        >
+          ⚠️ Failure, Contact Admin ⚠️
+        </Alert>
+      </Snackbar>
+
+      {/* Original Success message (still needed for other updates) */}
+      <Snackbar
+        open={updateSuccess && !showSuccessMessage}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}

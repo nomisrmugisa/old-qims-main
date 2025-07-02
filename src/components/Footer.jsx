@@ -11,12 +11,9 @@ const Footer = () => {
               <span className="sitename">QIMS</span>
             </a>
             <div className="footer-contact pt-3">
-              <p>Director</p>
-              <p>Health Inspectorate</p>
-              <p>Private Bag 0038</p>
-              <p>Gaborone</p>
-              <p className="mt-3"><strong>Phone:</strong> <span>(267) 3632602</span></p>
-              <p><strong>Fax:</strong> <span>(267) 3974512</span></p>
+              <p>A108 Adam Street</p>
+              <p>New York, NY 535022</p>
+              <p className="mt-3"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
               <p><strong>Email:</strong> <span>info@example.com</span></p>
             </div>
             <div className="social-links d-flex mt-4">
@@ -27,46 +24,7 @@ const Footer = () => {
             </div>
           </div>
 
-          <div className="col-lg-2 col-md-3 footer-links">
-            <h4>Physical Address</h4>
-            <p>Ministry of Health</p>
-            <p>Plot 54861</p>
-            <p>Government Enclave</p>
-            <p>Office no 8A:34</p>
-          </div>
 
-          <div className="col-lg-2 col-md-3 footer-links">
-            <h4>Our Services</h4>
-            <ul>
-              <li><a href="#">Web Design</a></li>
-              <li><a href="#">Web Development</a></li>
-              <li><a href="#">Product Management</a></li>
-              <li><a href="#">Marketing</a></li>
-              <li><a href="#">Graphic Design</a></li>
-            </ul>
-          </div>
-
-          <div className="col-lg-2 col-md-3 footer-links">
-            <h4>Hic solutasetp</h4>
-            <ul>
-              <li><a href="#">Molestiae accusamus iure</a></li>
-              <li><a href="#">Excepturi dignissimos</a></li>
-              <li><a href="#">Suscipit distinctio</a></li>
-              <li><a href="#">Dilecta</a></li>
-              <li><a href="#">Sit quas consectetur</a></li>
-            </ul>
-          </div>
-
-          <div className="col-lg-2 col-md-3 footer-links">
-            <h4>Nobis illum</h4>
-            <ul>
-              <li><a href="#">Ipsam</a></li>
-              <li><a href="#">Laudantium dolorum</a></li>
-              <li><a href="#">Dinera</a></li>
-              <li><a href="#">Trodelas</a></li>
-              <li><a href="#">Flexo</a></li>
-            </ul>
-          </div>
         </div>
       </div>
 

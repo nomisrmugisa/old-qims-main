@@ -391,10 +391,16 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    console.log("🚀 === ADD BUTTON CLICKED ===");
+    console.log("- Event object:", e);
+    console.log("- Form data:", newFormData);
+    console.log("- Is form valid:", isFormValid);
+    
     setErrorMessage(""); // Clear previous errors
     setIsLoading(true);
     
     const credentials = localStorage.getItem('userCredentials');
+    console.log("- Has credentials:", !!credentials);
 
     if (!credentials) {
       setErrorMessage("Authentication required. Please log in again.");
@@ -475,7 +481,13 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
         dataValues: dataValues
       };
 
-      console.log("Event creation payload:", payload);
+      console.log("🌐 === ABOUT TO MAKE POST REQUEST ===");
+      console.log("- Endpoint: POST /api/events");
+      console.log("- Payload:", payload);
+      console.log("- Headers:", {
+        Authorization: `Basic ${credentials.substring(0, 10)}...`,
+        "Content-Type": "application/json"
+      });
 
       const eventRes = await fetch("/api/events", {
         method: "POST",
@@ -485,6 +497,10 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
         },
         body: JSON.stringify(payload),
       });
+      
+      console.log("📡 === POST REQUEST COMPLETED ===");
+      console.log("- Response status:", eventRes.status);
+      console.log("- Response ok:", eventRes.ok);
 
       if (!eventRes.ok) {
         const errorText = await eventRes.text();
@@ -524,6 +540,15 @@ const AddFacilityOwnershipDialog = ({ open, onClose, onSuccess, onAddSuccess, tr
     newFormData.idType &&
     newFormData.id
   );
+  
+  console.log("📋 === FORM VALIDATION STATUS ===");
+  console.log("- firstName:", newFormData.firstName);
+  console.log("- surname:", newFormData.surname);
+  console.log("- citizen:", newFormData.citizen);
+  console.log("- ownershipType:", newFormData.ownershipType);
+  console.log("- idType:", newFormData.idType);
+  console.log("- id:", newFormData.id);
+  console.log("- isFormValid:", isFormValid);
 
   // Handle cancel button - refresh table and close
   const handleCancel = () => {

@@ -8,9 +8,11 @@ import AddServiceOfferingDialog from './AddServiceOfferingDialog';
 import EditServiceOfferingDialog from './EditServiceOfferingDialog';
 import AddInspectionDialog from './AddInspectionDialog';
 import AddStatutoryComplianceDialog from './AddStatutoryComplianceDialog';
+import AddEquipmentDialog from './AddEquipmentDialog';
 
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
+import CustomDateRangePicker from './CustomDateRangePicker';
 // import { useTheme } from '@mui/material/styles';
 
 // Inside your component:
@@ -42,6 +44,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [isLoadingInspections, setIsLoadingInspections] = useState(true);
   const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
   const [showEditInspectionDialog, setShowEditInspectionDialog] = useState(false);
+  
+  // Equipment & Machinery state
+  const [equipmentEvents, setEquipmentEvents] = useState([]);
+  const [isLoadingEquipment, setIsLoadingEquipment] = useState(true);
+  const [selectedEquipmentEvent, setSelectedEquipmentEvent] = useState(null);
+  const [showEditEquipmentDialog, setShowEditEquipmentDialog] = useState(false);
+  const [openEquipmentDialog, setOpenEquipmentDialog] = useState(false);
 
   // Statutory Compliance state
   const [statutoryComplianceEvents, setStatutoryComplianceEvents] = useState([]);
@@ -50,6 +59,21 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedStatutoryComplianceEvent, setSelectedStatutoryComplianceEvent] = useState(null);
   const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState("Unknown"); // New state for overall status
+  
+  // Preferred Inspection Date state
+  const [preferredStartDate, setPreferredStartDate] = useState(null);
+  const [preferredEndDate, setPreferredEndDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Tab validation states
+  const [tabValidationStates, setTabValidationStates] = useState({
+    facilityOwnership: false,
+    employeeRegistration: false,
+    serviceOffering: false,
+    inspectionSchedule: false,
+    equipmentMachinery: false,
+    statutoryCompliance: false
+  });
 
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -143,21 +167,92 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const handleFormStatusChange = (isComplete) => {
     setCompleteApplicationStatus(isComplete);
   };
+
+  // Handle successful application update - switch to facility ownership tab
+  const handleApplicationUpdateSuccess = () => {
+    console.log("Application updated successfully - switching to facility ownership tab");
+    setActiveTab('facilityOwnership');
+    // Also fetch facility ownership data to ensure it's up to date
+    fetchFacilityOwnershipData();
+  };
+
+  // Function to validate facility ownership completion
+  const validateFacilityOwnership = (facilityEvents) => {
+    console.log("🔍 === FACILITY OWNERSHIP VALIDATION ===");
+    console.log("- Events to validate:", facilityEvents?.length || 0);
+    
+    if (!facilityEvents || facilityEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No records exist)");
+      return false; // No records exist
+    }
+
+    // Required fields for facility ownership (based on the form structure)
+    const requiredFields = [
+      "HMk4LZ9ESOq", // firstName
+      "ykwhsQQPVH0", // surname
+      "zVmmto7HwOc", // citizen
+      "vAHHXaW0Pna", // ownershipType
+      "FLcrCfTNcQi", // idType
+      "aUGSyyfbUVI", // id
+      "KRj1TOR5cVM", // copyOfIdPassport
+      "yP49GKSQxPl", // professionalReference1
+      "lC217zTgC6C", // professionalReference2
+      "pelCBFPIFY1", // qualificationCertificates
+      "cUObXSGtCuD", // validRecentPermit
+      "g9jXH9LJyxU"  // workPermitWaiver
+    ];
+
+    console.log("- Required fields count:", requiredFields.length);
+
+    // Check if ALL records have all required fields filled
+    const allRecordsComplete = facilityEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      const missingFields = [];
+      const hasAllFields = requiredFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
+        const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
+        if (!isValid) {
+          missingFields.push(fieldId);
+        }
+        return isValid;
+      });
+      
+      console.log(`- Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`, missingFields);
+      return hasAllFields;
+    });
+    
+    console.log("- VALIDATION RESULT:", allRecordsComplete ? "TRUE (ALL records complete)" : "FALSE (Some records incomplete)");
+    return allRecordsComplete;
+  };
+
+  // Function to update tab validation states
+  const updateTabValidationStates = () => {
+    setTabValidationStates(prev => ({
+      ...prev,
+      facilityOwnership: validateFacilityOwnership(events)
+    }));
+  };
   
   const hasTabData = (tabKey) => {
     switch (tabKey) {
       case 'completeApplication':
         return completeApplicationStatus; // Use the state variable to determine if all fields are filled
       case 'facilityOwnership':
-        return events.length > 0;
+        return tabValidationStates.facilityOwnership; // Use validation state that checks both record existence and field completeness
       case 'employeeRegistration':
         return employeeEvents.length > 0;
       case 'servicesOffered':
         return serviceEvents.length > 0;
-      case 'inspectionSchedule':
-        return inspectionEvents.length > 0;
       case 'statutoryCompliance':
         return statutoryComplianceEvents.length > 0;
+      case 'equipmentMachinery':
+        return equipmentEvents.length > 0;
+      case 'inspectionSchedule':
+        return inspectionEvents.length > 0;
       default:
         return false;
     }
@@ -167,7 +262,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const steps = [
       { key: 'completeApplication', hasData: completeApplicationStatus },
-      { key: 'facilityOwnership', hasData: events.length > 0 },
+      { key: 'facilityOwnership', hasData: tabValidationStates.facilityOwnership },
       { key: 'employeeRegistration', hasData: employeeEvents.length > 0 },
       { key: 'servicesOffered', hasData: serviceEvents.length > 0 },
       { key: 'statutoryCompliance', hasData: statutoryComplianceEvents.length > 0 },
@@ -185,7 +280,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   }, [
     completeApplicationStatus,
-    events,
+    tabValidationStates.facilityOwnership,
     employeeEvents,
     serviceEvents,
     inspectionEvents,
@@ -205,6 +300,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     
     console.log("- Setting active tab to:", tabKey);
     setActiveTab(tabKey);
+    
+    // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+    if (tabKey === 'equipmentMachinery') {
+      console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+      fetchEquipmentData();
+    }
     
     // Manually trigger fetch for inspection data when clicking on inspectionSchedule tab
     if (tabKey === 'inspectionSchedule') {
@@ -361,6 +462,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setEvents(fetchedEvents);
       setIsLoading(false);
+      
+      // Update validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        facilityOwnership: validateFacilityOwnership(fetchedEvents)
+      }));
 
     } catch (error) {
       console.log("❌ === FACILITY OWNERSHIP FETCH ERROR ===");
@@ -695,6 +802,79 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+  const fetchEquipmentData = async () => {
+    console.log("🔄 === STARTING EQUIPMENT DATA FETCH ===");
+    console.log("- Timestamp:", new Date().toISOString());
+    console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+    
+    if (!trackedEntityInstanceId) {
+      console.log("- EARLY RETURN: No trackedEntityInstanceId");
+      setIsLoadingEquipment(false);
+      return;
+    }
+
+    const credentials = localStorage.getItem('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+
+    if (!credentials || !userOrgUnitId) {
+      console.log("- EARLY RETURN: Missing credentials or userOrgUnitId");
+      setIsLoadingEquipment(false);
+      return;
+    }
+
+    try {
+      setIsLoadingEquipment(true);
+      // Using the correct program stage ID for Equipment & Machinery
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      
+      console.log("Equipment API Request:");
+      console.log("- Full URL:", url);
+      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- organizationUnitId:", userOrgUnitId);
+      console.log("- programId: EE8yeLVo6cN");
+      console.log("- programStage: chlbXjBiIup"); // Equipment & Machinery stage ID
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      console.log("Equipment API Response:");
+      console.log("- Response data:", data);
+      
+      let fetchedEvents = [];
+
+      if (data.enrollments && data.enrollments.length > 0) {
+        console.log("- Processing equipment enrollments...");
+        data.enrollments.forEach((enrollment, index) => {
+          console.log(`  - Equipment Enrollment #${index+1} ID:`, enrollment.enrollment);
+          if (enrollment.events && enrollment.events.length > 0) {
+            // Filter events to only include Equipment & Machinery program stage (chlbXjBiIup)
+            const equipmentEvents = enrollment.events.filter(event => event.programStage === "chlbXjBiIup");
+            console.log(`  - Filtered equipment events (chlbXjBiIup):`, equipmentEvents.length);
+            fetchedEvents = fetchedEvents.concat(equipmentEvents);
+          }
+        });
+      }
+      
+      console.log("- Total equipment events extracted:", fetchedEvents.length);
+      
+      setEquipmentEvents(fetchedEvents);
+      setIsLoadingEquipment(false);
+
+    } catch (error) {
+      console.error("Error fetching equipment data:", error);
+      setIsLoadingEquipment(false);
+    }
+  };
+
   // Add fetch function for service offerings
     // Add useEffect to fetch service data
   useEffect(() => {
@@ -787,6 +967,28 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     setShowEditStatutoryComplianceDialog(true);
   };
 
+  // Equipment & Machinery handlers
+  const handleAddEquipment = () => {
+    console.log("Equipment add button clicked");
+    setOpenEquipmentDialog(true);
+  };
+
+  const handleCloseEquipmentDialog = () => {
+    setOpenEquipmentDialog(false);
+  };
+
+  const handleEquipmentAddSuccess = () => {
+    setOpenEquipmentDialog(false);
+    fetchEquipmentData();
+  };
+
+  const handleEquipmentRowClick = (event) => {
+    setSelectedEquipmentEvent(event);
+    setShowEditEquipmentDialog(true);
+  };
+
+
+
   // Fetch statutory compliance data
   const fetchStatutoryComplianceData = async () => {
     console.log("🔄 === STARTING STATUTORY COMPLIANCE DATA FETCH ===");
@@ -869,7 +1071,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="complete-application-details">
               <h2>Complete Application Details</h2>
-              <TrackerEventDetails onFormStatusChange={handleFormStatusChange} />
+              <TrackerEventDetails 
+                onFormStatusChange={handleFormStatusChange}
+                onUpdateSuccess={handleApplicationUpdateSuccess}
+              />
             </div>
           </div>
         );
@@ -1121,6 +1326,126 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
+      case 'equipmentMachinery':
+        return (
+          <div className="tab-content">
+            <div className="equipment-machinery-details">
+              <h2>
+                Equipment & Machinery 
+                <button 
+                  className="add-icon" 
+                  onClick={handleAddEquipment}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
+                  }}
+                >
+                  +
+                </button>
+              </h2>
+              {isLoadingEquipment ? (
+                <p>Loading equipment data...</p>
+              ) : equipmentEvents.length === 0 ? (
+                <p>No equipment records found.</p>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Emergency Equipment</th>
+                        <th>General Practice</th>
+                        <th>Laboratory Services</th>
+                        <th>Radiology</th>
+                        <th>Pharmacy</th>
+                        <th>Compliance Status</th>
+                        <th>Program Stage ID</th>
+                        <th>Event ID</th>
+                        <th>Tracked Entity Instance ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {equipmentEvents.map((event, index) => {
+                        const dataValues = event.dataValues || [];
+                        const getFormattedValue = (dataElementId) => {
+                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                          return dataValue ? dataValue.value : 'N/A';
+                        };
+
+                        // Helper function to format boolean values
+                        const formatBoolean = (value) => {
+                          if (value === 'true') return 'Yes';
+                          if (value === 'false') return 'No';
+                          return 'N/A';
+                        };
+
+                        // Aggregate emergency equipment
+                        const emergencyEquipment = [
+                          getFormattedValue("Ldkhcngpzm0") === 'true' ? "Defibrillator" : "",
+                          getFormattedValue("Dpzjb4f4zie") === 'true' ? "Ambulance" : "",
+                          getFormattedValue("iBa0EKW8Rs4") === 'true' ? "Oxygen Supply" : "",
+                          getFormattedValue("BBk59Ex46rC") === 'true' ? "Resuscitation Beds" : "",
+                        ].filter(Boolean).join(", ");
+
+                        // Aggregate general practice equipment
+                        const generalPracticeEquipment = [
+                          getFormattedValue("mBr9e3ecOze") === 'true' ? "BP Machines" : "",
+                          getFormattedValue("ftukRsNTA80") === 'true' ? "Examination Beds" : "",
+                          getFormattedValue("yA7QpYbNo7s") === 'true' ? "Thermometers" : "",
+                        ].filter(Boolean).join(", ");
+
+                        // Aggregate laboratory equipment
+                        const labEquipment = [
+                          getFormattedValue("K2Wj7GjneQq") === 'true' ? "Analyzers" : "",
+                          getFormattedValue("RzTeaeV0dKS") === 'true' ? "Centrifuge" : "",
+                          getFormattedValue("tlh2pkI5qro") === 'true' ? "Fridges" : "",
+                          getFormattedValue("H5zk9T4UZgr") === 'true' ? "Microscopes" : "",
+                        ].filter(Boolean).join(", ");
+
+                        // Aggregate radiology equipment
+                        const radiologyEquipment = [
+                          getFormattedValue("nh6jg8mhDpC") === 'true' ? "CT Scanner" : "",
+                          getFormattedValue("BDdXSCIVk5J") === 'true' ? "MRI" : "",
+                          getFormattedValue("SuvRvDmUtN6") === 'true' ? "PACS Systems" : "",
+                          getFormattedValue("OR7j7sVr19a") === 'true' ? "X-Ray" : "",
+                        ].filter(Boolean).join(", ");
+
+                        // Aggregate pharmacy equipment
+                        const pharmacyEquipment = [
+                          getFormattedValue("bDw85eij2QA") === 'true' ? "Dispensing Counters" : "",
+                          getFormattedValue("VCWdWq5cnqo") === 'true' ? "Inventory Software" : "",
+                        ].filter(Boolean).join(", ");
+
+                        return (
+                          <tr 
+                            key={event.event || index}
+                            onClick={() => handleEquipmentRowClick(event)}
+                            style={{ cursor: 'pointer' }}
+                            className="hover-row"
+                          >
+                            <td>{emergencyEquipment || "None"}</td>
+                            <td>{generalPracticeEquipment || "None"}</td>
+                            <td>{labEquipment || "None"}</td>
+                            <td>{radiologyEquipment || "None"}</td>
+                            <td>{pharmacyEquipment || "None"}</td>
+                            <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
+                            <td>{event.programStage || 'N/A'}</td>
+                            <td>{event.event || 'N/A'}</td>
+                            <td>{event.trackedEntityInstance || 'N/A'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case 'inspectionSchedule':
         return (
           <div className="tab-content">
@@ -1159,7 +1484,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   <table className="table table-hover">
                     <thead>
                       <tr>
-                        <th>Inspection Date</th>
+                        <th>Date and Time</th>
                         <th>Inspection Code</th>
                         <th>Inspector</th>
                         <th>Type</th>
@@ -1341,13 +1666,60 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
-            Registration Details
-          </Typography>
-          <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`}>
-            Status: {registrationStatus}
-          </span>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
+              Registration Details
+            </Typography>
+            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`}>
+              Status: {registrationStatus}
+            </span>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 'medium' }}>
+              Preferred Inspection Date:
+            </Typography>
+            
+            <Box 
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                backgroundColor: '#fafafa',
+                cursor: 'pointer',
+                minWidth: '280px',
+                '&:hover': {
+                  borderColor: '#1976d2',
+                  backgroundColor: '#fff'
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ fontSize: '0.85rem', color: preferredStartDate ? '#000' : '#999' }}>
+                {preferredStartDate && preferredEndDate 
+                  ? `${preferredStartDate.toLocaleDateString()} — ${preferredEndDate.toLocaleDateString()}`
+                  : 'Select date range'
+                }
+              </Typography>
+            </Box>
+
+            {showDatePicker && (
+              <CustomDateRangePicker
+                startDate={preferredStartDate}
+                endDate={preferredEndDate}
+                onChange={(start, end) => {
+                  setPreferredStartDate(start);
+                  setPreferredEndDate(end);
+                }}
+                onClose={() => setShowDatePicker(false)}
+                restrictToSecondWeek={true}
+              />
+            )}
+          </Box>
         </Box>
         
         <StepContainer>
@@ -1357,7 +1729,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
             { number: 4, title: 'Services Offered', key: 'servicesOffered' },
             { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-            { number: 6, title: 'Situational Analysis', key: 'inspectionSchedule' }
+            { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+            { number: 7, title: 'Situational Analysis', key: 'inspectionSchedule' }
           ].map((step, index) => {
             // Determine if the tab should be disabled
             const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
@@ -1393,7 +1766,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 5 && <StyledDivider disabled={isDisabled} />}
+                {index < 6 && <StyledDivider disabled={isDisabled} />}
               </React.Fragment>
             );
           })}
@@ -1564,6 +1937,40 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchStatutoryComplianceData();
           }}
           existingEvent={selectedStatutoryComplianceEvent}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+          isEditMode={true}
+        />
+      )}
+
+      {/* Add Equipment Dialog - only render when openEquipmentDialog is true */}
+      {openEquipmentDialog && (
+        <AddEquipmentDialog
+          open={openEquipmentDialog}
+          onClose={() => {
+            console.log("AddEquipmentDialog onClose called - reloading equipment data");
+            handleCloseEquipmentDialog();
+            fetchEquipmentData(); // Always reload data when dialog closes
+          }}
+          onSuccess={handleEquipmentAddSuccess}
+          trackedEntityInstanceId={trackedEntityInstanceId}
+        />
+      )}
+
+      {/* Edit Equipment Dialog - only render when showEditEquipmentDialog is true */}
+      {showEditEquipmentDialog && selectedEquipmentEvent && (
+        <AddEquipmentDialog
+          open={showEditEquipmentDialog}
+          onClose={() => {
+            console.log("EditEquipmentDialog onClose called - reloading equipment data");
+            setShowEditEquipmentDialog(false);
+            fetchEquipmentData(); // Always reload data when dialog closes
+          }}
+          onSuccess={() => {
+            console.log("EditEquipmentDialog onSuccess called - reloading equipment data");
+            setShowEditEquipmentDialog(false);
+            fetchEquipmentData();
+          }}
+          existingEvent={selectedEquipmentEvent}
           trackedEntityInstanceId={trackedEntityInstanceId}
           isEditMode={true}
         />
