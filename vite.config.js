@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/main/',
   server: {
     proxy: {
       '/api': {
@@ -13,6 +14,11 @@ export default defineConfig({
         secure: false,
       },
     }
+  },
+  preview: {
+      open: true,
+      host: true,
+      allowedHosts: ["qimsdev.5am.co.bw"]
   },
   optimizeDeps: {
     include: ['@mui/material', '@mui/icons-material'],

@@ -11,9 +11,12 @@ const Footer = () => {
               <span className="sitename">QIMS</span>
             </a>
             <div className="footer-contact pt-3">
-              <p>A108 Adam Street</p>
-              <p>New York, NY 535022</p>
-              <p className="mt-3"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
+              <p>Director</p>
+              <p>Health Inspectorate</p>
+              <p>Private Bag 0038</p>
+              <p>Gaborone</p>
+              <p className="mt-3"><strong>Phone:</strong> <span>(267) 3632602</span></p>
+              <p><strong>Fax:</strong> <span>(267) 3974512</span></p>
               <p><strong>Email:</strong> <span>info@example.com</span></p>
             </div>
             <div className="social-links d-flex mt-4">
@@ -22,6 +25,14 @@ const Footer = () => {
               <a href=""><i className="bi bi-instagram"></i></a>
               <a href=""><i className="bi bi-linkedin"></i></a>
             </div>
+          </div>
+
+          <div className="col-lg-2 col-md-3 footer-links">
+            <h4>Physical Address</h4>
+            <p>Ministry of Health</p>
+            <p>Plot 54861</p>
+            <p>Government Enclave</p>
+            <p>Office no 8A:34</p>
           </div>
 
 
