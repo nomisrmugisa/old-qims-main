@@ -22,6 +22,27 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { API_URL } from '../config'; // Import API_URL
 
+// Add CSS for animations
+const styles = `
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes slideInFromTop {
+    0% { transform: translateY(-100px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
+
 function RegistrationForm() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -460,59 +481,154 @@ function RegistrationForm() {
         </ErrorDialogActions>
       </ErrorDialog>
 
-      {/* Success messages */}
+      {/* Success messages - HIGHLY VISIBLE ON TOP OF EVERYTHING */}
       <Snackbar
         open={userCreatedMessage}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={handleUserCreatedClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '10px !important',
+          '& .MuiSnackbar-root': {
+            top: '10px !important'
+          }
+        }}
       >
         <Alert
           severity="success"
-          sx={{ mt: 2 }}
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '450px',
+            maxWidth: '600px',
+            boxShadow: '0 10px 40px rgba(46, 125, 50, 0.5)',
+            border: '3px solid #2e7d32',
+            animation: 'slideInFromTop 0.5s ease-out',
+            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }
+          }}
+          icon={<span style={{ fontSize: '2rem' }}>✅</span>}
         >
-          User profile created successfully!
+          <strong>🎉 STEP 1/3: User profile created successfully! 🎉</strong>
         </Alert>
       </Snackbar>
 
       <Snackbar
         open={registrationSubmittedMessage}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={handleRegistrationSubmittedClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '10px !important',
+          '& .MuiSnackbar-root': {
+            top: '10px !important'
+          }
+        }}
       >
         <Alert
           severity="success"
-          sx={{ mt: 2 }}
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '450px',
+            maxWidth: '600px',
+            boxShadow: '0 10px 40px rgba(46, 125, 50, 0.5)',
+            border: '3px solid #2e7d32',
+            animation: 'slideInFromTop 0.5s ease-out',
+            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }
+          }}
+          icon={<span style={{ fontSize: '2rem' }}>✅</span>}
         >
-          Registration data submitted successfully!
+          <strong>🎉 STEP 2/3: Registration data submitted successfully! 🎉</strong>
         </Alert>
       </Snackbar>
 
       <Snackbar
         open={emailSentMessage}
-        autoHideDuration={6000}
+        autoHideDuration={8000}
         onClose={() => setEmailSentMessage(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '10px !important',
+          '& .MuiSnackbar-root': {
+            top: '10px !important'
+          }
+        }}
       >
         <Alert
-          severity="success"
-          sx={{ mt: 2 }}
+          severity="info"
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '500px',
+            maxWidth: '650px',
+            boxShadow: '0 10px 40px rgba(1, 87, 155, 0.5)',
+            border: '3px solid #0277bd',
+            animation: 'slideInFromTop 0.5s ease-out',
+            background: 'linear-gradient(45deg, #2196f3, #42a5f5)',
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }
+          }}
+          icon={<span style={{ fontSize: '2rem' }}>📧</span>}
         >
-          Login credentials have been sent to your email address. Please check your inbox.
+          <strong>📬 STEP 3/3: Login credentials sent to your email! Check inbox! 📬</strong>
         </Alert>
       </Snackbar>
 
       <Snackbar
         open={successOpen}
-        autoHideDuration={8000}
+        autoHideDuration={12000}
         onClose={handleSuccessClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '10px !important',
+          '& .MuiSnackbar-root': {
+            top: '10px !important'
+          }
+        }}
       >
         <Alert
           severity="success"
-          sx={{ mt: 2 }}
+          variant="filled"
+          sx={{ 
+            fontSize: '1.4rem',
+            fontWeight: 'bold',
+            minWidth: '600px',
+            maxWidth: '800px',
+            boxShadow: '0 15px 50px rgba(46, 125, 50, 0.6)',
+            border: '4px solid #2e7d32',
+            animation: 'pulse 2s infinite',
+            background: 'linear-gradient(45deg, #4caf50, #66bb6a, #81c784)',
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center'
+            }
+          }}
+          icon={<span style={{ fontSize: '2.5rem' }}>🎊</span>}
         >
-          Application successful. Please check your email for login details.
+          <strong>🎉✨ APPLICATION COMPLETED SUCCESSFULLY! ✨🎉<br/>
+          📧 Check your email for login credentials! 📧</strong>
         </Alert>
       </Snackbar>
 

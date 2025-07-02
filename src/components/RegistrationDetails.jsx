@@ -12,9 +12,7 @@ import AddEquipmentDialog from './AddEquipmentDialog';
 
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import CustomDateRangePicker from './CustomDateRangePicker';
 // import { useTheme } from '@mui/material/styles';
 
 // Inside your component:
@@ -65,6 +63,17 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Preferred Inspection Date state
   const [preferredStartDate, setPreferredStartDate] = useState(null);
   const [preferredEndDate, setPreferredEndDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Tab validation states
+  const [tabValidationStates, setTabValidationStates] = useState({
+    facilityOwnership: false,
+    employeeRegistration: false,
+    serviceOffering: false,
+    inspectionSchedule: false,
+    equipmentMachinery: false,
+    statutoryCompliance: false
+  });
 
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -158,13 +167,82 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const handleFormStatusChange = (isComplete) => {
     setCompleteApplicationStatus(isComplete);
   };
+
+  // Handle successful application update - switch to facility ownership tab
+  const handleApplicationUpdateSuccess = () => {
+    console.log("Application updated successfully - switching to facility ownership tab");
+    setActiveTab('facilityOwnership');
+    // Also fetch facility ownership data to ensure it's up to date
+    fetchFacilityOwnershipData();
+  };
+
+  // Function to validate facility ownership completion
+  const validateFacilityOwnership = (facilityEvents) => {
+    console.log("🔍 === FACILITY OWNERSHIP VALIDATION ===");
+    console.log("- Events to validate:", facilityEvents?.length || 0);
+    
+    if (!facilityEvents || facilityEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No records exist)");
+      return false; // No records exist
+    }
+
+    // Required fields for facility ownership (based on the form structure)
+    const requiredFields = [
+      "HMk4LZ9ESOq", // firstName
+      "ykwhsQQPVH0", // surname
+      "zVmmto7HwOc", // citizen
+      "vAHHXaW0Pna", // ownershipType
+      "FLcrCfTNcQi", // idType
+      "aUGSyyfbUVI", // id
+      "KRj1TOR5cVM", // copyOfIdPassport
+      "yP49GKSQxPl", // professionalReference1
+      "lC217zTgC6C", // professionalReference2
+      "pelCBFPIFY1", // qualificationCertificates
+      "cUObXSGtCuD", // validRecentPermit
+      "g9jXH9LJyxU"  // workPermitWaiver
+    ];
+
+    console.log("- Required fields count:", requiredFields.length);
+
+    // Check if ALL records have all required fields filled
+    const allRecordsComplete = facilityEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      const missingFields = [];
+      const hasAllFields = requiredFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
+        const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
+        if (!isValid) {
+          missingFields.push(fieldId);
+        }
+        return isValid;
+      });
+      
+      console.log(`- Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`, missingFields);
+      return hasAllFields;
+    });
+    
+    console.log("- VALIDATION RESULT:", allRecordsComplete ? "TRUE (ALL records complete)" : "FALSE (Some records incomplete)");
+    return allRecordsComplete;
+  };
+
+  // Function to update tab validation states
+  const updateTabValidationStates = () => {
+    setTabValidationStates(prev => ({
+      ...prev,
+      facilityOwnership: validateFacilityOwnership(events)
+    }));
+  };
   
   const hasTabData = (tabKey) => {
     switch (tabKey) {
       case 'completeApplication':
         return completeApplicationStatus; // Use the state variable to determine if all fields are filled
       case 'facilityOwnership':
-        return events.length > 0;
+        return tabValidationStates.facilityOwnership; // Use validation state that checks both record existence and field completeness
       case 'employeeRegistration':
         return employeeEvents.length > 0;
       case 'servicesOffered':
@@ -184,7 +262,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const steps = [
       { key: 'completeApplication', hasData: completeApplicationStatus },
-      { key: 'facilityOwnership', hasData: events.length > 0 },
+      { key: 'facilityOwnership', hasData: tabValidationStates.facilityOwnership },
       { key: 'employeeRegistration', hasData: employeeEvents.length > 0 },
       { key: 'servicesOffered', hasData: serviceEvents.length > 0 },
       { key: 'statutoryCompliance', hasData: statutoryComplianceEvents.length > 0 },
@@ -202,7 +280,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   }, [
     completeApplicationStatus,
-    events,
+    tabValidationStates.facilityOwnership,
     employeeEvents,
     serviceEvents,
     inspectionEvents,
@@ -384,6 +462,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setEvents(fetchedEvents);
       setIsLoading(false);
+      
+      // Update validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        facilityOwnership: validateFacilityOwnership(fetchedEvents)
+      }));
 
     } catch (error) {
       console.log("❌ === FACILITY OWNERSHIP FETCH ERROR ===");
@@ -987,7 +1071,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="complete-application-details">
               <h2>Complete Application Details</h2>
-              <TrackerEventDetails onFormStatusChange={handleFormStatusChange} />
+              <TrackerEventDetails 
+                onFormStatusChange={handleFormStatusChange}
+                onUpdateSuccess={handleApplicationUpdateSuccess}
+              />
             </div>
           </div>
         );
@@ -1589,51 +1676,49 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </span>
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 'medium' }}>
               Preferred Inspection Date:
             </Typography>
             
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Start Date"
-                value={preferredStartDate}
-                onChange={(newValue) => setPreferredStartDate(newValue)}
-                slotProps={{
-                  textField: {
-                    size: 'small',
-                    sx: { 
-                      width: '140px',
-                      '& .MuiInputBase-input': {
-                        fontSize: '0.85rem',
-                      }
-                    }
-                  }
-                }}
-              />
-              
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-                to
+            <Box 
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                backgroundColor: '#fafafa',
+                cursor: 'pointer',
+                minWidth: '280px',
+                '&:hover': {
+                  borderColor: '#1976d2',
+                  backgroundColor: '#fff'
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ fontSize: '0.85rem', color: preferredStartDate ? '#000' : '#999' }}>
+                {preferredStartDate && preferredEndDate 
+                  ? `${preferredStartDate.toLocaleDateString()} — ${preferredEndDate.toLocaleDateString()}`
+                  : 'Select date range'
+                }
               </Typography>
-              
-              <DatePicker
-                label="End Date"
-                value={preferredEndDate}
-                onChange={(newValue) => setPreferredEndDate(newValue)}
-                minDate={preferredStartDate}
-                slotProps={{
-                  textField: {
-                    size: 'small',
-                    sx: { 
-                      width: '140px',
-                      '& .MuiInputBase-input': {
-                        fontSize: '0.85rem',
-                      }
-                    }
-                  }
+            </Box>
+
+            {showDatePicker && (
+              <CustomDateRangePicker
+                startDate={preferredStartDate}
+                endDate={preferredEndDate}
+                onChange={(start, end) => {
+                  setPreferredStartDate(start);
+                  setPreferredEndDate(end);
                 }}
+                onClose={() => setShowDatePicker(false)}
+                restrictToSecondWeek={true}
               />
-            </LocalizationProvider>
+            )}
           </Box>
         </Box>
         
