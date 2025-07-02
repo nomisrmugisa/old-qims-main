@@ -32,9 +32,6 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [eventData, setEventData] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError, setUpdateError] = useState(null);
   const [organisationalUnits, setOrganisationalUnits] = useState([]);
   const [filteredOrgUnits, setFilteredOrgUnits] = useState([]);
   const [isLoadingOrgUnits, setIsLoadingOrgUnits] = useState(false);
@@ -42,15 +39,36 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormComplete, setIsFormComplete] = useState(false);
 
-  const [parentOrgUnitId, setParentOrgUnitId] = useState(null);
-
-  const [successMessages, setSuccessMessages] = useState([]);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentStep, setCurrentStep] = useState('');
-
   const [locationName, setLocationName] = useState('');
   const credentials = localStorage.getItem('userCredentials');
+
+  // Function to set dummy data for development/testing
+  const setDummyData = () => {
+    console.log('Setting dummy data');
+    // Set minimal dummy data
+    const dummyData = {
+      dataValues: [
+        { dataElement: 'HMk4LZ9ESOq', value: 'John' },
+        { dataElement: 'ykwhsQQPVH0', value: 'Doe' },
+        { dataElement: 'PdtizqOqE6Q', value: 'Test Facility' },
+        { dataElement: 'VJzk8OdFJKA', value: 'DUMMY_LOCATION_ID' }
+      ]
+    };
+    
+    setEventData(dummyData);
+    
+    const dummyFormValues = {};
+    dummyData.dataValues.forEach(dv => {
+      dummyFormValues[dv.dataElement] = dv.value;
+    });
+    
+    setFormValues(dummyFormValues);
+    setLocationName('Test Location');
+    setLoading(false);
+    
+    // Check form completion with dummy values
+    checkFormCompletion(dummyFormValues);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,7 +84,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         }
 
         // Fetch user data to get the twitter value (DHIS2 Registration Code)
-        const meResponse = await fetch('/api/me', {
+        const meResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
           headers: {
             Authorization: `Basic ${credentials}`,
           },
@@ -94,7 +112,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         // Try to fetch events using the direct endpoint with twitter value
         try {
           // Use the specified endpoint: /api/events/{twitter}
-          const eventsUrl = `/api/events/${registrationCode}`;
+          const eventsUrl = `${import.meta.env.VITE_DHIS2_URL}/api/events/${registrationCode}`;
 
           const eventsResponse = await fetch(eventsUrl, {
             headers: {
@@ -115,22 +133,31 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             // Initialize form values
             const initialFormValues = {};
             if (eventData.dataValues) {
+              console.log("Processing event data values...");
               eventData.dataValues.forEach(dv => {
                 initialFormValues[dv.dataElement] = dv.value;
+                console.log(`Data element ${dv.dataElement}: ${dv.value}`);
               });
             }
+            console.log("Initial form values:", initialFormValues);
             setFormValues(initialFormValues);
 
             // If there's a location value, set the selected org unit
             const locationValue = initialFormValues['VJzk8OdFJKA'];
+            console.log("Location value (VJzk8OdFJKA):", locationValue);
+            
             if (locationValue) {
+              console.log("Setting selected org unit with displayName:", locationValue);
               setSelectedOrgUnit({ displayName: locationValue });
+            } else {
+              console.log("No location value found in initial data");
             }
 
             // Check if all required fields are filled
             checkFormCompletion(initialFormValues);
 
             setLoading(false);
+            console.log("Data loading completed");
             return;
           }
 
@@ -180,6 +207,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     }
   }, [isEditing]);
 
+  // Monitor parentOrgUnitId changes
+  useEffect(() => {
+    // Removed debug logs for cleaner console
+  }, []);
+
   // Update filtered org units when organizational units change or search query changes
   useEffect(() => {
     if (searchQuery) {
@@ -194,6 +226,46 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     checkFormCompletion(formValues);
   }, [formValues]);
 
+  // Fetch organization unit name when location is available
+  useEffect(() => {
+    const fetchOrgUnitName = async () => {
+      if (!formValues['VJzk8OdFJKA'] || !credentials) {
+        return;
+      }
+      
+      try {
+        const apiUrl = `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`;
+        
+        const response = await fetch(
+          apiUrl,
+          {
+            headers: {
+              Authorization: `Basic ${credentials}`,
+            },
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch organisation unit name");
+        }
+
+        const data = await response.json();
+        
+        if (data && data.name) {
+          setLocationName(data.name);
+          
+          // We don't need to update formValues with the name anymore
+          // as we're now keeping the ID in formValues
+          // and storing the displayName separately in locationName
+        }
+      } catch (error) {
+        console.error("Error fetching organization unit name:", error);
+      }
+    };
+
+    fetchOrgUnitName();
+  }, []);
+
   const fetchOrganisationalUnits = async () => {
     setIsLoadingOrgUnits(true);
     try {
@@ -201,11 +273,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       if (!credentials) {
         console.error("No credentials found");
         setIsLoadingOrgUnits(false);
-        return;
+        return [];
       }
 
       const response = await fetch(
-        "/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false",
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`,
         {
           headers: {
             Authorization: `Basic ${credentials}`,
@@ -218,8 +290,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       const data = await response.json();
       setOrganisationalUnits(data.organisationUnits);
       setFilteredOrgUnits(data.organisationUnits);
+      return data.organisationUnits;
     } catch (error) {
       console.error("Error fetching organisational units:", error);
+      return [];
     } finally {
       setIsLoadingOrgUnits(false);
     }
@@ -278,16 +352,21 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     const newFormValues = { ...formValues };
 
     if (newValue) {
-      newFormValues['VJzk8OdFJKA'] = newValue.displayName.trim();
+      // Store the organization unit ID in VJzk8OdFJKA field
+      newFormValues['VJzk8OdFJKA'] = newValue.id;
+      
+      // Also update locationName with the display name for rendering
+      setLocationName(newValue.displayName);
     } else {
       newFormValues['VJzk8OdFJKA'] = '';
+      setLocationName('');
     }
 
     setFormValues(newFormValues);
   };
 
   // Toggle edit mode
-  const handleToggleEdit = () => {
+  const handleToggleEdit = async () => {
     if (isEditing) {
       // Reset form values to original data when canceling
       const originalValues = {};
@@ -298,13 +377,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
       setFormValues(originalValues);
 
-      // Reset selected org unit
-      const locationValue = originalValues['VJzk8OdFJKA'];
-      if (locationValue) {
-        setSelectedOrgUnit({ displayName: locationValue });
-      } else {
-        setSelectedOrgUnit(null);
-      }
+      // Reset selected org unit 
+      setSelectedOrgUnit(null); 
 
       // Reset search
       setSearchQuery('');
@@ -312,519 +386,66 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
       // Check form completion with original values
       checkFormCompletion(originalValues);
+    } else {
+      // Always fetch fresh org units when entering edit mode
+      const fetchedOrgUnits = await fetchOrganisationalUnits();
+      
+      // After fetching organizational units, try to match the current ID
+      if (formValues['VJzk8OdFJKA']) {
+        const matchingOrgUnit = fetchedOrgUnits.find(unit => unit.id === formValues['VJzk8OdFJKA']);
+        if (matchingOrgUnit) {
+          // If found in our list, use it
+          setSelectedOrgUnit(matchingOrgUnit);
+        } else {
+          // If we can't find it in the list but we have a name, create a synthetic option
+          setSelectedOrgUnit({ 
+            id: formValues['VJzk8OdFJKA'],
+            displayName: locationName || formValues['VJzk8OdFJKA']
+          });
+          
+          // If locationName is empty but we have an ID, try to fetch the name directly
+          if (!locationName && formValues['VJzk8OdFJKA']) {
+            const credentials = localStorage.getItem('userCredentials');
+            try {
+              const response = await fetch(
+                `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`,
+                {
+                  headers: {
+                    Authorization: `Basic ${credentials}`,
+                  },
+                }
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data && data.name) {
+                  setLocationName(data.name);
+                  setSelectedOrgUnit(prev => ({
+                    ...prev,
+                    displayName: data.name
+                  }));
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching org unit name:", err);
+            }
+          }
+        }
+      }
     }
     setIsEditing(!isEditing);
   };
 
-  // ------------------ cascade starts------------------------------
-  useEffect(() => {
-    const fetchParentOrgUnitId = async () => {
-      if (!formValues['VJzk8OdFJKA']) {
-        setParentOrgUnitId(null);
-        return;
-      }
-  
-      try {
-        const response = await fetch(
-          "/api/organisationUnits?paging=false",
-          {
-            headers: {
-              Authorization: `Basic ${credentials}`,
-            },
-          }
-        );
-  
-        if (!response.ok) {
-          throw new Error("Failed to fetch organisational units");
-        }
-  
-        const data = await response.json();
-        const orgUnit = data.organisationUnits.find(
-          unit => unit.displayName.trim() === formValues['VJzk8OdFJKA'].trim() // Trim both values
-        );
-  
-        if (orgUnit) {
-          setParentOrgUnitId(orgUnit.id);
-        } else {
-          setParentOrgUnitId(null);
-        }
-      } catch (error) {
-        console.error("Error fetching parent org unit ID:", error);
-        setParentOrgUnitId(null);
-      }
-    };
-  
-    fetchParentOrgUnitId();
-  }, [formValues['VJzk8OdFJKA'], credentials]);
-
-  const generate_orgUnitID = () => {
-    const alphabets = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = alphabets.charAt(Math.floor(Math.random() * alphabets.length)); // First character is always an alphabet
-    for (let i = 1; i < 11; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-  };
-  
-
-  const createOrgUnit = async (orgUnitId) => {
-    try {
-      const shortName = formValues['PdtizqOqE6Q'].length > 40
-        ? formValues['PdtizqOqE6Q'].substring(0, 40)
-        : formValues['PdtizqOqE6Q'];
-
-      console.log(`PARENT ID: ${parentOrgUnitId}`)
-
-      const orgUnitPayload = {
-        name: formValues['PdtizqOqE6Q'],
-        id: orgUnitId,
-        shortName: shortName,
-        openingDate: new Date().toISOString(),
-        parent: {
-          id: parentOrgUnitId
-        }
-      };
-
-      // First API call to create schema
-      const schemaResponse = await fetch(`/api/29/schemas/organisationUnit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`
-        },
-        body: JSON.stringify(orgUnitPayload)
-      });
-
-      if (!schemaResponse.ok) {
-        throw new Error('Failed to create organization unit schema');
-      }
-
-      // Second API call to create org unit
-      const orgUnitResponse = await fetch(`/api/29/organisationUnits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`
-        },
-        body: JSON.stringify(orgUnitPayload)
-      });
-
-      if (!orgUnitResponse.ok) {
-        throw new Error('Failed to create organization unit');
-      }
-
-      return orgUnitId;
-    } catch (error) {
-      console.error('Error creating org unit:', error);
-      throw error;
-    }
-  };
-
-  const addOrgUnitToProgram = async (orgUnitId) => {
-    try {
-      const programs = [
-        'EE8yeLVo6cN', 'Xje2ga2tJcA', 'QSQWCmnsQtG',
-        'adbaKjLFtYH', 'fWc9nCmUjez', 'Y4W5qIKlOsh',
-        'wlWC4vYeTzt', 'cghjivP9xA2'
-      ];
-
-      // Process all programs in parallel
-      const results = await Promise.all(programs.map(async (programId) => {
-        const response = await fetch(`/api/programs/${programId}/organisationUnits`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          },
-          body: JSON.stringify({
-            additions: [{ id: orgUnitId }]
-          })
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to add org unit to program ${programId}`);
-          return false;
-        }
-        return true;
-      }));
-
-      // Check if all operations were successful
-      const allSuccess = results.every(result => result === true);
-      if (!allSuccess) {
-        throw new Error('Failed to add org unit to one or more programs');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error adding org unit to programs:', error);
-      throw error;
-    }
-  };
-
-  // Add this new function to handle TEI creation/update
-  const createOrUpdateTEI = async (orgUnitId) => {
-    try {
-      const teiPayload = {
-        trackedEntityType: "uTTDt3fuXZK",
-        orgUnit: orgUnitId,
-        attributes: [
-          { attribute: "Ue8XNxxVKZs", value: formValues['SVzSsDiZMN5'] },
-          { attribute: "YRTNX6YvPlu", value: formValues['aMFg2iq9VIg'] },
-          { attribute: "YiCio8ZTWNj", value: formValues['g3J1CH26hSA'] },
-          { attribute: "ixWjABeTjHn", value: formValues['SReqZgQk0RY'] },
-          { attribute: "vRUtkpMwzDW", value: orgUnitId }
-        ]
-      };
-
-      let response;
-      let newTei = formValues['PdtizqOqE6Q'];
-
-      // if (!formValues['PdtizqOqE6Q']) {
-        // Create new TEI if it doesn't exist
-        response = await fetch(`/api/trackedEntityInstances`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          },
-          body: JSON.stringify(teiPayload)
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create tracked entity instance');
-        }
-
-        const result = await response.json();
-        newTei = result.response.importSummaries[0].reference;
-
-        // Update formData with the new TEI
-        // setFormData(prev => ({ ...prev, tei: newTei }));
-      // } else {
-      //   // Update existing TEI
-      //   response = await fetch(`/api/trackedEntityInstances/$newTei`, {
-      //     method: 'PUT',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //       Authorization: `Basic ${credentials}`
-      //     },
-      //     body: JSON.stringify(teiPayload)
-      //   });
-
-      //   if (!response.ok) {
-      //     throw new Error('Failed to update tracked entity instance');
-      //   }
-      // }
-
-      return newTei;
-    } catch (error) {
-      console.error('Error in createOrUpdateTEI:', error);
-      throw error;
-    }
-  };
-
-  const createEnrollment = async (orgUnitId, programId, teiCalled) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/enrollments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`
-        },
-        body: JSON.stringify({
-          trackedEntityInstance: teiCalled,
-          program: programId,
-          status: "ACTIVE",
-          orgUnit: orgUnitId,
-          enrollmentDate: today,
-          incidentDate: today
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create enrollment for program ${programId}`);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error creating enrollment:', error);
-      throw error;
-    }
-  };
-
-  const fetchOrgUnitUsersAssoc = async () => {
-    try {
-      const empUserName = formValues['g3J1CH26hSA'];
-      const response = await fetch(
-        `/api/users?filter=username:eq:${empUserName}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users for org unit');
-      }
-
-      const data = await response.json();
-      return data.users || [];
-    } catch (error) {
-      console.error('Error fetching org unit users:', error);
-      throw error;
-    }
-  };
-
-
-  const updateUserOrgUnits = async (userId, orgUnitUpdateType, newOrgUnitId) => {
-    try {
-      // Step 1: Assign new org unit
-      const assignResponse = await fetch(
-        `/api/users/${userId}/${orgUnitUpdateType}/${newOrgUnitId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          },
-          body: JSON.stringify({})
-        }
-      );
-
-      if (!assignResponse.ok) {
-        throw new Error(`Failed to assign new org unit for ${orgUnitUpdateType}Updates`);
-      }
-
-      // Step 2: Delete Botswana org unit (OVpBNoteQ2Y)
-      const deleteResponse = await fetch(
-        `/api/users/${userId}/${orgUnitUpdateType}/OVpBNoteQ2Y`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          }
-        }
-      );
-
-      if (!deleteResponse.ok) {
-        throw new Error(`Failed to delete Botswana org unit for ${orgUnitUpdateType}`);
-      }
-
-      return true;
-    } catch (error) {
-      console.error(`Error in updateUserOrgUnits for ${orgUnitUpdateType}:`, error);
-      throw error;
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      setSuccessMessages([]);
-
-      // Generate a new ID for org unit if complete is checked
-      const orgUnitId = generate_orgUnitID();
-
-      // Prepare the payload
-      setCurrentStep('Saving...');
-      const payload = {
-        events: [{
-          event: eventData.event, // Use eventData instead of request
-          status: "COMPLETED", // We're completing the process, so hardcode COMPLETED
-          program: eventData.program,
-          programStage: eventData.programStage,
-          enrollment: eventData.enrollment,
-          orgUnit: eventData.orgUnit,
-          orgUnitName: eventData.orgUnitName,
-          occurredAt: eventData.eventDate,
-          followup: false,
-          deleted: false,
-          createdAt: eventData.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          attributeCategoryOptions: eventData.attributeCategoryOptions || {},
-          createdBy: eventData.createdBy || {
-            uid: "M5zQapPyTZI",
-            username: "admin",
-            firstName: "admin",
-            surname: "admin"
-          },
-          updatedBy: {
-            uid: "M5zQapPyTZI",
-            username: "admin",
-            firstName: "admin",
-            surname: "admin"
-          },
-          notes: [],
-          scheduledAt: null,
-          geometry: null,
-          dataValues: [
-            { dataElement: 'PdtizqOqE6Q', value: formValues['PdtizqOqE6Q']?.trim() || '' }, // facilityName
-            { dataElement: 'HMk4LZ9ESOq', value: formValues['HMk4LZ9ESOq']?.trim() || '' }, // firstName
-            { dataElement: 'ykwhsQQPVH0', value: formValues['ykwhsQQPVH0']?.trim() || '' }, // surname
-            // { dataElement: 'NVlLoMZbXIW', value: formValues['NVlLoMZbXIW'] || '' }, // email
-            { dataElement: 'SReqZgQk0RY', value: formValues['SReqZgQk0RY']?.trim() || '' }, // phoneNumber
-            // { dataElement: 'dRkX5jmHEIM', value: formValues['dRkX5jmHEIM'] || '' }, // physicalAddress
-            // { dataElement: 'p7y0vqpP0W2', value: formValues['p7y0vqpP0W2'] || '' }, // correspondenceAddress
-            { dataElement: 'SVzSsDiZMN5', value: formValues['SVzSsDiZMN5']?.trim() || '' }, // bhpcNumber
-            { dataElement: 'aMFg2iq9VIg', value: formValues['aMFg2iq9VIg']?.trim() || '' }, // privatePracticeNumber
-            { dataElement: 'VJzk8OdFJKA', value: parentOrgUnitId || '' }, // location
-            // { dataElement: "PdtizqOqE6Q", value: formValues['PdtizqOqE6Q'] || '' }, // tei
-            { dataElement: "g3J1CH26hSA", value: formValues['g3J1CH26hSA']?.trim() || '' }, // employeeUsername
-            { dataElement: "jV5Y8XOfkgb", value: "true" },
-            // Add any checklist items if needed
-            // { dataElement: 'Bz0oYRvSypS', value: "true" },
-            // ... other checklist items
-          ].filter(dv => dv.value !== null && dv.value !== undefined)
-        }]
-      };
-
-      // If complete is checked, perform the additional steps
-      // if (checklist.complete && orgUnitId) {
-      // Step 2a: Create org unit
-
-      // }
-
-      // Send the request
-      // setCurrentStep('Accepting request ...');
-      setCurrentStep('Saving...');
-      const API_URL = `/api/40/tracker?async=false&importStrategy=UPDATE`;
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      // const contentType = response.headers.get('content-type');
-      // if (!response.ok || !contentType?.includes('application/json')) {
-      //     const raw = await response.text(); // Get raw response
-      //     console.error('Unexpected response:', raw);
-      //     throw new Error('Server did not return JSON. Check API URL and authentication.');
-      // }
-
-      const result = await response.json();
-      console.log('Update successful:', result);
-      // setSuccessMessages(prev => [...prev, 'Request updated successfully in DHIS2']);
-      setSuccessMessages(prev => [...prev, '1 / 5']);
-      setOpenSnackbar(true);
-
-      // Creating org unit
-      // setCurrentStep(`Adding ${locationName} facility to registry...`);
-      setCurrentStep('Saving...');
-      await createOrgUnit(orgUnitId);
-      // setSuccessMessages(prev => [...prev, 'Facility added to registry successfully']);
-      setSuccessMessages(prev => [...prev, '2 / 5']);
-      setOpenSnackbar(true);
-
-      // Step 2b: Add org unit to program
-      // setCurrentStep(`Facility updated...`);
-      await addOrgUnitToProgram(orgUnitId);
-      // setSuccessMessages(prev => [...prev, 'Facility added ']);
-      setOpenSnackbar(true);
-
-      // New Step: Create or Update TEI
-      // setCurrentStep('Updating facility dependecies...');
-      setCurrentStep('Saving...');
-      const updatedTei = await createOrUpdateTEI(orgUnitId);
-      // setSuccessMessages(prev => [...prev, 'Facility dependecies updated successfully']);
-      setSuccessMessages(prev => [...prev, '3 / 5']);
-      setOpenSnackbar(true);
-
-      // Update the payload with the new TEI if it was created
-      if (!formValues['PdtizqOqE6Q'] && updatedTei) {
-        payload.events[0].dataValues = payload.events[0].dataValues.map(dv =>
-          dv.dataElement === "PdtizqOqE6Q" ? { ...dv, value: updatedTei } : dv
-        );
-      }
-
-      // Step 2c: Create enrollments for all programs
-      setCurrentStep('Saving...');
-      // setCurrentStep('Creating program enrollments...');
-      const programs = [
-        'EE8yeLVo6cN', 'Xje2ga2tJcA', 'QSQWCmnsQtG',
-        'adbaKjLFtYH', 'fWc9nCmUjez',
-        'wlWC4vYeTzt', 'cghjivP9xA2'
-      ]; // 'Y4W5qIKlOsh',
-
-      for (const programId of programs) {
-        await createEnrollment(orgUnitId, programId, updatedTei);
-      }
-      // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
-      setSuccessMessages(prev => [...prev, '4 / 5']);
-      setOpenSnackbar(true);
-
-      // NEW STEP: Enable users associated with the org unit
-      // setCurrentStep('Enabling users and adding user to location...');
-      try {
-        const users = await fetchOrgUnitUsersAssoc();
-        console.log(`Found ${users.length} users to enable for org unit`);
-
-        const orgUnitTypes = [
-          'organisationUnits',
-          'dataViewOrganisationUnits',
-          'teiSearchOrganisationUnits'
-        ];
-
-        // setCurrentStep(`Assigning User to New Facility...`);
-        setCurrentStep('Saving...');
-        for (const user of users) {
-          for (const orgUnitType of orgUnitTypes) {
-            await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
-          }
-          // await enableUser(user.id);
-          // await addUsertoLocation(user.id);
-          console.log(`Enabled user ${user.id}`);
-        }
-        // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
-        setSuccessMessages(prev => [...prev, '5 / 5']);
-
-        setOpenSnackbar(true);
-      } catch (error) {
-        console.error('Error in user enabling process:', error);
-        // Continue even if user enabling fails - this shouldn't block the main process
-        // setSuccessMessages(prev => [...prev, 'User enabling partially completed']);
-        setOpenSnackbar(true);
-      }
-
-      // Call the onSave callback with the updated data
-      onSave({
-        ...formData,
-        checklist,
-        comments
-      });
-
-      setCurrentStep('Request accepted successfully!');
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000);
-
-    } catch (error) {
-      console.error('Error updating request:', error);
-      // You might want to show an error message to the user here
-      setSuccessMessages(prev => [...prev, `Error: ${error.message}`]);
-      setOpenSnackbar(true);
-      setLoading(false);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // ------------------- End --------------------
-
   // Handle snackbar close
   const handleSnackbarClose = () => {
-    setUpdateSuccess(false);
+    // Implement the logic to handle snackbar close
+  };
+
+  // Restore the original handleSubmit, updating state, and update button logic
+  const handleSubmit = () => {
+    // Implement the logic to handle form submission
+    console.log("Form values before submission:", formValues);
+    // Add your submission logic here
   };
 
   if (loading) {
@@ -847,9 +468,63 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, px: { xs: 1, sm: 2 } }}>
-      {/* Success message */}
+      {/* Custom Success Message */}
       <Snackbar
-        open={updateSuccess}
+        open={false}
+        autoHideDuration={2000}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '20px !important'
+        }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(46, 125, 50, 0.4)',
+            border: '2px solid #2e7d32',
+            background: 'linear-gradient(45deg, #4caf50, #66bb6a)'
+          }}
+          icon={<span style={{ fontSize: '1.5rem' }}>✅</span>}
+        >
+          🎉 Other details submitted successfully! 🎉
+        </Alert>
+      </Snackbar>
+
+      {/* Custom Failure Message */}
+      <Snackbar
+        open={false}
+        autoHideDuration={4000}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ 
+          zIndex: 999999,
+          top: '20px !important'
+        }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ 
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(211, 47, 47, 0.4)',
+            border: '2px solid #d32f2f',
+            background: 'linear-gradient(45deg, #f44336, #ef5350)'
+          }}
+          icon={<span style={{ fontSize: '1.5rem' }}>❌</span>}
+        >
+          ⚠️ Failure, Contact Admin ⚠️
+        </Alert>
+      </Snackbar>
+
+      {/* Original Success message (still needed for other updates) */}
+      <Snackbar
+        open={false}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
@@ -860,9 +535,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       </Snackbar>
 
       {/* Error message */}
-      {updateError && (
+      {false && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {updateError}
+          {/* updateError */}
         </Alert>
       )}
 
@@ -938,7 +613,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || false}
                 required
                 error={!formValues['aMFg2iq9VIg'] && !loading}
                 helperText={!formValues['aMFg2iq9VIg'] && !loading ? "This field is required" : ""}
@@ -952,7 +627,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || false}
                 required
                 error={!formValues['HMk4LZ9ESOq'] && !loading}
                 helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
@@ -966,7 +641,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || false}
                 required
                 error={!formValues['ykwhsQQPVH0'] && !loading}
                 helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
@@ -980,7 +655,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || false}
                 required
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
@@ -1003,7 +678,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                     onChange={handleLocationChange}
                     onInputChange={handleSearchChange}
                     loading={isLoadingOrgUnits}
-                    disabled={updating}
+                    disabled={false}
                     fullWidth
                     size="small"
                     ListboxProps={{
@@ -1094,7 +769,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 >
                   {formValues['VJzk8OdFJKA'] ? (
                     <Chip
-                      label={formValues['VJzk8OdFJKA']}
+                      label={locationName || formValues['VJzk8OdFJKA']}
                       color="primary"
                       variant="outlined"
                       size="small"
@@ -1114,7 +789,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 variant="outlined"
                 color="primary"
                 onClick={handleToggleEdit}
-                disabled={updating}
+                disabled={false}
                 size="small"
               >
                 Edit Details
@@ -1125,7 +800,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                   variant="outlined"
                   color="secondary"
                   onClick={handleToggleEdit}
-                  disabled={updating}
+                  disabled={false}
                   size="small"
                 >
                   Cancel
@@ -1134,10 +809,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                   variant="contained"
                   color="primary"
                   onClick={handleSubmit}
-                  disabled={updating}
+                  disabled={false}
                   size="small"
                 >
-                  {updating ? 'Updating...' : 'Update Application Details'}
+                  {false ? 'Updating...' : 'Update Application Details'}
                 </Button>
               </>
             )}

@@ -1,0 +1,204 @@
+import React, { useState } from 'react';
+
+// Loading spinner component
+const LoadingSpinner = () => (
+  <div className="loading-spinner">
+    <div className="spinner"></div>
+    <p>Loading, please wait...</p>
+  </div>
+);
+
+const MCPForApplicationUpdateButton = ({ formValues, parentOrgUnitId }) => {
+  // State management
+  const [loading, setLoading] = useState(false);
+  const [successMessages, setSuccessMessages] = useState([]);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [currentStep, setCurrentStep] = useState('');
+
+  // Helper: Generate a new org unit ID (stub)
+  const generate_orgUnitID = () => {
+    // Replace with your actual ID generation logic
+    return 'ORG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  };
+
+  // Helper: Fetch users to associate with org unit (stub)
+  const fetchOrgUnitUsersAssoc = async () => {
+    // Replace with your actual fetch logic
+    return [
+      { id: 'user1' },
+      { id: 'user2' }
+    ];
+  };
+
+  // (A) Create Org Unit
+  const createOrgUnit = async (orgUnitId) => {
+    const orgUnitPayload = {
+      name: formValues['PdtizqOqE6Q'], // Facility name
+      id: orgUnitId,
+      parent: { id: parentOrgUnitId }
+    };
+    // Create org unit
+    await fetch(`/api/29/organisationUnits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orgUnitPayload)
+    });
+  };
+
+  // (B) Add Org Unit to Programs
+  const addOrgUnitToProgram = async (orgUnitId) => {
+    const programs = ['EE8yeLVo6cN', 'Xje2ga2tJcA']; // Example program IDs
+    await Promise.all(programs.map(programId =>
+      fetch(`/api/programs/${programId}/organisationUnits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additions: [{ id: orgUnitId }] })
+      })
+    ));
+  };
+
+  // (C) Create or Update TEI
+  const createOrUpdateTEI = async (orgUnitId) => {
+    const teiPayload = {
+      trackedEntityType: 'uTTDt3fuXZK',
+      orgUnit: orgUnitId,
+      attributes: [
+        // Example attributes, replace with actual
+        { attribute: 'BHPC_NUMBER', value: formValues['bhpcNumber'] },
+        { attribute: 'PRACTICE_NUMBER', value: formValues['practiceNumber'] }
+      ]
+    };
+    const response = await fetch(`/api/trackedEntityInstances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(teiPayload)
+    });
+    const data = await response.json();
+    return data.response?.importSummaries?.[0]?.reference || null;
+  };
+
+  // (D) Create Enrollment
+  const createEnrollment = async (orgUnitId, programId, teiId) => {
+    await fetch(`/api/enrollments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trackedEntityInstance: teiId,
+        program: programId,
+        orgUnit: orgUnitId,
+        enrollmentDate: new Date().toISOString().split('T')[0]
+      })
+    });
+  };
+
+  // (E) Update User Org Units
+  const updateUserOrgUnits = async (userId, orgUnitType, newOrgUnitId) => {
+    // Assign user to new org unit
+    await fetch(`/api/users/${userId}/${orgUnitType}/${newOrgUnitId}`, {
+      method: 'POST'
+    });
+    // Remove user from default org unit (Botswana)
+    await fetch(`/api/users/${userId}/${orgUnitType}/OVpBNoteQ2Y`, {
+      method: 'DELETE'
+    });
+  };
+
+  // Main Submission Flow
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      setSuccessMessages([]);
+      setProgressMessage('Starting the update process...');
+      setCurrentStep('');
+
+      // Generate a new ID for org unit
+      const orgUnitId = generate_orgUnitID();
+
+      // Prepare the payload for updating tracker events
+      setProgressMessage('Configuring your account!');
+      const payload = {
+        // Example event update payload, replace with actual
+        events: [
+          {
+            event: formValues['eventId'],
+            status: 'COMPLETED',
+            program: formValues['programId'],
+            orgUnit: orgUnitId,
+            eventDate: new Date().toISOString().split('T')[0],
+            dataValues: [
+              { dataElement: 'dataElementId', value: formValues['someValue'] }
+            ]
+          }
+        ]
+      };
+
+      // (A) Update tracker events in DHIS2
+      const API_URL = `/api/40/tracker?async=false&importStrategy=UPDATE`;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      setSuccessMessages(prev => [...prev, '1 / 5']);
+      setProgressMessage('Tracker events updated. Creating organizational unit...');
+
+      // (B) Create new organizational unit
+      await createOrgUnit(orgUnitId);
+      setSuccessMessages(prev => [...prev, '2 / 5']);
+      setProgressMessage('Organizational unit created. Adding to programs...');
+
+      // (C) Add org unit to programs
+      await addOrgUnitToProgram(orgUnitId);
+      setSuccessMessages(prev => [...prev, '3 / 5']);
+      setProgressMessage('Added to programs. Creating/updating TEI...');
+
+      // (D) Create/update Tracked Entity Instance (TEI)
+      const updatedTei = await createOrUpdateTEI(orgUnitId);
+      setSuccessMessages(prev => [...prev, '4 / 5']);
+      setProgressMessage('TEI created/updated. Creating enrollments...');
+
+      // (E) Create enrollments for all programs
+      const programs = ['EE8yeLVo6cN', 'Xje2ga2tJcA'];
+      for (const programId of programs) {
+        await createEnrollment(orgUnitId, programId, updatedTei);
+      }
+      setSuccessMessages(prev => [...prev, '5 / 5']);
+      setProgressMessage('Enrollments created. Updating user assignments...');
+
+      // (F) Update user organization unit assignments
+      const users = await fetchOrgUnitUsersAssoc();
+      const orgUnitTypes = ['organisationUnits', 'dataViewOrganisationUnits', 'teiSearchOrganisationUnits'];
+      for (const user of users) {
+        for (const orgUnitType of orgUnitTypes) {
+          await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
+        }
+      }
+      setCurrentStep('Request accepted successfully!');
+      setProgressMessage('Update process completed successfully!');
+    } catch (error) {
+      console.error('Error updating request:', error);
+      setSuccessMessages(prev => [...prev, `Error: ${error.message}`]);
+      setProgressMessage('An error occurred during the update process.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {loading && <LoadingSpinner />}
+      <button onClick={handleSubmit} disabled={loading}>
+        UPDATE APPLICATION DETAILS
+      </button>
+      <p>{progressMessage}</p>
+      <ul>
+        {successMessages.map((msg, idx) => (
+          <li key={idx}>{msg}</li>
+        ))}
+      </ul>
+      {currentStep && <p>{currentStep}</p>}
+    </div>
+  );
+};
+
+export default MCPForApplicationUpdateButton;

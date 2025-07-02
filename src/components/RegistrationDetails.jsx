@@ -69,10 +69,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [tabValidationStates, setTabValidationStates] = useState({
     facilityOwnership: false,
     employeeRegistration: false,
-    serviceOffering: false,
-    inspectionSchedule: false,
+    servicesOffered: false,
+    statutoryCompliance: false,
     equipmentMachinery: false,
-    statutoryCompliance: false
+    inspectionSchedule: false
   });
 
   const StepContainer = styled(Box)(({ theme }) => ({
@@ -229,13 +229,213 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     return allRecordsComplete;
   };
 
-  // Function to update tab validation states
-  const updateTabValidationStates = () => {
-    setTabValidationStates(prev => ({
-      ...prev,
-      facilityOwnership: validateFacilityOwnership(events)
-    }));
+  // Function to validate employee registration completion
+  const validateEmployeeRegistration = (employeeEvents) => {
+    console.log("👥 === EMPLOYEE REGISTRATION VALIDATION ===");
+    console.log("- Events to validate:", employeeEvents?.length || 0);
+    
+    if (!employeeEvents || employeeEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No employee records exist)");
+      return false; // No records exist
+    }
+
+    // Required fields for employee registration (based on AddEmployeeRegistrationDialog structure)
+    const requiredFields = [
+      "IIxbad41cH6", // firstName
+      "VFTRgPnvSHV", // lastName
+      "xcTxmEUy6g6", // bhpcNmcNumber
+      "FClCncccLzw", // position
+      "F3h1A96t3uL"  // contractType
+    ];
+
+    console.log("- Required employee fields count:", requiredFields.length);
+
+    // Check if ALL employee records have all required fields filled
+    const allEmployeeRecordsComplete = employeeEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Employee Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      const missingFields = [];
+      const hasAllFields = requiredFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
+        const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
+        if (!isValid) {
+          missingFields.push(fieldId);
+        }
+        return isValid;
+      });
+      
+      console.log(`- Employee Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`, missingFields);
+      return hasAllFields;
+    });
+    
+    console.log("- EMPLOYEE VALIDATION RESULT:", allEmployeeRecordsComplete ? "TRUE (ALL employee records complete)" : "FALSE (Some employee records incomplete)");
+    return allEmployeeRecordsComplete;
   };
+
+  // Function to validate services offered completion
+  const validateServicesOffered = (serviceEvents) => {
+    console.log("🏥 === SERVICES OFFERED VALIDATION ===");
+    console.log("- Events to validate:", serviceEvents?.length || 0);
+    
+    if (!serviceEvents || serviceEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No service records exist)");
+      return false; // No records exist
+    }
+
+    // All available service data elements from AddServiceOfferingDialog
+    const serviceDataElements = [
+      "j57HXXX4Ijz", // coreEmergencyServices
+      "ECjGkIq0Deq", // coreGeneralPracticeServices
+      "aM41KiGDJAs", // coreTreatmentAndCare
+      "flzyZUlf30v", // coreUrgentCare
+      "SMvKa2EWeBO", // additionalHealthEducation
+      "y9QSgKRoc6L", // specialisedMaternityAndReproductiveHealth
+      "yZhlCTgamq0", // specialisedMentalHealthAndSubstanceAbuse
+      "RCvjFJQUaPV", // specialisedRadiology
+      "uxcdCPnaqWL", // specialisedRehabilitation
+      "r76ODkNZv43", // supportAmbulatoryCare
+      "E7OMKr09N0R", // supportDialysisCenters
+      "GyQNkXpNraW", // supportHospices
+      "OgpVvPxkLwf", // supportLabServices
+      "rLC2CE79p7Q", // supportNursingHomes
+      "w86r0XZCLCr", // supportOutpatientDepartment
+      "m8Kl585eWSK", // supportPatientTransportation
+      "yecnkdC7HtM", // supportPharmacy
+      "i0QXYWMOUjy", // additionalCounseling
+      "e48W7983nBs"  // additionalCommunityBased
+    ];
+
+    console.log("- Available service data elements count:", serviceDataElements.length);
+
+    // Check if ALL service records have at least one service selected
+    const allServiceRecordsComplete = serviceEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Service Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      // Count how many services are selected (value = "true")
+      const selectedServices = event.dataValues.filter(dv => {
+        return serviceDataElements.includes(dv.dataElement) && dv.value === "true";
+      });
+      
+      const hasServices = selectedServices.length > 0;
+      console.log(`- Service Event ${event.event}: Has services = ${hasServices}, Selected services count: ${selectedServices.length}`);
+      
+      if (!hasServices) {
+        console.log(`- Service Event ${event.event}: No services selected`);
+      } else {
+        console.log(`- Service Event ${event.event}: Selected services:`, selectedServices.map(s => s.dataElement));
+      }
+      
+      return hasServices;
+    });
+    
+    console.log("- SERVICES VALIDATION RESULT:", allServiceRecordsComplete ? "TRUE (ALL service records have at least one service)" : "FALSE (Some service records have no services selected)");
+    return allServiceRecordsComplete;
+  };
+
+  // Function to validate statutory compliance completion
+  const validateStatutoryCompliance = (complianceEvents) => {
+    console.log("📋 === STATUTORY COMPLIANCE VALIDATION ===");
+    console.log("- Events to validate:", complianceEvents?.length || 0);
+    
+    if (!complianceEvents || complianceEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No compliance records exist)");
+      return false; // No records exist
+    }
+
+    // Required document data elements from AddStatutoryComplianceDialog
+    const requiredDocumentFields = [
+      "fSGzyNOvsn3", // companyRegistrationDocuments
+      "mooXtirlse9", // companyTaxRegistrationDocuments
+      "Yv2HUJvSDKB", // facilityHealthRecognitionDocuments
+      "aa4jP4GCtin"  // facilityCompanyLeaseAgreement
+    ];
+
+    console.log("- Required document fields count:", requiredDocumentFields.length);
+
+    // Check if ALL compliance records have all required documents uploaded
+    const allComplianceRecordsComplete = complianceEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Compliance Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      const missingDocuments = [];
+      const hasAllDocuments = requiredDocumentFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
+        const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
+        if (!isValid) {
+          missingDocuments.push(fieldId);
+        }
+        return isValid;
+      });
+      
+      console.log(`- Compliance Event ${event.event}: Complete = ${hasAllDocuments}, Missing documents:`, missingDocuments);
+      
+      if (!hasAllDocuments) {
+        console.log(`- Compliance Event ${event.event}: Missing ${missingDocuments.length} out of ${requiredDocumentFields.length} required documents`);
+      } else {
+        console.log(`- Compliance Event ${event.event}: All ${requiredDocumentFields.length} documents uploaded`);
+      }
+      
+      return hasAllDocuments;
+    });
+    
+    console.log("- STATUTORY COMPLIANCE VALIDATION RESULT:", allComplianceRecordsComplete ? "TRUE (ALL compliance records have all documents)" : "FALSE (Some compliance records have missing documents)");
+    return allComplianceRecordsComplete;
+  };
+
+  // Function to validate equipment & machinery completion
+  const validateEquipmentMachinery = (equipmentEvents) => {
+    console.log("⚙️ === EQUIPMENT & MACHINERY VALIDATION ===");
+    console.log("- Events to validate:", equipmentEvents?.length || 0);
+    
+    if (!equipmentEvents || equipmentEvents.length === 0) {
+      console.log("- VALIDATION RESULT: FALSE (No equipment records exist)");
+      return false; // No records exist
+    }
+
+    // Since equipment form uses dynamic fields from DHIS2 metadata, 
+    // we validate that each record has at least some meaningful data
+    const minRequiredFields = 3; // Minimum number of fields that should be filled
+    
+    console.log("- Minimum required fields per record:", minRequiredFields);
+
+    // Check if ALL equipment records have sufficient data
+    const allEquipmentRecordsComplete = equipmentEvents.every(event => {
+      if (!event.dataValues) {
+        console.log(`- Equipment Event ${event.event}: No dataValues`);
+        return false;
+      }
+      
+      // Count non-empty data values
+      const filledFields = event.dataValues.filter(dv => {
+        return dv.value && dv.value.trim() !== "" && dv.value !== "null" && dv.value !== "undefined";
+      });
+      
+      const hasEnoughData = filledFields.length >= minRequiredFields;
+      console.log(`- Equipment Event ${event.event}: Has enough data = ${hasEnoughData}, Filled fields count: ${filledFields.length}/${event.dataValues.length}`);
+      
+      if (!hasEnoughData) {
+        console.log(`- Equipment Event ${event.event}: Insufficient data - only ${filledFields.length} fields filled, need at least ${minRequiredFields}`);
+        console.log(`- Equipment Event ${event.event}: Filled fields:`, filledFields.map(f => `${f.dataElement}="${f.value}"`));
+      } else {
+        console.log(`- Equipment Event ${event.event}: Sufficient data with ${filledFields.length} filled fields`);
+      }
+      
+      return hasEnoughData;
+    });
+    
+    console.log("- EQUIPMENT VALIDATION RESULT:", allEquipmentRecordsComplete ? "TRUE (ALL equipment records have sufficient data)" : "FALSE (Some equipment records have insufficient data)");
+    return allEquipmentRecordsComplete;
+  };
+
+
   
   const hasTabData = (tabKey) => {
     switch (tabKey) {
@@ -244,13 +444,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       case 'facilityOwnership':
         return tabValidationStates.facilityOwnership; // Use validation state that checks both record existence and field completeness
       case 'employeeRegistration':
-        return employeeEvents.length > 0;
+        return tabValidationStates.employeeRegistration; // Use validation state that checks both record existence and field completeness
       case 'servicesOffered':
-        return serviceEvents.length > 0;
+        return tabValidationStates.servicesOffered; // Use validation state that checks both record existence and service selection
       case 'statutoryCompliance':
-        return statutoryComplianceEvents.length > 0;
+        return tabValidationStates.statutoryCompliance; // Use validation state that checks both record existence and document completeness
       case 'equipmentMachinery':
-        return equipmentEvents.length > 0;
+        return tabValidationStates.equipmentMachinery; // Use validation state that checks both record existence and data completeness
       case 'inspectionSchedule':
         return inspectionEvents.length > 0;
       default:
@@ -263,9 +463,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     const steps = [
       { key: 'completeApplication', hasData: completeApplicationStatus },
       { key: 'facilityOwnership', hasData: tabValidationStates.facilityOwnership },
-      { key: 'employeeRegistration', hasData: employeeEvents.length > 0 },
-      { key: 'servicesOffered', hasData: serviceEvents.length > 0 },
-      { key: 'statutoryCompliance', hasData: statutoryComplianceEvents.length > 0 },
+      { key: 'employeeRegistration', hasData: tabValidationStates.employeeRegistration },
+      { key: 'servicesOffered', hasData: tabValidationStates.servicesOffered },
+      { key: 'statutoryCompliance', hasData: tabValidationStates.statutoryCompliance },
+      { key: 'equipmentMachinery', hasData: tabValidationStates.equipmentMachinery },
       { key: 'inspectionSchedule', hasData: inspectionEvents.length > 0 }
     ];
 
@@ -281,10 +482,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   }, [
     completeApplicationStatus,
     tabValidationStates.facilityOwnership,
-    employeeEvents,
-    serviceEvents,
-    inspectionEvents,
-    statutoryComplianceEvents
+    tabValidationStates.employeeRegistration,
+    tabValidationStates.servicesOffered,
+    tabValidationStates.statutoryCompliance,
+    tabValidationStates.equipmentMachinery,
+    inspectionEvents
   ]);
   
   // Handle tab click with validation
@@ -319,6 +521,38 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
       fetchFacilityOwnershipData();
+    }
+    
+    // Manually trigger fetch for employee data when clicking on employeeRegistration tab
+    if (tabKey === 'employeeRegistration') {
+      console.log("👥 === EMPLOYEE REGISTRATION TAB CLICKED ===");
+      console.log("- Manually triggering fetchEmployeeData for Employee Registration tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchEmployeeData();
+    }
+    
+    // Manually trigger fetch for services data when clicking on servicesOffered tab
+    if (tabKey === 'servicesOffered') {
+      console.log("🏥 === SERVICES OFFERED TAB CLICKED ===");
+      console.log("- Manually triggering fetchServiceData for Services Offered tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchServiceData();
+    }
+    
+    // Manually trigger fetch for statutory compliance data when clicking on statutoryCompliance tab
+    if (tabKey === 'statutoryCompliance') {
+      console.log("📋 === STATUTORY COMPLIANCE TAB CLICKED ===");
+      console.log("- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchStatutoryComplianceData();
+    }
+    
+    // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+    if (tabKey === 'equipmentMachinery') {
+      console.log("⚙️ === EQUIPMENT & MACHINERY TAB CLICKED ===");
+      console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchEquipmentData();
     }
   };
 
@@ -579,6 +813,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setServiceEvents(fetchedEvents);
       setIsLoadingServices(false);
+      
+      // Update services validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        servicesOffered: validateServicesOffered(fetchedEvents)
+      }));
 
     } catch (error) {
       console.error("Error fetching service data:", error);
@@ -692,6 +932,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setEmployeeEvents(fetchedEvents);
       setIsLoadingEmployees(false);
+      
+      // Update employee validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        employeeRegistration: validateEmployeeRegistration(fetchedEvents)
+      }));
 
     } catch (error) {
       console.error("Error fetching employee data:", error);
@@ -868,6 +1114,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       setEquipmentEvents(fetchedEvents);
       setIsLoadingEquipment(false);
+      
+      // Update equipment validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        equipmentMachinery: validateEquipmentMachinery(fetchedEvents)
+      }));
 
     } catch (error) {
       console.error("Error fetching equipment data:", error);
@@ -1057,6 +1309,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setStatutoryComplianceEvents(fetchedEvents);
       setIsLoadingStatutoryCompliance(false);
+      
+      // Update statutory compliance validation state after data is loaded
+      setTabValidationStates(prev => ({
+        ...prev,
+        statutoryCompliance: validateStatutoryCompliance(fetchedEvents)
+      }));
 
     } catch (error) {
       console.error("Error fetching statutory compliance data:", error);
