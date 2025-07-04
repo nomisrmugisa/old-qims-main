@@ -70,7 +70,7 @@ function RegistrationForm() {
     //   setCredentials(storedCredentials);
     // }
 
-    const fetchOrganisationalUnits = async () => {
+    /*const fetchOrganisationalUnits = async () => {
 
       try {
         const response = await fetch(
@@ -94,7 +94,7 @@ function RegistrationForm() {
       }
     };
 
-    fetchOrganisationalUnits();
+    fetchOrganisationalUnits();*/
   }, [credentials]);
 
   const [formData, setFormData] = useState({
@@ -158,7 +158,7 @@ function RegistrationForm() {
 
   const handleSubmit = async () => {
     setLoading(true);
-
+      eventBus.emit(EVENTS.LOADING_SHOW, { source: "registration_form"});
     try {
       // 1. Create User Profile (switched to be first)
       const userPayload = {
@@ -307,6 +307,7 @@ function RegistrationForm() {
       }
     } finally {
       setLoading(false);
+        eventBus.emit(EVENTS.LOADING_HIDE, { source: "registration_form"});
     }
   };
 

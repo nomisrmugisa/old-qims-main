@@ -208,7 +208,8 @@ const LoginModal = ({ show, onClose, onLogin }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage(''); // Clear previous errors
-
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: "login_form"});
+        window.console.log("Login FormSubmitted");
         // TEMPORARILY DISABLED 2FA FOR DEVELOPMENT
         // if (useTwoFactor) {
         //     if (!twoFactorCode.trim()) {
@@ -233,6 +234,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     // ...(useTwoFactor && twoFactorCode && { 'X-2FA-Code': twoFactorCode }),
                 },
             });
+            window.console.log(response);
 
             if (!response.ok) {
                 // Handle authentication errors based on status code
@@ -262,6 +264,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                 return; // Stop further execution
             }
 
+            window.console.log("Managed to pass login");
             // If authentication successful, fetch organization units
             const orgUnitsResponse = await fetch(
                 `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,displayName]`,
@@ -301,6 +304,9 @@ const LoginModal = ({ show, onClose, onLogin }) => {
             console.error("Login error:", error);
             setErrorMessage('Network error or unexpected issue. Please try again.');
             onLogin(false); // Login failed due to network or other error
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "login_form"});
         }
     };
 
