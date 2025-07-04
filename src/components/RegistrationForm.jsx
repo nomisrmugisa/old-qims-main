@@ -20,6 +20,7 @@ import {
   DialogActions as ErrorDialogActions
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import {useEvent, EVENTS } from '../events';
 import { API_URL } from '../config'; // Import API_URL
 
 // Add CSS for animations
@@ -57,6 +58,10 @@ function RegistrationForm() {
 
   // Define a default password for new users
   const DEFAULT_PASSWORD = "selfRegistration@123$";
+
+  useEvent(EVENTS.REGISTRATION_FORM_SHOW, () => {
+      handleClickOpen();
+  });
 
   useEffect(() => {
     // Credentials are now hardcoded as requested, no need to retrieve from localStorage

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import './Header.css';
 import logo from '../assets/logo.png';
+import {eventBus, EVENTS } from '../events';
 
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
@@ -10,6 +11,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
     return situationalAnalysisComplete;
+  };
+
+  const onApplyClick = () => {
+    eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
   };
   
   // Monitor localStorage for changes to situationalAnalysisComplete
@@ -94,10 +99,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               </div>
             )}
             <div className="social-links d-none d-md-flex align-items-center">
-              <a href="#" className="twitter"><i className="bi bi-twitter-x"></i></a>
-              <a href="#" className="facebook"><i className="bi bi-facebook"></i></a>
-              <a href="#" className="instagram"><i className="bi bi-instagram"></i></a>
-              <a href="#" className="linkedin"><i className="bi bi-linkedin"></i></a>
+
             </div>
           </div>
         </div>
@@ -226,7 +228,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </button>
             )}
             {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="#Registration">Apply</a>
+                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Apply</a>
             )}
           </div>
         </div>

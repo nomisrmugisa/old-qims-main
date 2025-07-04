@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './LoginModal.css';
+import {eventBus, EVENTS } from '../events';
 
 const LoginModal = ({ show, onClose, onLogin }) => {
     const modalRef = useRef();
@@ -16,6 +17,11 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
     const isValidTwoFactorCode = (code) => {
         return /^\d{6}$/.test(code);
+    };
+
+    const openRegistrationForm = () => {
+        onClose();
+        eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
     };
 
     useEffect(() => {
@@ -433,23 +439,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
                         {/* Register buttons */}
                         <div className="text-center">
-                            <p>Not a member? <a href="#!">Register</a></p>
-                            <p>or sign up with:</p>
-                            <button type="button" className="btn btn-link btn-floating mx-1">
-                                <i className="fab fa-facebook-f"></i>
-                            </button>
-
-                            <button type="button" className="btn btn-link btn-floating mx-1">
-                                <i className="fab fa-google"></i>
-                            </button>
-
-                            <button type="button" className="btn btn-link btn-floating mx-1">
-                                <i className="fab fa-twitter"></i>
-                            </button>
-
-                            <button type="button" className="btn btn-link btn-floating mx-1">
-                                <i className="fab fa-github"></i>
-                            </button>
+                            <p>Not a member? <a href="javascript:void(0);" onClick={openRegistrationForm}>Register</a></p>
                         </div>
                     </form>
                 </div>
