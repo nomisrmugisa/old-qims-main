@@ -1,385 +1,194 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
 
 const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) => {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    surname: "",
-    citizen: "",
-    ownershipType: "",
-    idType: "",
-    id: "",
-    copyOfIdPassport: null,
-    professionalReference1: null,
-    professionalReference2: null,
-    qualificationCertificates: null,
-    validRecentPermit: null,
-    workPermitWaiver: null,
-    existingFiles: {}
-  });
-
-  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [programStageMetadata, setProgramStageMetadata] = useState(null);
+  const [formData, setFormData] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
-  const [fieldStates, setFieldStates] = useState({}); // Track individual field states (saving, saved, error)
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileUploadStatus, setFileUploadStatus] = useState({}); // { [dataElementId]: { uploading: bool, error: string|null } }
+  const [selectedFileNames, setSelectedFileNames] = useState({}); // { [dataElementId]: fileName }
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewType, setPreviewType] = useState(null);
 
-  // Map of field names to their DHIS2 data element IDs
-  const fieldToDataElementMap = {
-    firstName: "HMk4LZ9ESOq",
-    surname: "ykwhsQQPVH0",
-    citizen: "zVmmto7HwOc",
-    ownershipType: "vAHHXaW0Pna",
-    idType: "FLcrCfTNcQi",
-    id: "aUGSyyfbUVI",
-    copyOfIdPassport: "KRj1TOR5cVM",
-    professionalReference1: "yP49GKSQxPl",
-    professionalReference2: "lC217zTgC6C",
-    qualificationCertificates: "pelCBFPIFY1",
-    validRecentPermit: "cUObXSGtCuD",
-    workPermitWaiver: "g9jXH9LJyxU"
-  };
+  // Fetch Program Stage Metadata for Facility Ownership
+  const fetchProgramStageMetadata = useCallback(async () => {
+    const credentials = localStorage.getItem('userCredentials');
+    if (!credentials) {
+      setErrorMessage("Authentication required.");
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`,
+        {
+          headers: { Authorization: `Basic ${credentials}` },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metadata: ${response.status}`);
+      }
+      const metadata = await response.json();
+      setProgramStageMetadata(metadata);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const fileFieldNames = [
-    'copyOfIdPassport',
-    'professionalReference1',
-    'professionalReference2',
-    'qualificationCertificates',
-    'validRecentPermit',
-    'workPermitWaiver'
-  ];
-
-  // Prevent scrolling on the main body when the modal is open
+  // Initialize form data from event and fetch metadata
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = 'auto';
-      };
+      fetchProgramStageMetadata();
+      if (event && event.dataValues) {
+        const initialData = {};
+        event.dataValues.forEach(dv => {
+          initialData[dv.dataElement] = dv.value;
+        });
+        setFormData(initialData);
+      } else {
+        setFormData({});
+      }
+      setIsSubmitting(false);
+      setErrorMessage("");
     }
-  }, [open]);
+  }, [open, event, fetchProgramStageMetadata]);
 
+  // On dialog open, fetch file names for existing FILE_RESOURCE fields
   useEffect(() => {
-    if (event) {
-      const dataValues = event.dataValues || [];
-      const getValue = (dataElementId) => {
-        const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-        return dataValue ? dataValue.value : "";
-      };
-
-      const initialFormData = {
-        firstName: getValue("HMk4LZ9ESOq"),
-        surname: getValue("ykwhsQQPVH0"),
-        citizen: getValue("zVmmto7HwOc"),
-        ownershipType: getValue("vAHHXaW0Pna"),
-        idType: getValue("FLcrCfTNcQi"),
-        id: getValue("aUGSyyfbUVI"),
-      };
-      
-      const existingFiles = {};
-      fileFieldNames.forEach(fieldName => {
-        const dataElementId = fieldToDataElementMap[fieldName];
-        const fileId = getValue(dataElementId);
-        if (fileId) {
-          existingFiles[fieldName] = fileId;
+    if (open && formData && programStageMetadata) {
+      const fetchFileNames = async () => {
+        const fileFields = [];
+        programStageMetadata.programStageSections.forEach(section => {
+          section.dataElements.forEach(de => {
+            if (isFileValueType(de.valueType) && formData[de.id]) {
+              fileFields.push({ dataElementId: de.id, fileResourceId: formData[de.id] });
+            }
+          });
+        });
+        const credentials = localStorage.getItem('userCredentials');
+        const newFileNames = {};
+        for (const field of fileFields) {
+          try {
+            const res = await fetch(`/api/fileResources/${field.fileResourceId}?fields=originalFilename`, {
+              headers: { Authorization: `Basic ${credentials}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              newFileNames[field.dataElementId] = data.originalFilename;
+            }
+          } catch { /* ignore file name fetch errors */ }
         }
-        initialFormData[fieldName] = null; // Always init file inputs to null
-      });
-
-      setFormData(initialFormData);
-      setUploadedFiles(existingFiles);
-    }
-  }, [event, open]);
-
-  // Function to update individual field value in real-time
-  const updateSingleField = async (fieldName, value) => {
-    const dataElementId = fieldToDataElementMap[fieldName];
-    if (!dataElementId || !event) return;
-
-    const credentials = localStorage.getItem('userCredentials');
-    if (!credentials) {
-      setFieldStates(prev => ({
-        ...prev,
-        [fieldName]: { status: 'error', message: 'Authentication required' }
-      }));
-      return;
-    }
-
-    // Set field as saving
-    setFieldStates(prev => ({
-      ...prev,
-      [fieldName]: { status: 'saving' }
-    }));
-
-    try {
-      let finalValue = value;
-      
-      // If the field is a file field and there's a file to upload
-      if (fileFieldNames.includes(fieldName) && value instanceof File) {
-        finalValue = await uploadFileAndGetId(value);
-
-        // After successful upload, update the uploadedFiles state
-        if (finalValue) {
-          setUploadedFiles(prev => ({ ...prev, [fieldName]: finalValue }));
+        if (Object.keys(newFileNames).length > 0) {
+          setSelectedFileNames(prev => ({ ...prev, ...newFileNames }));
         }
-      }
-
-      const orgUnitId = await getCurrentUserOrgUnit();
-
-      const payload = {
-        event: event.event,
-        orgUnit: orgUnitId,
-        program: "EE8yeLVo6cN",
-        programStage: "MuJubgTzJrY",
-        status: "ACTIVE", // Using ACTIVE to allow further edits
-        trackedEntityInstance: event.trackedEntityInstance,
-        dataValues: [
-          {
-            dataElement: dataElementId,
-            value: finalValue ? finalValue.toString() : "",
-          }
-        ]
       };
-
-      console.log(`Updating field ${fieldName}:`, payload);
-
-      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}/${dataElementId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Update failed with response:", errorText);
-        throw new Error(`Failed to update ${fieldName}: ${response.status}`);
-      }
-
-      // Set field as saved
-      setFieldStates(prev => ({
-        ...prev,
-        [fieldName]: { status: 'saved' }
-      }));
-
-      // Clear saved status after 2 seconds
-      setTimeout(() => {
-        setFieldStates(prev => ({
-          ...prev,
-          [fieldName]: { status: 'idle' }
-        }));
-      }, 2000);
-
-    } catch (error) {
-      console.error(`Error updating field ${fieldName}:`, error);
-      setFieldStates(prev => ({
-        ...prev,
-        [fieldName]: { status: 'error', message: error.message }
-      }));
+      fetchFileNames();
     }
+  }, [open, formData, programStageMetadata]);
+
+  const handleInputChange = (dataElementId, value) => {
+    setFormData(prev => ({ ...prev, [dataElementId]: value }));
   };
 
-  // Debounced field update for text inputs
-  const debounceUpdateField = (() => {
-    const timeouts = {};
-    return (fieldName, value) => {
-      if (timeouts[fieldName]) {
-        clearTimeout(timeouts[fieldName]);
-      }
-      timeouts[fieldName] = setTimeout(() => {
-        updateSingleField(fieldName, value);
-      }, 1000); // 1 second delay
-    };
-  })();
-
-  // If dialog is not open, don't render anything
-  if (!open) {
-    return null;
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    const newValue = type === 'file' ? files[0] : value;
-    
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: newValue,
-    }));
-
-    // Update field in real-time
-    if (type === 'file') {
-      // For files, update immediately
-      updateSingleField(name, newValue);
-    } else {
-      // For text inputs, debounce the update
-      debounceUpdateField(name, newValue);
-    }
+  // Helper to check if file is previewable (image or PDF)
+  const isPreviewable = (fileName) => {
+    if (!fileName) return false;
+    const ext = fileName.split('.').pop().toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'pdf'].includes(ext);
   };
 
-  const uploadFileAndGetId = async (file) => {
-    if (!file) return null;
+  // Enhanced file input handler: upload immediately, store file name
+  const handleFileUpload = async (de, file) => {
+    if (!file) return;
+    setFileUploadStatus(prev => ({ ...prev, [de.id]: { uploading: true, error: null } }));
+    setSelectedFileNames(prev => ({ ...prev, [de.id]: file.name }));
     const credentials = localStorage.getItem('userCredentials');
     const fileData = new FormData();
-    fileData.append("file", file);
-    
+    fileData.append('file', file);
     try {
-      const fileRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/fileResources`, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${credentials}`,
-        },
+      const response = await fetch('/api/fileResources', {
+        method: 'POST',
+        headers: { Authorization: `Basic ${credentials}` },
         body: fileData,
       });
-
-      if (!fileRes.ok) {
-        const errorText = await fileRes.text();
-        throw new Error(`File upload failed: ${fileRes.status} - ${errorText}`);
-      }
-      const responseJson = await fileRes.json();
-      return responseJson.response.fileResource.id;
-    } catch (error) {
-      console.error("Error uploading file:", file.name, error);
-      throw error;
-    }
-  };
-
-  // Function to get field status indicator
-  const getFieldStatusIndicator = (fieldName) => {
-    const state = fieldStates[fieldName];
-    if (!state || state.status === 'idle') return null;
-
-    switch (state.status) {
-      case 'saving':
-        return <span className="field-status saving">💾 Saving...</span>;
-      case 'saved':
-        return <span className="field-status saved">✅ Saved</span>;
-      case 'error':
-        return <span className="field-status error">❌ Error: {state.message}</span>;
-      default:
-        return null;
-    }
-  };
-
-  // Function to get the current user's organization unit
-  const getCurrentUserOrgUnit = async () => {
-    const credentials = localStorage.getItem('userCredentials');
-    
-    if (!credentials) {
-      throw new Error("Authentication required. Please log in again.");
-    }
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
-        headers: {
-          Authorization: `Basic ${credentials}`,
-        },
-      });
-      
       if (!response.ok) {
-        throw new Error(`Failed to fetch user information: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`File upload failed: ${response.status} - ${errorText}`);
       }
-      
-      const userData = await response.json();
-      
-      if (!userData.organisationUnits || userData.organisationUnits.length === 0) {
-        throw new Error("User has no associated organization units");
-      }
-      
-      return userData.organisationUnits[0].id;
+      const responseJson = await response.json();
+      const fileResourceId = responseJson.response.fileResource.id;
+      setFormData(prev => ({ ...prev, [de.id]: fileResourceId }));
+      setFileUploadStatus(prev => ({ ...prev, [de.id]: { uploading: false, error: null } }));
     } catch (error) {
-      console.error("Error fetching user organization unit:", error);
-      throw error;
+      setFileUploadStatus(prev => ({ ...prev, [de.id]: { uploading: false, error: error.message } }));
     }
   };
 
-  const handleUpdateSubmit = async (e) => {
+  // Preview handler for uploaded file
+  const handlePreview = (fileResourceId, fileName) => {
+    const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
+    setPreviewType(ext);
+    setPreviewUrl(`/api/fileResources/${fileResourceId}/data`);
+  };
+
+  // Close preview
+  const closePreview = () => {
+    setPreviewUrl(null);
+    setPreviewType(null);
+  };
+
+  const handleRemoveFile = (de) => {
+    setFormData(prev => ({ ...prev, [de.id]: undefined }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     setErrorMessage("");
     const credentials = localStorage.getItem('userCredentials');
-
     if (!credentials) {
-      setErrorMessage("Authentication required. Please log in again.");
+      setErrorMessage("Authentication required.");
+      setIsSubmitting(false);
       return;
     }
-
     try {
-      // Get the current user's organization unit
+      // Upload files first if any
+      const dataValues = await Promise.all(Object.entries(formData).map(async ([dataElement, value]) => {
+        if (value instanceof File) {
+          // Upload file and get fileResourceId
+          const fileData = new FormData();
+          fileData.append("file", value);
+          const fileRes = await fetch("/api/fileResources", {
+            method: "POST",
+            headers: { Authorization: `Basic ${credentials}` },
+            body: fileData,
+          });
+          if (!fileRes.ok) {
+            const errorText = await fileRes.text();
+            throw new Error(`File upload failed: ${fileRes.status} - ${errorText}`);
+          }
+          const responseJson = await fileRes.json();
+          return { dataElement, value: responseJson.response.fileResource.id };
+        } else {
+          return { dataElement, value: value };
+        }
+      }));
       const orgUnitId = await getCurrentUserOrgUnit();
-
-      // Upload files individually and track their IDs
-      const fileMapping = {};
-      
-      if (formData.copyOfIdPassport) {
-        fileMapping.copyOfIdPassport = await uploadFileAndGetId(formData.copyOfIdPassport);
-      }
-      if (formData.professionalReference1) {
-        fileMapping.professionalReference1 = await uploadFileAndGetId(formData.professionalReference1);
-      }
-      if (formData.professionalReference2) {
-        fileMapping.professionalReference2 = await uploadFileAndGetId(formData.professionalReference2);
-      }
-      if (formData.qualificationCertificates) {
-        fileMapping.qualificationCertificates = await uploadFileAndGetId(formData.qualificationCertificates);
-      }
-      if (formData.validRecentPermit) {
-        fileMapping.validRecentPermit = await uploadFileAndGetId(formData.validRecentPermit);
-      }
-      if (formData.workPermitWaiver) {
-        fileMapping.workPermitWaiver = await uploadFileAndGetId(formData.workPermitWaiver);
-      }
-
-      const today = new Date().toISOString().split('T')[0];
-      const dataValues = [
-        { dataElement: "HMk4LZ9ESOq", value: formData.firstName },
-        { dataElement: "ykwhsQQPVH0", value: formData.surname },
-        { dataElement: "zVmmto7HwOc", value: formData.citizen },
-        { dataElement: "aUGSyyfbUVI", value: formData.id },
-        { dataElement: "FLcrCfTNcQi", value: formData.idType },
-        { dataElement: "vAHHXaW0Pna", value: formData.ownershipType },
-      ];
-
-      // Add file references - use new uploads or preserve existing ones
-      const fileDataElements = {
-        copyOfIdPassport: "KRj1TOR5cVM",
-        professionalReference1: "yP49GKSQxPl",
-        professionalReference2: "lC217zTgC6C",
-        qualificationCertificates: "pelCBFPIFY1",
-        validRecentPermit: "cUObXSGtCuD",
-        workPermitWaiver: "g9jXH9LJyxU"
-      };
-
-      Object.entries(fileDataElements).forEach(([fieldName, dataElementId]) => {
-        let fileId = null;
-        
-        // Use newly uploaded file ID if available
-        if (fileMapping[fieldName]) {
-          fileId = fileMapping[fieldName];
-        } 
-        // Otherwise preserve existing file reference
-        else if (formData.existingFiles && formData.existingFiles[fieldName]) {
-          fileId = formData.existingFiles[fieldName];
-        }
-        
-        if (fileId) {
-          dataValues.push({ dataElement: dataElementId, value: fileId });
-        }
-      });
-
       const payload = {
         event: event.event,
-        eventDate: event.eventDate || today,
         orgUnit: orgUnitId,
         program: "EE8yeLVo6cN",
         programStage: "MuJubgTzJrY",
         status: "COMPLETED",
         trackedEntityInstance: event.trackedEntityInstance,
-        dataValues: dataValues,
+        dataValues,
       };
-
-      console.log("Update payload:", payload);
-
-      const eventRes = await fetch(`/api/events/${event.event}`, {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
         method: "PUT",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -387,116 +196,213 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
         },
         body: JSON.stringify(payload),
       });
-
-      if (!eventRes.ok) {
-        const errorText = await eventRes.text();
-        console.error("Update failed with response:", errorText);
-        throw new Error(`Event update failed: ${eventRes.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Submission failed: ${response.status} - ${errorText}`);
       }
-
-      console.log("Facility ownership updated successfully!");
-      onUpdateSuccess();
+      onUpdateSuccess && onUpdateSuccess();
       onClose();
     } catch (error) {
-      console.error("Error updating facility ownership:", error);
-      setErrorMessage(`Failed to update facility ownership: ${error.message}`);
+      setErrorMessage(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Handle cancel button - refresh table and close
-  const handleCancel = () => {
-    console.log("EditFacilityOwnershipDialog handleCancel called");
-    console.log("- onUpdateSuccess exists:", typeof onUpdateSuccess === 'function');
-    console.log("- onClose exists:", typeof onClose === 'function');
-    
-    // Refresh the parent table to reflect any real-time updates made during editing
-    if (typeof onUpdateSuccess === 'function') {
-      console.log("- Calling onUpdateSuccess to refresh table");
-      onUpdateSuccess();
+  const getCurrentUserOrgUnit = async () => {
+    const credentials = localStorage.getItem('userCredentials');
+    const response = await fetch("/api/me.json", {
+      headers: { Authorization: `Basic ${credentials}` },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user information: ${response.status}`);
     }
-    
-    // Call onClose to close the dialog
-    if (typeof onClose === 'function') {
-      console.log("- Calling onClose to close dialog");
-      onClose();
-    }
+    const userInfo = await response.json();
+    return userInfo.organisationUnits[0].id;
   };
 
-  return (
-    <ModalPortal open={open} onClose={handleCancel}>
-      <div className="modal-content">
-        <div className="modal-header">
-          <h5 className="modal-title">Edit Facility Ownership</h5>
-          <button type="button" className="close-btn" onClick={handleCancel}>
-            &times;
-          </button>
-        </div>
-        <div className="modal-body">
-          {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
-          <form onSubmit={(e) => e.preventDefault()}> {/* Prevent default form submission */}
-            <div className="form-group">
-              <label>First Name:</label>
-              <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('firstName', e.target.value)} />
-              {getFieldStatusIndicator('firstName')}
+  const isFileValueType = (vt) => ['FILE_RESOURCE', 'FILE', 'fileResource'].includes(vt);
+  const renderFileInput = (de) => {
+    const fileInputId = `file-input-${de.id}`;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {formData[de.id] ? (
+          <>
+            <a href={`/api/fileResources/${formData[de.id]}/data`} target="_blank" rel="noopener noreferrer" className="file-download-link">Download current file</a>
+            {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
+              <button type="button" className="btn btn-link" style={{marginLeft: 8}} onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}>Preview</button>
+            )}
+            <button type="button" className="btn btn-link text-danger" style={{marginLeft: 8}} onClick={() => handleRemoveFile(de)}>Remove</button>
+          </>
+        ) : (
+          <>
+            <input
+              id={fileInputId}
+              type="file"
+              style={{ display: 'none' }}
+              onChange={e => handleFileUpload(de, e.target.files[0])}
+              required={de.compulsory}
+              disabled={fileUploadStatus[de.id]?.uploading}
+            />
+            <label htmlFor={fileInputId} style={{
+              display: 'inline-block',
+              padding: '8px 18px',
+              background: '#1976d2',
+              color: 'white',
+              borderRadius: '4px',
+              cursor: fileUploadStatus[de.id]?.uploading ? 'not-allowed' : 'pointer',
+              fontWeight: 500,
+              fontSize: '1em',
+              boxShadow: '0 2px 6px rgba(25, 118, 210, 0.08)'
+            }}>
+              Choose File
+            </label>
+            {selectedFileNames[de.id] && (
+              <span style={{marginLeft: 8, fontStyle: 'italic', color: '#333'}}>{selectedFileNames[de.id]}</span>
+            )}
+            {fileUploadStatus[de.id]?.uploading && <span style={{marginLeft: 8}}>Uploading...</span>}
+            {fileUploadStatus[de.id]?.error && <span style={{marginLeft: 8, color: 'red'}}>{fileUploadStatus[de.id].error}</span>}
+          </>
+        )}
+        {/* Preview Modal */}
+        {previewUrl && previewType && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <div style={{ background: 'white', padding: 24, borderRadius: 8, maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}>
+              <button onClick={closePreview} style={{ position: 'absolute', top: 8, right: 8, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
+              {previewType === 'pdf' ? (
+                <iframe src={previewUrl} title="Preview" style={{ width: '80vw', height: '80vh', border: 'none' }} />
+              ) : (
+                <img src={previewUrl} alt="Preview" style={{ maxWidth: '80vw', maxHeight: '80vh', display: 'block', margin: '0 auto' }} />
+              )}
             </div>
-            <div className="form-group">
-              <label>Surname:</label>
-              <input type="text" name="surname" value={formData.surname} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('surname', e.target.value)} />
-              {getFieldStatusIndicator('surname')}
-            </div>
-            <div className="form-group">
-              <label>Citizen:</label>
-              <input type="text" name="citizen" value={formData.citizen} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('citizen', e.target.value)} />
-              {getFieldStatusIndicator('citizen')}
-            </div>
-            <div className="form-group">
-              <label>Ownership Type:</label>
-              <select name="ownershipType" value={formData.ownershipType} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('ownershipType', e.target.value)}>
-                <option value="">Select Ownership Type</option>
-                <option value="State Owned">State Owned</option>
-                <option value="Private Owned">Private Owned</option>
-              </select>
-              {getFieldStatusIndicator('ownershipType')}
-            </div>
-            <div className="form-group">
-              <label>ID Type:</label>
-              <input type="text" name="idType" value={formData.idType} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('idType', e.target.value)} />
-              {getFieldStatusIndicator('idType')}
-            </div>
-            <div className="form-group">
-              <label>ID:</label>
-              <input type="text" name="id" value={formData.id} onChange={handleInputChange} className="form-control" required onBlur={(e) => updateSingleField('id', e.target.value)} />
-              {getFieldStatusIndicator('id')}
-            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
-            {/* File Inputs */}
-            {fileFieldNames.map(fieldName => (
-              <div key={fieldName} className="form-group document-upload-group">
-                <label>{fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}:</label>
-                <div className="file-input-wrapper">
+  const renderFormBody = () => {
+    if (isLoading) return <div>Loading form...</div>;
+    if (errorMessage) return <div className="alert alert-danger">{errorMessage}</div>;
+    if (!programStageMetadata) return <div className="alert alert-warning">Form metadata could not be loaded.</div>;
+    return (
+      <div className="dynamic-form-body">
+        {programStageMetadata.programStageSections.map(section => (
+          <div key={section.id} className="section-group">
+            {section.name && <h4>{section.name}</h4>}
+            {section.dataElements.map(de => (
+              <div key={de.id} className="form-group-dhis2">
+                <label>{de.displayFormName}{de.compulsory && <span style={{color:'red'}}>*</span>}</label>
+                {isFileValueType(de.valueType) ? (
+                  renderFileInput(de)
+                ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
                   <input
-                    type="file"
-                    name={fieldName}
-                    id={fieldName}
-                    onChange={handleInputChange}
-                    className="form-control-file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    type="text"
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
                   />
-                  <label htmlFor={fieldName} className="custom-file-upload">Choose File</label>
-                  <span className="file-name">
-                    {formData[fieldName] ? formData[fieldName].name : 
-                     uploadedFiles[fieldName] ? 'Document already uploaded' : 
-                     'No file chosen'}
-                  </span>
-                </div>
-                {uploadedFiles[fieldName] && !formData[fieldName] && (
-                  <small className="text-success">✓ Document previously uploaded</small>
+                ) : de.valueType === 'DATE' ? (
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
+                  />
+                ) : de.valueType === 'NUMBER' ? (
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
+                  />
+                ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
+                  <select
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
+                  >
+                    <option value="">Select</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                ) : de.optionSet ? (
+                  <select
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
+                  >
+                    <option value="">Select</option>
+                    {de.optionSet.options.map(opt => (
+                      <option key={opt.id} value={opt.code}>{opt.displayName}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData[de.id] || ''}
+                    onChange={e => handleInputChange(de.id, e.target.value)}
+                    required={de.compulsory}
+                  />
                 )}
-                {getFieldStatusIndicator(fieldName)}
               </div>
             ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-            <button type="button" className="btn btn-secondary cancel-btn" onClick={handleCancel}>Close</button>
+  if (!open) return null;
+
+  return (
+    <ModalPortal open={open} onClose={onClose}>
+      <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
+        <div className="modal-header">
+          <h5 className="modal-title">Edit Facility Ownership</h5>
+          <button type="button" className="close-btn" onClick={onClose} disabled={isSubmitting}>&times;</button>
+        </div>
+        <div className="modal-body" style={{ position: 'relative', paddingBottom: '80px' }}>
+          <form onSubmit={handleSubmit} className="ownership-form">
+            {renderFormBody()}
+            <div className="button-container" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}
+                style={{ padding: '10px 24px', fontSize: '1em', borderRadius: 6 }}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}
+                style={{ padding: '10px 24px', fontSize: '1em', borderRadius: 6 }}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                style={{
+                  background: '#1976d2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '10px 24px',
+                  fontSize: '1em',
+                  fontWeight: 600,
+                  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+                onClick={() => alert('Submit Application for Review clicked!')}
+              >
+                Submit Application for Review
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -70,6 +70,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     inspectionSchedule: false
   });
 
+  // Track if application has been submitted for review
+  const [isApplicationSubmitted, setIsApplicationSubmitted] = useState(false);
+
+  // Listen for a custom event to set submission state (can be triggered from the review button)
+  useEffect(() => {
+    const handler = () => setIsApplicationSubmitted(true);
+    window.addEventListener('applicationSubmitted', handler);
+    return () => window.removeEventListener('applicationSubmitted', handler);
+  }, []);
+
   const StepContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
@@ -495,6 +505,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     if (!completeApplicationStatus && tabKey !== 'completeApplication') {
       console.log("- Tab click blocked - application not complete");
       return; // Don't change tabs
+    }
+    
+    // Disable certain tabs unless application is submitted
+    const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    if (!isApplicationSubmitted && restrictedTabs.includes(tabKey)) {
+      console.log("- Tab click blocked - application not submitted for review");
+      return;
     }
     
     console.log("- Setting active tab to:", tabKey);
@@ -1337,13 +1354,37 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="facility-ownership-details">
-              <h2>Facility Ownership Details <span className="add-icon" onClick={() => setOpenAddDialog(true)}>+</span></h2>
+              <h2>
+                Facility Ownership
+                <button 
+                  className="add-icon" 
+                  onClick={() => setOpenAddDialog(true)}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
+                  }}
+                >
+                  +
+                </button>
+              </h2>
               {isLoading ? (
                 <p>Loading facility ownership data...</p>
               ) : showReviewDialog ? (
                 <p className="error-message">Error loading data. Please try again or contact support.</p>
               ) : events.length === 0 ? (
-                <p>No facility ownership records found.</p>
+                <div>
+                  <p>No facility ownership records found.</p>
+                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
+                    Debug: isLoading={isLoading.toString()}, 
+                    events.length={events.length}, 
+                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
+                  </p>
+                </div>
               ) : (
                 <div className="table-responsive">
                   <table className="table table-hover">
@@ -1354,6 +1395,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         <th>First Name</th>
                         <th>Surname</th>
                         <th>Citizenship</th>
+                        <th>Ownership Type</th>
                         <th>Program Stage ID</th>
                         <th>Event ID</th>
                         <th>Tracked Entity Instance ID</th>
@@ -1364,9 +1406,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         const dataValues = event.dataValues || [];
                         const getFormattedValue = (dataElementId) => {
                           const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : '';
+                          return dataValue ? dataValue.value : 'N/A';
                         };
-
+                        // Example: Add aggregation/status logic if applicable (customize as needed)
+                        // For now, just display the values directly
                         return (
                           <tr 
                             key={event.event || index}
@@ -1374,14 +1417,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             style={{ cursor: 'pointer' }}
                             className="hover-row"
                           >
-                            <td>{new Date(event.eventDate).toLocaleDateString()}</td>
+                            <td>{event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'N/A'}</td>
                             <td>{localStorage.getItem('userOrgUnitName')}</td>
                             <td>{getFormattedValue("HMk4LZ9ESOq")}</td> {/* First Name */}
                             <td>{getFormattedValue("ykwhsQQPVH0")}</td> {/* Surname */}
                             <td>{getFormattedValue("zVmmto7HwOc")}</td> {/* Citizenship */}
-                            <td>{event.programStage}</td>
-                            <td>{event.event}</td>
-                            <td>{event.trackedEntityInstance}</td>
+                            <td>{getFormattedValue("vAHHXaW0Pna")}</td> {/* Ownership Type */}
+                            <td>{event.programStage || 'N/A'}</td>
+                            <td>{event.event || 'N/A'}</td>
+                            <td>{event.trackedEntityInstance || 'N/A'}</td>
                           </tr>
                         );
                       })}
@@ -1918,6 +1962,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+  // Helper to determine if a tab should be disabled
+  const isTabDisabled = (tabKey) => {
+    const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    if (restrictedTabs.includes(tabKey) && !isApplicationSubmitted) return true;
+    return false;
+  };
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
@@ -1951,30 +2002,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             
             return (
               <React.Fragment key={step.number}>
-                <Tooltip 
-                  title={step.key === 'inspectionSchedule' ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted" : (isDisabled ? "Complete the Application details first" : "")}
+                <Tooltip
+                  title={
+                    step.key === 'inspectionSchedule'
+                      ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
+                      : isTabDisabled(step.key)
+                        ? "Submit Application For review under Facility Ownership"
+                        : (isDisabled ? "Complete the Application details first" : "")
+                  }
                   arrow
                   placement="top"
                 >
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Step 
+                    <Step
                       active={activeTab === step.key}
                       hasdata={hasTabData(step.key)}
-                      disabled={isDisabled || step.key === 'inspectionSchedule'}
+                      disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
                       onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
                     >
                       <span className="step-number">{step.number}</span>
-                      <Typography 
-                        variant="subtitle1" 
+                      <Typography
+                        variant="subtitle1"
                         className={`step-title${step.title === 'Situational Analysis' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
                       >
                         {step.title}
                       </Typography>
-                      <span 
-                        className="completion-indicator" 
+                      <span
+                        className="completion-indicator"
                         style={{
-                          color: hasTabData(step.key) 
-                            ? theme.palette.success.main 
+                          color: hasTabData(step.key)
+                            ? theme.palette.success.main
                             : theme.palette.error.main
                         }}
                       >
