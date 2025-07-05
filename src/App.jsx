@@ -9,6 +9,14 @@ import './App.css';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import {eventBus, useEvent, EVENTS } from './events';
 import './App.css'
+import NavigationWrapper from './components/NavigationWrapper';
+
+
+import AlertNotification from './components/AlertNotification';
+
+//Routes
+import ForgotPassword from './views/ForgotPassword';
+import ResetPassword from './views/ResetPassword';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -71,7 +79,7 @@ function App() {
   // Check for existing credentials on app load
   useEffect(() => {
 
-    
+
     checkExistingLogin();
 
   }, [navigate]);
@@ -104,15 +112,23 @@ function App() {
         activeDashboardSection={activeDashboardSection}
         setActiveDashboardSection={setActiveDashboardSection}
       />
+        {/*Global Alert Notification */}
+        <AlertNotification />
+
       <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Main />} />
-          <Route 
-            path="/dashboards/facility-ownership"
-            element={isLoggedIn ? <Dashboard activeSection={activeDashboardSection} setActiveSection={setActiveDashboardSection} /> : <Main />}
-          />
-          {/* You can add more routes here for other dashboard sections if needed */}
-        </Routes>
+        <NavigationWrapper>
+          <Routes>
+            <Route path="/" element={<Main />} />
+            <Route
+                path="/dashboards/facility-ownership"
+                element={isLoggedIn ? <Dashboard activeSection={activeDashboardSection} setActiveSection={setActiveDashboardSection} /> : <Main />}
+            />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* You can add more routes here for other dashboard sections if needed */}
+          </Routes>
+        </NavigationWrapper>
       </main>
       <Footer />
       {showLoginModal && (

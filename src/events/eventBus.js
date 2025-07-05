@@ -34,7 +34,11 @@ const eventBus = {
         }
         this.lastEmitTimes = { ...this.lastEmitTimes, [event]: now };
         [...this.listeners[event]].forEach((callback) => {
-            callback(...args);
+            try {
+                callback(...args);
+            } catch (err) {
+                console.error(`Error in ${event} listener`, err);
+            }
         });
     },
 };

@@ -19,6 +19,7 @@
     "@mui/x-date-pickers": "^8.6.0",
     "@mui/x-date-pickers-pro": "^8.6.0",
     "aos": "^2.3.4",
+    "axios": "^1.10.0",
     "bootstrap": "^5.3.6",
     "date-fns": "^4.1.0",
     "lodash": "^4.17.21",
@@ -26,6 +27,7 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
+    "react-sweetalert2": "^0.6.0",
     "swiper": "^11.2.8"
   },
   "devDependencies": {

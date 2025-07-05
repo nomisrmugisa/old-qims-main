@@ -20,7 +20,7 @@ import {
   DialogActions as ErrorDialogActions
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import {useEvent, EVENTS } from '../events';
+import {eventBus, useEvent, EVENTS } from '../events';
 import { API_URL } from '../config'; // Import API_URL
 
 // Add CSS for animations
@@ -269,7 +269,7 @@ function RegistrationForm() {
 
       // 3. Send Welcome Email (remains third)
       try {
-        const emailResponse = await fetch('http://localhost:5002/api/send-email', {
+        const emailResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/send-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -448,17 +448,9 @@ function RegistrationForm() {
             Cancel
           </Button>
           <Button
+              class="cta-btn"
             onClick={handleSubmit}
             variant="contained"
-            sx={{
-              backgroundColor: "#3f51b5",
-              color: "#fff",
-              borderRadius: 2,
-              px: 4,
-              "&:hover": {
-                backgroundColor: "#303f9f",
-              },
-            }}
           >
             Apply
           </Button>

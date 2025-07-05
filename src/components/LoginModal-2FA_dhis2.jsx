@@ -41,7 +41,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
   const check2FAStatus = async (credentials) => {
     try {
-      const response = await fetch('https://qimsdev.5am.co.bw/qims/api/me', {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -61,7 +61,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
   const get2FASetup = async (credentials) => {
     try {
-      const response = await fetch('https://qimsdev.5am.co.bw/qims/api/40/2fa/qrCode', {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/40/2fa/qrCode`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -117,7 +117,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
   // Alternative method if the primary method fails
   const get2FASetupWithFormat = async (credentials) => {
     try {
-      const response = await fetch('https://qimsdev.5am.co.bw/qims/api/40/2fa/qrCode?format=png', {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/40/2fa/qrCode?format=png`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -172,13 +172,13 @@ const LoginModal = ({ show, onClose, onLogin }) => {
       
       // Set crossOrigin before src
       img.crossOrigin = 'anonymous';
-      img.src = `https://qimsdev.5am.co.bw/qims/api/40/2fa/qrCode?t=${Date.now()}`;
+      img.src = `${import.meta.env.VITE_DHIS2_URL}/api/40/2fa/qrCode?t=${Date.now()}`;
     });
   };
 
   const verify2FACode = async (credentials, code) => {
     try {
-      const response = await fetch('https://qimsdev.5am.co.bw/qims/api/40/2fa/enabled', {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/40/2fa/enabled`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -289,7 +289,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
       }
 
       // Authenticate with DHIS2
-      const response = await fetch('https://qimsdev.5am.co.bw/qims/api/me', {
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

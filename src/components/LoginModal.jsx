@@ -52,7 +52,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     const username = 'nomisrmugisa@gmail.com';
                     const password = 'Nomisr123$';
                     const credentials = btoa(`${username}:${password}`);
-                    const tokenResponse = await fetch("http://localhost:5002/api/Token/", {
+                    const tokenResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/Token/`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Basic ${credentials}`,
@@ -74,7 +74,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     setTwoFactorToken(extractedToken);
 
                     // Step 2: Initialize 2FA - send OTP
-                    const initResponse = await fetch("http://localhost:5002/api/SMS2FA/init/", {
+                    const initResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/init/`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${extractedToken}`,
@@ -112,7 +112,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
             // Step 1: Acquire Token
             const credentials = btoa(`${username}:${password}`);
-            const tokenResponse = await fetch("http://localhost:5002/api/Token/", {
+            const tokenResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/Token/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
@@ -133,7 +133,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
             setTwoFactorToken(extractedToken);
 
             // Step 2: Initialize 2FA - send OTP
-            const initResponse = await fetch("http://localhost:5002/api/SMS2FA/init/", {
+            const initResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/init/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${extractedToken}`,
@@ -174,7 +174,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
             // Step 3: Verify OTP code
             const username = 'nomisrmugisa@gmail.com';
-            const verifyResponse = await fetch("http://localhost:5002/api/SMS2FA/verify/", {
+            const verifyResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/verify/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${twoFactorToken}`,
@@ -260,6 +260,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     default:
                         setErrorMessage(`Authentication failed: ${response.statusText}`);
                 }
+                eventBus.emit(EVENTS.LOADING_HIDE, { source: 'login_modal' });
                 onLogin(false); // Indicate login failure to App.jsx
                 return; // Stop further execution
             }
@@ -300,6 +301,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                 setErrorMessage(`Failed to fetch organization units: ${orgUnitsResponse.statusText}`);
                 onLogin(false); // Login failed
             }
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: 'login_modal' });
         } catch (error) {
             console.error("Login error:", error);
             setErrorMessage('Network error or unexpected issue. Please try again.');
@@ -428,7 +430,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
                             <div className="col">
                                 {/* Forgot password link */}
-                                <a href="#!">Forgot password?</a>
+                                <a href="/main/forgot-password">Forgot password?</a>
                             </div>
                         </div>
 
