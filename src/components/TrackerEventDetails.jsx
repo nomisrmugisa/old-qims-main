@@ -809,6 +809,32 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setLoading(false);
       }, 1000);
 
+      // Send email notification
+      try {
+        const userEmail = "qimsmohbots@gmail.com";
+        if (userEmail) {
+          const emailResponse = await fetch('https://qimsdev.5am.co.bw/api/facility-reg-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userEmail,
+              // facilityName: formValues['PdtizqOqE6Q'] || 'your facility'
+            })
+          });
+
+          if (emailResponse.ok) {
+            setSuccessMessages(prev => [...prev, 'Email notification sent successfully']);
+            setEmailSent(true);
+            setOpenSnackbar(true);
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+        // Continue even if email fails
+      }
+
     } catch (error) {
       console.error('Error updating request:', error);
       // You might want to show an error message to the user here
