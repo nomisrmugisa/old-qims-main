@@ -264,7 +264,7 @@ function RegistrationForm() {
 
       // 3. Send Welcome Email (remains third)
       try {
-        const emailResponse = await fetch('https://qimsdev.5am.co.bw/api/send-email', {
+        const emailResponse = await fetch('http://134.255.180.98:5002/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

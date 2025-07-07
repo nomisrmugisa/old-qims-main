@@ -185,7 +185,52 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <i className="bi bi-chevron-down toggle-dropdown"></i>
                 </a>
                 <ul>
-                  <li><a href="#">Dropdown 1</a></li>
+                  <li>
+                    <a 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const credentials = localStorage.getItem('userCredentials');
+                        const downloadUrl = `${import.meta.env.VITE_DHIS2_URL}/api/documents/nO1LbjtYHO7/data`;
+                        
+                        // Create a hidden anchor element for download
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = downloadUrl;
+                        downloadLink.setAttribute('download', 'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf');
+                        downloadLink.setAttribute('target', '_blank');
+                        
+                        // Add authorization header if needed via fetch API
+                        if (credentials) {
+                          fetch(downloadUrl, {
+                            headers: {
+                              Authorization: `Basic ${credentials}`
+                            }
+                          })
+                          .then(response => response.blob())
+                          .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            downloadLink.href = url;
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(downloadLink);
+                          })
+                          .catch(error => {
+                            console.error('Download failed:', error);
+                            // Fallback to direct link if fetch fails
+                            window.open(downloadUrl, '_blank');
+                          });
+                        } else {
+                          // If no credentials, try direct download
+                          document.body.appendChild(downloadLink);
+                          downloadLink.click();
+                          document.body.removeChild(downloadLink);
+                        }
+                      }}
+                    >
+                      GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA
+                    </a>
+                  </li>
                   <li className="dropdown">
                     <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
                     <ul>
