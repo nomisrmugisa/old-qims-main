@@ -11,7 +11,7 @@ const AuthService = {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "login"});
         try {
             const response = await httpService.post('/auth/login', credentials);
-            const { token, refreshToken, user } = response;
+            /*const { token, refreshToken, user } = response;
 
             // Store tokens and user data
             StorageService.set(STORAGE_KEYS.AUTH_TOKEN, token);
@@ -21,7 +21,8 @@ const AuthService = {
             // Set auth header
             httpService.setAuthToken(token);
 
-            return user;
+            return user;*/
+            return response;
         } catch (error) {
             throw error;
         }
@@ -62,6 +63,32 @@ const AuthService = {
         }
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "resetPassword"});
+        }
+    },
+    registerEmail: async (credentials) => {
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "registerEmail"});
+        try {
+            const response = await httpService.post('/auth/forgot-password', credentials);
+            window.console.log(response);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "registerEmail"});
+        }
+    },
+    registerComplete: async (credentials) => {
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "registerComplete"});
+        try {
+            const response = await httpService.post('/auth/forgot-password', credentials);
+            window.console.log(response);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "registerComplete"});
         }
     },
 

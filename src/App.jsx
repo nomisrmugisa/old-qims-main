@@ -17,6 +17,11 @@ import AlertNotification from './components/AlertNotification';
 //Routes
 import ForgotPassword from './views/ForgotPassword';
 import ResetPassword from './views/ResetPassword';
+import Registration from './views/Registration';
+import Login from './views/Login';
+import FacilitiesPage from './views/FacilitiesPage';
+import FacilityDetailPage from './views/FacilityDetails';
+import ConflictResolutionPage from './views/ConflictResolverPage';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -125,6 +130,11 @@ function App() {
             />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/register" element={<Registration />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/facilities" element={<FacilitiesPage />} />
+              <Route path="/facility/:facilityId" element={<FacilityDetailPage />} />
+              <Route path="/conflict-resolution" element={<ConflictResolutionPage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>
