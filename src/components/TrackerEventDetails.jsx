@@ -323,7 +323,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setParentOrgUnitId(null);
         return;
       }
-  
+
       try {
         const response = await fetch(
           "/api/organisationUnits?paging=false",
@@ -333,16 +333,16 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             },
           }
         );
-  
+
         if (!response.ok) {
           throw new Error("Failed to fetch organisational units");
         }
-  
+
         const data = await response.json();
         const orgUnit = data.organisationUnits.find(
           unit => unit.displayName.trim() === formValues['VJzk8OdFJKA'].trim() // Trim both values
         );
-  
+
         if (orgUnit) {
           setParentOrgUnitId(orgUnit.id);
         } else {
@@ -353,7 +353,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setParentOrgUnitId(null);
       }
     };
-  
+
     fetchParentOrgUnitId();
   }, [formValues['VJzk8OdFJKA'], credentials]);
 
@@ -366,7 +366,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     }
     return result;
   };
-  
+
 
   const createOrgUnit = async (orgUnitId) => {
     try {
@@ -481,25 +481,25 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       let newTei = formValues['PdtizqOqE6Q'];
 
       // if (!formValues['PdtizqOqE6Q']) {
-        // Create new TEI if it doesn't exist
-        response = await fetch(`/api/trackedEntityInstances`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          },
-          body: JSON.stringify(teiPayload)
-        });
+      // Create new TEI if it doesn't exist
+      response = await fetch(`/api/trackedEntityInstances`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${credentials}`
+        },
+        body: JSON.stringify(teiPayload)
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to create tracked entity instance');
-        }
+      if (!response.ok) {
+        throw new Error('Failed to create tracked entity instance');
+      }
 
-        const result = await response.json();
-        newTei = result.response.importSummaries[0].reference;
+      const result = await response.json();
+      newTei = result.response.importSummaries[0].reference;
 
-        // Update formData with the new TEI
-        // setFormData(prev => ({ ...prev, tei: newTei }));
+      // Update formData with the new TEI
+      // setFormData(prev => ({ ...prev, tei: newTei }));
       // } else {
       //   // Update existing TEI
       //   response = await fetch(`/api/trackedEntityInstances/$newTei`, {
@@ -804,36 +804,36 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         comments
       });
 
-      setCurrentStep('Request accepted successfully!');
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000);
-
       // Send email notification
       try {
-        const userEmail = "qimsmohbots@gmail.com";
-        if (userEmail) {
-          const emailResponse = await fetch('https://qimsdev.5am.co.bw/api/facility-reg-update', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: userEmail,
-              // facilityName: formValues['PdtizqOqE6Q'] || 'your facility'
-            })
-          });
+        const emailResponse = await fetch('http://localhost:5003/api/facility-reg-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: "qimsmohbots@gmail.com",
+            // facilityName: formValues['PdtizqOqE6Q'] || 'your facility'
+          })
+        });
 
-          if (emailResponse.ok) {
-            setSuccessMessages(prev => [...prev, 'Email notification sent successfully']);
-            setEmailSent(true);
-            setOpenSnackbar(true);
-          }
+        if (emailResponse.ok) {
+          setSuccessMessages(prev => [...prev, 'Email notification sent successfully']);
+          setEmailSent(true);
+          setOpenSnackbar(true);
         }
+
       } catch (emailError) {
         console.error('Error sending email:', emailError);
         // Continue even if email fails
       }
+
+      setCurrentStep('Request accepted successfully!');
+      // setTimeout(() => {
+        setLoading(false);
+      // }, 1000);
+
+
 
     } catch (error) {
       console.error('Error updating request:', error);
