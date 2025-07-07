@@ -625,6 +625,31 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     setOpenSnackbar(false);
   };
 
+  const sendFacilityUpdateEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:5003/api/facility-reg-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: "qimsmohbots@gmail.com",
+
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email server responded with status ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Email sending error:', error);
+      return false;
+    }
+  };
+
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -804,36 +829,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         comments
       });
 
-      // Send email notification
-      try {
-        const emailResponse = await fetch('http://localhost:5003/api/facility-reg-update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: "qimsmohbots@gmail.com",
-            // facilityName: formValues['PdtizqOqE6Q'] || 'your facility'
-          })
-        });
-
-        if (emailResponse.ok) {
-          setSuccessMessages(prev => [...prev, 'Email notification sent successfully']);
-          setEmailSent(true);
-          setOpenSnackbar(true);
-        }
-
-      } catch (emailError) {
-        console.error('Error sending email:', emailError);
-        // Continue even if email fails
-      }
-
       setCurrentStep('Request accepted successfully!');
+
       // setTimeout(() => {
-        setLoading(false);
+      // setLoading(false);
       // }, 1000);
-
-
 
     } catch (error) {
       console.error('Error updating request:', error);
@@ -1159,7 +1159,24 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleSubmit}
+                  onClick={async () => {
+                    // First execute handleSubmit
+                    await handleSubmit();
+
+                    // Then send email
+                    setCurrentStep('Sending notification...');
+                    try {
+                      const emailSuccess = await sendFacilityUpdateEmail();
+                      if (emailSuccess) {
+                        setSuccessMessages(prev => [...prev, 'Notification email sent']);
+                        setOpenSnackbar(true);
+                      }
+                    } catch (emailError) {
+                      console.error('Email sending failed:', emailError);
+                      setSuccessMessages(prev => [...prev, 'Email notification failed']);
+                      setOpenSnackbar(true);
+                    }
+                  }}
                   disabled={updating}
                   size="small"
                 >
