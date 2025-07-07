@@ -6,6 +6,59 @@ import logo from '../assets/logo.png';
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+  
+  // Function to handle document download
+  const handleDocumentDownload = async (e, documentId, fileName) => {
+    e.preventDefault();
+    setIsDownloading(true);
+    setDownloadError(null);
+    
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) {
+        throw new Error('Authentication required. Please log in.');
+      }
+      
+      const downloadUrl = `${import.meta.env.VITE_DHIS2_URL}/api/documents/${documentId}/data`;
+      
+      // Fetch the document with authentication
+      const response = await fetch(downloadUrl, {
+        headers: {
+          Authorization: `Basic ${credentials}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the file as a blob
+      const blob = await response.blob();
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.setAttribute('download', fileName);
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(downloadLink);
+      
+      // Show success message or notification here if needed
+      console.log('Download successful');
+    } catch (error) {
+      console.error('Download error:', error);
+      setDownloadError(error.message);
+      // You could display this error to the user with a toast notification
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
@@ -188,47 +241,28 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li>
                     <a 
                       href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const credentials = localStorage.getItem('userCredentials');
-                        const downloadUrl = `${import.meta.env.VITE_DHIS2_URL}/api/documents/nO1LbjtYHO7/data`;
-                        
-                        // Create a hidden anchor element for download
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = downloadUrl;
-                        downloadLink.setAttribute('download', 'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf');
-                        downloadLink.setAttribute('target', '_blank');
-                        
-                        // Add authorization header if needed via fetch API
-                        if (credentials) {
-                          fetch(downloadUrl, {
-                            headers: {
-                              Authorization: `Basic ${credentials}`
-                            }
-                          })
-                          .then(response => response.blob())
-                          .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            downloadLink.href = url;
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            window.URL.revokeObjectURL(url);
-                            document.body.removeChild(downloadLink);
-                          })
-                          .catch(error => {
-                            console.error('Download failed:', error);
-                            // Fallback to direct link if fetch fails
-                            window.open(downloadUrl, '_blank');
-                          });
-                        } else {
-                          // If no credentials, try direct download
-                          document.body.appendChild(downloadLink);
-                          downloadLink.click();
-                          document.body.removeChild(downloadLink);
-                        }
+                      onClick={(e) => handleDocumentDownload(
+                        e, 
+                        'nO1LbjtYHO7', 
+                        'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf'
+                      )}
+                      style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: isDownloading ? 'wait' : 'pointer'
                       }}
                     >
-                      GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA
+                      {isDownloading ? (
+                        <>
+                          <i className="bi bi-arrow-clockwise me-2" style={{ animation: 'spin 1s linear infinite' }}></i>
+                          <span>Downloading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-file-pdf me-2"></i>
+                          <span>GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA</span>
+                        </>
+                      )}
                     </a>
                   </li>
                   <li className="dropdown">
@@ -276,6 +310,46 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
           </div>
         </div>
       </div>
+      
+      {/* Download error notification */}
+      {downloadError && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            padding: '10px 15px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            zIndex: 1050,
+            display: 'flex',
+            alignItems: 'center',
+            maxWidth: '400px'
+          }}
+        >
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          <div>
+            <strong>Download Error:</strong> {downloadError}
+            <button 
+              onClick={() => setDownloadError(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#721c24',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                position: 'absolute',
+                top: '5px',
+                right: '10px'
+              }}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
