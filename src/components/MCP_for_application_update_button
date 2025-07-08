@@ -202,3 +202,21 @@ const MCPForApplicationUpdateButton = ({ formValues, parentOrgUnitId }) => {
 };
 
 export default MCPForApplicationUpdateButton;
+
+
+
+
+// when Submit for application Button is clicked:
+// 1.  Add facility for Screening organisation Unit Group by :
+// Method: PUT
+//   /api/29/organisationUnitGroups/nDAvPPtYHQP?mergeMode=REPLACE
+// Body:
+// {"id":"nDAvPPtYHQP","name":"Screening Review","shortName":"Screening Review","organisationUnits":[{"id":"Z3UFGQZ14FW"}]}
+
+// where Z3UFGQZ14FW is the facility ID
+
+// 2. Send email to User that their Application Has been Recieved using the ame mechanism as  in the Registration form but hard code the email to  "qimsmohbots@gmail.com"  Message"Your Application Has Been Recieved, we will contact you soon"  
+
+// 3. give user feedback popup that Apllication submitted successfully"
+
+// 4. Disable submit application for review button and togle it to application sent.

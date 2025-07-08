@@ -7,6 +7,59 @@ import {eventBus, EVENTS } from '../events';
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+  
+  // Function to handle document download
+  const handleDocumentDownload = async (e, documentId, fileName) => {
+    e.preventDefault();
+    setIsDownloading(true);
+    setDownloadError(null);
+    
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) {
+        throw new Error('Authentication required. Please log in.');
+      }
+      
+      const downloadUrl = `${import.meta.env.VITE_DHIS2_URL}/api/documents/${documentId}/data`;
+      
+      // Fetch the document with authentication
+      const response = await fetch(downloadUrl, {
+        headers: {
+          Authorization: `Basic ${credentials}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the file as a blob
+      const blob = await response.blob();
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.setAttribute('download', fileName);
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(downloadLink);
+      
+      // Show success message or notification here if needed
+      console.log('Download successful');
+    } catch (error) {
+      console.error('Download error:', error);
+      setDownloadError(error.message);
+      // You could display this error to the user with a toast notification
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
@@ -44,7 +97,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
             return;
           }
 
-          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName]`, {
+          console.log('📊 FETCHING ORGANIZATION UNIT DATA');
+          console.log('- API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`);
+          
+          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
             headers: {
               Authorization: `Basic ${credentials}`
             }
@@ -52,10 +108,22 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           if (response.ok) {
             const data = await response.json();
+            console.log('- API Response:', data);
+            
             if (data && data.organisationUnits && data.organisationUnits.length > 0) {
-              setOrgUnitName(data.organisationUnits[0].displayName);
+              const orgUnitName = data.organisationUnits[0].displayName;
+              const orgUnitId = data.organisationUnits[0].id;
+              
+              console.log('✅ ORGANIZATION UNIT DATA:');
+              console.log('- Name:', orgUnitName);
+              console.log('- ID:', orgUnitId);
+              
+              setOrgUnitName(orgUnitName);
               // Also store in localStorage for future use
-              localStorage.setItem('userOrgUnitName', data.organisationUnits[0].displayName);
+              localStorage.setItem('userOrgUnitName', orgUnitName);
+              localStorage.setItem('userOrgUnitId', orgUnitId);
+            } else {
+              console.log('❌ No organization units found in response');
             }
           } else {
             console.error('Failed to fetch organization unit data');
@@ -187,7 +255,33 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <i className="bi bi-chevron-down toggle-dropdown"></i>
                 </a>
                 <ul>
-                  <li><a href="#">Dropdown 1</a></li>
+                  <li>
+                    <a 
+                      href="#" 
+                      onClick={(e) => handleDocumentDownload(
+                        e, 
+                        'nO1LbjtYHO7', 
+                        'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf'
+                      )}
+                      style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: isDownloading ? 'wait' : 'pointer'
+                      }}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <i className="bi bi-arrow-clockwise me-2" style={{ animation: 'spin 1s linear infinite' }}></i>
+                          <span>Downloading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-file-pdf me-2"></i>
+                          <span>GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA</span>
+                        </>
+                      )}
+                    </a>
+                  </li>
                   <li className="dropdown">
                     <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
                     <ul>
@@ -233,6 +327,46 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
           </div>
         </div>
       </div>
+      
+      {/* Download error notification */}
+      {downloadError && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            padding: '10px 15px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            zIndex: 1050,
+            display: 'flex',
+            alignItems: 'center',
+            maxWidth: '400px'
+          }}
+        >
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          <div>
+            <strong>Download Error:</strong> {downloadError}
+            <button 
+              onClick={() => setDownloadError(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#721c24',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                position: 'absolute',
+                top: '5px',
+                right: '10px'
+              }}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

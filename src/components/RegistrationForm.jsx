@@ -20,7 +20,6 @@ import {
   DialogActions as ErrorDialogActions
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import {eventBus, useEvent, EVENTS } from '../events';
 import { API_URL } from '../config'; // Import API_URL
 
 // Add CSS for animations
@@ -59,10 +58,6 @@ function RegistrationForm() {
   // Define a default password for new users
   const DEFAULT_PASSWORD = "selfRegistration@123$";
 
-  useEvent(EVENTS.REGISTRATION_FORM_SHOW, () => {
-      handleClickOpen();
-  });
-
   useEffect(() => {
     // Credentials are now hardcoded as requested, no need to retrieve from localStorage
     // const storedCredentials = localStorage.getItem('userCredentials');
@@ -70,7 +65,7 @@ function RegistrationForm() {
     //   setCredentials(storedCredentials);
     // }
 
-    /*const fetchOrganisationalUnits = async () => {
+    const fetchOrganisationalUnits = async () => {
 
       try {
         const response = await fetch(
@@ -94,7 +89,7 @@ function RegistrationForm() {
       }
     };
 
-    fetchOrganisationalUnits();*/
+    fetchOrganisationalUnits();
   }, [credentials]);
 
   const [formData, setFormData] = useState({
@@ -158,7 +153,7 @@ function RegistrationForm() {
 
   const handleSubmit = async () => {
     setLoading(true);
-      eventBus.emit(EVENTS.LOADING_SHOW, { source: "registration_form"});
+
     try {
       // 1. Create User Profile (switched to be first)
       const userPayload = {
@@ -269,7 +264,7 @@ function RegistrationForm() {
 
       // 3. Send Welcome Email (remains third)
       try {
-        const emailResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/send-email`, {
+        const emailResponse = await fetch('http://134.255.180.98:5002/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -307,7 +302,6 @@ function RegistrationForm() {
       }
     } finally {
       setLoading(false);
-        eventBus.emit(EVENTS.LOADING_HIDE, { source: "registration_form"});
     }
   };
 
@@ -448,9 +442,17 @@ function RegistrationForm() {
             Cancel
           </Button>
           <Button
-              class="cta-btn"
             onClick={handleSubmit}
             variant="contained"
+            sx={{
+              backgroundColor: "#3f51b5",
+              color: "#fff",
+              borderRadius: 2,
+              px: 4,
+              "&:hover": {
+                backgroundColor: "#303f9f",
+              },
+            }}
           >
             Apply
           </Button>

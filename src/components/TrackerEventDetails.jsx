@@ -323,7 +323,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setParentOrgUnitId(null);
         return;
       }
-  
+
       try {
         const response = await fetch(
           "/api/organisationUnits?paging=false",
@@ -333,16 +333,16 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             },
           }
         );
-  
+
         if (!response.ok) {
           throw new Error("Failed to fetch organisational units");
         }
-  
+
         const data = await response.json();
         const orgUnit = data.organisationUnits.find(
           unit => unit.displayName.trim() === formValues['VJzk8OdFJKA'].trim() // Trim both values
         );
-  
+
         if (orgUnit) {
           setParentOrgUnitId(orgUnit.id);
         } else {
@@ -353,7 +353,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setParentOrgUnitId(null);
       }
     };
-  
+
     fetchParentOrgUnitId();
   }, [formValues['VJzk8OdFJKA'], credentials]);
 
@@ -366,7 +366,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     }
     return result;
   };
-  
+
 
   const createOrgUnit = async (orgUnitId) => {
     try {
@@ -481,25 +481,25 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       let newTei = formValues['PdtizqOqE6Q'];
 
       // if (!formValues['PdtizqOqE6Q']) {
-        // Create new TEI if it doesn't exist
-        response = await fetch(`/api/trackedEntityInstances`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          },
-          body: JSON.stringify(teiPayload)
-        });
+      // Create new TEI if it doesn't exist
+      response = await fetch(`/api/trackedEntityInstances`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${credentials}`
+        },
+        body: JSON.stringify(teiPayload)
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to create tracked entity instance');
-        }
+      if (!response.ok) {
+        throw new Error('Failed to create tracked entity instance');
+      }
 
-        const result = await response.json();
-        newTei = result.response.importSummaries[0].reference;
+      const result = await response.json();
+      newTei = result.response.importSummaries[0].reference;
 
-        // Update formData with the new TEI
-        // setFormData(prev => ({ ...prev, tei: newTei }));
+      // Update formData with the new TEI
+      // setFormData(prev => ({ ...prev, tei: newTei }));
       // } else {
       //   // Update existing TEI
       //   response = await fetch(`/api/trackedEntityInstances/$newTei`, {
@@ -625,15 +625,44 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     setOpenSnackbar(false);
   };
 
+  const sendFacilityUpdateEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:5003/api/facility-reg-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: "qimsmohbots@gmail.com",
+
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email server responded with status ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Email sending error:', error);
+      return false;
+    }
+  };
+
+
   const handleSubmit = async () => {
     try {
+      console.log('🚀 === STARTING APPLICATION UPDATE PROCESS ===');
+      console.log('Step 1: Initializing update process...');
       setLoading(true);
       setSuccessMessages([]);
 
       // Generate a new ID for org unit if complete is checked
       const orgUnitId = generate_orgUnitID();
+      console.log('Step 2: Generated organization unit ID:', orgUnitId);
 
       // Prepare the payload
+      console.log('Step 3: Preparing payload for DHIS2 update...');
       setCurrentStep('Saving...');
       const payload = {
         events: [{
@@ -686,12 +715,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         }]
       };
 
-      // If complete is checked, perform the additional steps
-      // if (checklist.complete && orgUnitId) {
-      // Step 2a: Create org unit
-
-      // }
-
+      console.log('Step 4: Sending update request to DHIS2...');
       // Send the request
       // setCurrentStep('Accepting request ...');
       setCurrentStep('Saving...');
@@ -714,29 +738,33 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       // }
 
       const result = await response.json();
-      console.log('Update successful:', result);
+      console.log('✅ Step 4 COMPLETED: DHIS2 update successful:', result);
       // setSuccessMessages(prev => [...prev, 'Request updated successfully in DHIS2']);
       setSuccessMessages(prev => [...prev, '1 / 5']);
       setOpenSnackbar(true);
 
+      console.log('Step 5: Creating organization unit...');
       // Creating org unit
       // setCurrentStep(`Adding ${locationName} facility to registry...`);
       setCurrentStep('Saving...');
       await createOrgUnit(orgUnitId);
+      console.log('✅ Step 5 COMPLETED: Organization unit created successfully');
       // setSuccessMessages(prev => [...prev, 'Facility added to registry successfully']);
       setSuccessMessages(prev => [...prev, '2 / 5']);
       setOpenSnackbar(true);
 
+      console.log('Step 6: Adding organization unit to program...');
       // Step 2b: Add org unit to program
       // setCurrentStep(`Facility updated...`);
       await addOrgUnitToProgram(orgUnitId);
-      // setSuccessMessages(prev => [...prev, 'Facility added ']);
-      setOpenSnackbar(true);
+      console.log('✅ Step 6 COMPLETED: Organization unit added to program');
 
+      console.log('Step 7: Creating/updating tracked entity instance...');
       // New Step: Create or Update TEI
       // setCurrentStep('Updating facility dependecies...');
       setCurrentStep('Saving...');
       const updatedTei = await createOrUpdateTEI(orgUnitId);
+      console.log('✅ Step 7 COMPLETED: Tracked entity instance created/updated:', updatedTei);
       // setSuccessMessages(prev => [...prev, 'Facility dependecies updated successfully']);
       setSuccessMessages(prev => [...prev, '3 / 5']);
       setOpenSnackbar(true);
@@ -748,6 +776,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         );
       }
 
+      console.log('Step 8: Creating program enrollments...');
       // Step 2c: Create enrollments for all programs
       setCurrentStep('Saving...');
       // setCurrentStep('Creating program enrollments...');
@@ -760,10 +789,12 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       for (const programId of programs) {
         await createEnrollment(orgUnitId, programId, updatedTei);
       }
+      console.log('✅ Step 8 COMPLETED: Program enrollments created for all programs');
       // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
       setSuccessMessages(prev => [...prev, '4 / 5']);
       setOpenSnackbar(true);
 
+      console.log('Step 9: Enabling users and assigning to location...');
       // NEW STEP: Enable users associated with the org unit
       // setCurrentStep('Enabling users and adding user to location...');
       try {
@@ -786,12 +817,68 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           // await addUsertoLocation(user.id);
           console.log(`Enabled user ${user.id}`);
         }
+        console.log('✅ Step 9 COMPLETED: Users enabled and assigned to location');
         // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
         setSuccessMessages(prev => [...prev, '5 / 5']);
 
         setOpenSnackbar(true);
+        
+        console.log('Step 10: Sending email notification...');
+        // Step 10: Send email notification
+        setCurrentStep('Sending notification...');
+        try {
+          const emailSuccess = await sendFacilityUpdateEmail();
+          if (emailSuccess) {
+            console.log('✅ Step 10 COMPLETED: Email notification sent successfully');
+            setSuccessMessages(prev => [...prev, 'Email notification sent']);
+            setOpenSnackbar(true);
+            
+            console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
+            // Step 11: Reload data and switch to Facility Ownership tab (only after successful email)
+            setCurrentStep('Completing application...');
+            setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
+            
+            // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
+            localStorage.setItem('autoSelectTab', 'facilityOwnership');
+            
+            // Add a short delay before reloading to ensure user sees the success message
+            setTimeout(() => {
+              console.log('🚀 EXECUTING Step 11: Triggering data refresh and tab switch...');
+              // Instead of reloading the page, trigger a data refresh from localStorage
+              // This will cause the parent component to re-fetch all data
+              const refreshEvent = new CustomEvent('refreshApplicationData', {
+                detail: { 
+                  action: 'refresh',
+                  timestamp: new Date().toISOString()
+                }
+              });
+              window.dispatchEvent(refreshEvent);
+              
+              // Also trigger the tab switch
+              const tabSwitchEvent = new CustomEvent('switchToTab', {
+                detail: { 
+                  tab: 'facilityOwnership',
+                  timestamp: new Date().toISOString()
+                }
+              });
+              window.dispatchEvent(tabSwitchEvent);
+              
+              console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
+            }, 1500);
+            
+          } else {
+            console.error('❌ Step 10 FAILED: Email notification failed');
+            setSuccessMessages(prev => [...prev, 'Email notification failed']);
+            setOpenSnackbar(true);
+          }
+        } catch (emailError) {
+          console.error('❌ Step 10 FAILED: Email sending error:', emailError);
+          setSuccessMessages(prev => [...prev, 'Email notification failed']);
+          setOpenSnackbar(true);
+        }
+        
       } catch (error) {
-        console.error('Error in user enabling process:', error);
+        console.error('❌ Step 9 FAILED: Error in user enabling process:', error);
         // Continue even if user enabling fails - this shouldn't block the main process
         // setSuccessMessages(prev => [...prev, 'User enabling partially completed']);
         setOpenSnackbar(true);
@@ -805,12 +892,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       });
 
       setCurrentStep('Request accepted successfully!');
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000);
+      console.log('🎉 === APPLICATION UPDATE PROCESS COMPLETED ===');
+
+      // setTimeout(() => {
+      // setLoading(false);
+      // }, 1000);
 
     } catch (error) {
-      console.error('Error updating request:', error);
+      console.error('❌ APPLICATION UPDATE PROCESS FAILED:', error);
       // You might want to show an error message to the user here
       setSuccessMessages(prev => [...prev, `Error: ${error.message}`]);
       setOpenSnackbar(true);
@@ -1133,7 +1222,33 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleSubmit}
+                  onClick={async () => {
+                    // First execute handleSubmit
+                    await handleSubmit();
+
+                    // Then send email
+                    setCurrentStep('Sending notification...');
+                    try {
+                      const emailSuccess = await sendFacilityUpdateEmail();
+                      if (emailSuccess) {
+                        setSuccessMessages(prev => [...prev, 'Notification email sent']);
+                        setOpenSnackbar(true);
+                        
+                        // Add a short delay before reloading to ensure user sees the success message
+                        setTimeout(() => {
+                          // Store a flag in localStorage to indicate we should select the Facility Ownership tab after reload
+                          localStorage.setItem('autoSelectTab', 'facilityOwnership');
+                          
+                          // Reload the page
+                          window.location.reload();
+                        }, 1500);
+                      }
+                    } catch (emailError) {
+                      console.error('Email sending failed:', emailError);
+                      setSuccessMessages(prev => [...prev, 'Email notification failed']);
+                      setOpenSnackbar(true);
+                    }
+                  }}
                   disabled={updating}
                   size="small"
                 >
