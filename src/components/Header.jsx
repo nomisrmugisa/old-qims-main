@@ -92,7 +92,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
             return;
           }
 
-          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName]`, {
+          console.log('📊 FETCHING ORGANIZATION UNIT DATA');
+          console.log('- API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`);
+          
+          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
             headers: {
               Authorization: `Basic ${credentials}`
             }
@@ -100,10 +103,22 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           if (response.ok) {
             const data = await response.json();
+            console.log('- API Response:', data);
+            
             if (data && data.organisationUnits && data.organisationUnits.length > 0) {
-              setOrgUnitName(data.organisationUnits[0].displayName);
+              const orgUnitName = data.organisationUnits[0].displayName;
+              const orgUnitId = data.organisationUnits[0].id;
+              
+              console.log('✅ ORGANIZATION UNIT DATA:');
+              console.log('- Name:', orgUnitName);
+              console.log('- ID:', orgUnitId);
+              
+              setOrgUnitName(orgUnitName);
               // Also store in localStorage for future use
-              localStorage.setItem('userOrgUnitName', data.organisationUnits[0].displayName);
+              localStorage.setItem('userOrgUnitName', orgUnitName);
+              localStorage.setItem('userOrgUnitId', orgUnitId);
+            } else {
+              console.log('❌ No organization units found in response');
             }
           } else {
             console.error('Failed to fetch organization unit data');

@@ -2,15 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
 
-const EditFacilityOwnershipDialog = ({ 
-  open, 
-  onClose, 
-  onUpdateSuccess, 
-  onAddSuccess, 
-  event, 
-  trackedEntityInstanceId, 
-  isEditMode = true 
-}) => {
+const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
   const [formData, setFormData] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
@@ -24,7 +16,6 @@ const EditFacilityOwnershipDialog = ({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
@@ -88,39 +79,20 @@ const EditFacilityOwnershipDialog = ({
   useEffect(() => {
     if (open) {
       fetchProgramStageMetadata();
-      
-      // Only check screening group in edit mode
-      if (isEditMode && event) {
       checkIfInScreeningGroup();
-      } else {
-        setIsInScreeningGroup(false);
-      }
-      
-      // Initialize form data from event if in edit mode
-      if (isEditMode && event && event.dataValues) {
+      if (event && event.dataValues) {
         const initialData = {};
         event.dataValues.forEach(dv => {
           initialData[dv.dataElement] = dv.value;
         });
         setFormData(initialData);
       } else {
-        // Reset form data in add mode
         setFormData({});
       }
-      
       setIsSubmitting(false);
       setErrorMessage("");
-      setSubmitSuccess(false);
-      setSubmitError(null);
-      
-      // Log for debugging
-      console.log("Dialog initialized with:", { 
-        isEditMode, 
-        hasEvent: !!event,
-        trackedEntityInstanceId 
-      });
     }
-  }, [open, event, fetchProgramStageMetadata, checkIfInScreeningGroup, isEditMode, trackedEntityInstanceId]);
+  }, [open, event, fetchProgramStageMetadata, checkIfInScreeningGroup]);
 
   // On dialog open, fetch file names for existing FILE_RESOURCE fields
   useEffect(() => {
@@ -221,157 +193,84 @@ const EditFacilityOwnershipDialog = ({
       return;
     }
     try {
-      console.log("Form submission started", { isEditMode, hasEvent: !!event });
-      
-      const dataValues = Object.entries(formData)
-        .filter(([, value]) => value !== null && value !== '')
-        .map(([dataElement, value]) => ({
-          dataElement,
-          value: value.toString(),
-        }));
-      
-      console.log(`Prepared ${dataValues.length} data values for submission`);
+      // Get all data elements from compliance sections to exclude them
+      const complianceDataElementIds = new Set();
+      if (programStageMetadata) {
+        programStageMetadata.programStageSections.forEach(section => {
+          if (isComplianceSection(section)) {
+            section.dataElements.forEach(de => {
+              complianceDataElementIds.add(de.id);
+            });
+          }
+        });
+      }
 
-      if (isEditMode && event) {
-        // Edit mode - update existing event
-        console.log("Update mode - Event data:", { 
-          eventId: event.event,
-          orgUnit: event.orgUnit,
-          program: event.program || "EE8yeLVo6cN",
-          programStage: event.programStage || "MuJubgTzJrY"
-        });
-        
-        const payload = {
-          event: event.event,
-          orgUnit: event.orgUnit,
-          program: event.program || "EE8yeLVo6cN",
-          programStage: event.programStage || "MuJubgTzJrY",
-          status: "COMPLETED",
-          dataValues,
-        };
-        
-        console.log("Sending PUT request to update event:", payload);
-        
-        const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Basic ${credentials}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-        
-        console.log("Update response status:", response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Update failed:", { status: response.status, error: errorText });
-          throw new Error(`Update failed: ${response.status} - ${errorText}`);
-        }
-        
-        const responseData = await response.json();
-        console.log("Update successful:", responseData);
-        
-        // Call the success callback
-        onUpdateSuccess && onUpdateSuccess();
-        
-        // Show success message
-        setErrorMessage("Changes saved successfully!");
-        
-        // Close dialog after a short delay to show success message
-        setTimeout(() => {
-          onClose();
-        }, 1500);
-      } else {
-        // Add mode - create new event
-        // Get the organization unit ID from the current user
-        const orgUnitId = await getCurrentUserOrgUnit();
-        const today = new Date().toISOString().split('T')[0];
-        
-        console.log("Add mode - Using organization unit:", orgUnitId);
-        
-        // Use the provided trackedEntityInstanceId or fetch it if not available
-        let effectiveTrackedEntityInstanceId = trackedEntityInstanceId;
-        
-        if (!effectiveTrackedEntityInstanceId) {
-          // Fetch trackedEntityInstanceId if not provided
-          console.log("No trackedEntityInstanceId provided, fetching from API");
-          
-          const teiResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`, {
+      // Upload files first if any, excluding compliance fields
+      const dataValues = await Promise.all(
+        Object.entries(formData)
+          .filter(([dataElement]) => !complianceDataElementIds.has(dataElement)) // Exclude compliance fields
+          .map(async ([dataElement, value]) => {
+            if (value instanceof File) {
+              // Upload file and get fileResourceId
+              const fileData = new FormData();
+              fileData.append("file", value);
+              const fileRes = await fetch("/api/fileResources", {
+                method: "POST",
                 headers: { Authorization: `Basic ${credentials}` },
-          });
-          
-          if (!teiResponse.ok) {
-            console.error("Failed to fetch tracked entity instance:", teiResponse.status);
-            throw new Error(`Failed to fetch tracked entity instance: ${teiResponse.status}`);
-          }
-          
-          const teiData = await teiResponse.json();
-          console.log("Tracked entity response:", teiData);
-          
-          if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
-            effectiveTrackedEntityInstanceId = teiData.trackedEntityInstances[0].trackedEntityInstance;
-            console.log("Found trackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
+                body: fileData,
+              });
+              if (!fileRes.ok) {
+                const errorText = await fileRes.text();
+                throw new Error(`File upload failed: ${fileRes.status} - ${errorText}`);
+              }
+              const responseJson = await fileRes.json();
+              return { dataElement, value: responseJson.response.fileResource.id };
             } else {
-            console.error("No tracked entity instances found");
-            throw new Error("No tracked entity instance found for this organization unit.");
+              return { dataElement, value: value };
+            }
+          })
+      );
+
+      // Add back the original compliance field values from the event
+      if (event && event.dataValues) {
+        event.dataValues.forEach(dv => {
+          if (complianceDataElementIds.has(dv.dataElement)) {
+            dataValues.push({ dataElement: dv.dataElement, value: dv.value });
           }
-        } else {
-          console.log("Using provided trackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
-        }
-        
+        });
+      }
+
+      const orgUnitId = await getCurrentUserOrgUnit();
       const payload = {
+        event: event.event,
         orgUnit: orgUnitId,
         program: "EE8yeLVo6cN",
         programStage: "MuJubgTzJrY",
         status: "COMPLETED",
+        trackedEntityInstance: event.trackedEntityInstance,
         dataValues,
-          trackedEntityInstance: effectiveTrackedEntityInstanceId,
-          eventDate: today
-        };
-        
-        console.log("Sending POST request to create event:", payload);
-        
-        const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
-          method: "POST",
+      };
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
+        method: "PUT",
         headers: {
           Authorization: `Basic ${credentials}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-        
-        console.log("Create response status:", response.status);
-        
       if (!response.ok) {
         const errorText = await response.text();
-          console.error("Create failed:", { status: response.status, error: errorText });
         throw new Error(`Submission failed: ${response.status} - ${errorText}`);
       }
-        
-        const responseData = await response.json();
-        console.log("Create successful:", responseData);
-        
-        // Call the success callback
-        onAddSuccess && onAddSuccess();
-        
-        // Show success message
-        setErrorMessage("Record added successfully!");
-        
-        // Close dialog after a short delay to show success message
-        setTimeout(() => {
+      onUpdateSuccess && onUpdateSuccess();
       onClose();
-        }, 1500);
-      }
     } catch (error) {
-      console.error("Form submission error:", error);
       setErrorMessage(error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper function to get the current user's organization unit ID
   const getCurrentUserOrgUnit = async () => {
     const credentials = localStorage.getItem('userCredentials');
     const response = await fetch("/api/me.json", {
@@ -396,11 +295,13 @@ const EditFacilityOwnershipDialog = ({
     // Check for section name containing "compliance" (case insensitive)
     return section.name && section.name.toLowerCase().includes('compliance');
   };
-
+  
   // Helper to check if a section is the special circumstances section
   const isSpecialCircumstancesSection = (section) => {
-    // Check for section name containing "special circumstances" (case insensitive)
-    return section.name && section.name.toLowerCase().includes('special circumstances');
+    // Check for section name containing "special" and "circumstances" (case insensitive)
+    return section.name && 
+           section.name.toLowerCase().includes('special') && 
+           section.name.toLowerCase().includes('circumstances');
   };
 
   const renderFileInput = (de) => {
@@ -935,17 +836,13 @@ const EditFacilityOwnershipDialog = ({
   // Helper to check if all required fields are filled
   const isAllRequiredFieldsFilled = () => {
     if (!programStageMetadata) return false;
-    
     for (const section of programStageMetadata.programStageSections) {
-      // Exclude fields in Compliance sections and Special Circumstances sections
-      if (isComplianceSection(section) || isSpecialCircumstancesSection(section)) {
-        continue;
-      }
-      
       for (const de of section.dataElements) {
-        // Check ALL fields in required sections, not just those marked as compulsory
-        const value = formData[de.id];
-        if (value === undefined || value === null || value === '') {
+        // Exclude fields in Compliance sections and Special Circumstances sections
+        if (isComplianceSection(section) || isSpecialCircumstancesSection(section)) {
+          continue;
+        }
+        if (de.compulsory && !formData[de.id]) {
           return false;
         }
       }
@@ -958,13 +855,6 @@ const EditFacilityOwnershipDialog = ({
 
   // Handler for submit application for review
   const handleSubmitForReview = async () => {
-    // Show confirmation dialog instead of proceeding directly
-    setShowConfirmDialog(true);
-  };
-  
-  // Actual submission after confirmation
-  const handleConfirmedSubmit = async () => {
-    setShowConfirmDialog(false);
     setSubmitInProgress(true);
     setSubmitError(null);
     try {
@@ -994,7 +884,7 @@ const EditFacilityOwnershipDialog = ({
         body: JSON.stringify({
           to: 'qimsmohbots@gmail.com',
           subject: 'Application Received',
-          message: 'Your Application Has Been Received, we will contact you soon',
+          message: 'Your Application Has Been Recieved, we will contact you soon',
         }),
       });
 
@@ -1002,25 +892,13 @@ const EditFacilityOwnershipDialog = ({
       setSubmitSuccess(true);
       // 4. Disable and toggle button
       setSubmitInProgress(false);
-      // 5. Set isInScreeningGroup to true to disable Save Changes button
-      setIsInScreeningGroup(true);
     } catch (err) {
       setSubmitError(err.message || 'Submission failed');
       setSubmitInProgress(false);
     }
   };
 
-  // Cancel confirmation
-  const handleCancelConfirmation = () => {
-    setShowConfirmDialog(false);
-  };
-
   if (!open) return null;
-
-  // Debug check for isEditMode
-  if (isEditMode === undefined) {
-    console.error("isEditMode prop is undefined in EditFacilityOwnershipDialog");
-  }
 
   return (
     <ModalPortal open={open} onClose={onClose}>
@@ -1032,123 +910,6 @@ const EditFacilityOwnershipDialog = ({
         boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
         overflow: 'hidden'
       }}>
-        {/* Confirmation Dialog */}
-        {showConfirmDialog && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 10001
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '24px',
-              width: '400px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                borderBottom: '1px solid #eee',
-                paddingBottom: '16px'
-              }}>
-                <span style={{ 
-                  fontSize: '24px', 
-                  color: '#f57c00',
-                  marginRight: '8px'
-                }}>⚠️</span>
-                <h3 style={{ 
-                  margin: 0, 
-                  color: '#333',
-                  fontSize: '18px',
-                  fontWeight: '600'
-                }}>Confirm Submission</h3>
-              </div>
-              
-              <p style={{ 
-                margin: '0 0 8px 0',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                color: '#555'
-              }}>
-                You are about to submit this application for review. Once submitted:
-              </p>
-              
-              <ul style={{
-                margin: '0 0 16px 0',
-                paddingLeft: '20px',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                color: '#555'
-              }}>
-                <li>You will not be able to make further edits to this information</li>
-                <li>Your application will be sent for official review</li>
-                <li>You will receive confirmation via email</li>
-              </ul>
-              
-              <p style={{ 
-                margin: '0 0 16px 0',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333'
-              }}>
-                Are you sure you want to proceed?
-              </p>
-              
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                borderTop: '1px solid #eee',
-                paddingTop: '16px'
-              }}>
-                <button 
-                  onClick={handleCancelConfirmation}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#f5f5f5',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#555',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleConfirmedSubmit}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#2e7d32',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: 'white',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
-                  }}
-                >
-                  Yes, Submit Application
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="modal-header" style={{
           padding: '16px 24px',
           borderBottom: '1px solid #e0e0e0',
@@ -1162,7 +923,7 @@ const EditFacilityOwnershipDialog = ({
             fontSize: '1.25rem', 
             fontWeight: '500',
             color: '#333'
-          }}>{isEditMode ? 'Edit Facility Ownership' : 'Add Facility Ownership'}</h5>
+          }}>Edit Facility Ownership</h5>
           <button 
             type="button" 
             className="close-btn" 
@@ -1187,27 +948,6 @@ const EditFacilityOwnershipDialog = ({
           overflowY: 'auto'
         }}>
           <form onSubmit={handleSubmit} className="ownership-form">
-            {errorMessage && (
-              <div style={{
-                padding: '12px 16px',
-                marginBottom: '20px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                backgroundColor: errorMessage.includes('successfully') ? '#e8f5e9' : '#ffebee',
-                color: errorMessage.includes('successfully') ? '#2e7d32' : '#c62828',
-                border: `1px solid ${errorMessage.includes('successfully') ? '#a5d6a7' : '#ef9a9a'}`,
-                display: 'flex',
-                alignItems: 'center',
-              }}>
-                <span style={{ 
-                  marginRight: '8px', 
-                  fontSize: '18px' 
-                }}>
-                  {errorMessage.includes('successfully') ? '✓' : '⚠️'}
-                </span>
-                {errorMessage}
-              </div>
-            )}
             {renderFormBody()}
             <div className="button-container" style={{ 
               display: 'flex', 
@@ -1259,7 +999,7 @@ const EditFacilityOwnershipDialog = ({
                   boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
                 }}
               >
-                {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Record'}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>
               {isInScreeningGroup && (
                 <div style={{ 
@@ -1285,14 +1025,14 @@ const EditFacilityOwnershipDialog = ({
                   fontSize: '0.95rem',
                   fontWeight: '500',
                   boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
-                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() || !isEditMode ? 'not-allowed' : 'pointer',
+                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
-                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess && isEditMode ? 1 : 0.7,
+                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
                 }}
-                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup || !isEditMode}
+                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
                 onClick={handleSubmitForReview}
               >
-                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : !isEditMode ? 'Save Record First' : submitInProgress ? 'Submitting...' : 'Submit Application for Review'}
+                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Submit Application for Review'}
               </button>
               {submitSuccess && (
                 <div style={{ 
