@@ -627,7 +627,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   const sendFacilityUpdateEmail = async () => {
     try {
-      const response = await fetch('http://localhost:5003/api/facility-reg-update', {
+      const response = await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -824,55 +824,50 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setOpenSnackbar(true);
         
         console.log('Step 10: Sending email notification...');
-        // Step 10: Send email notification
+        // Step 10: Email sending is deactivated, but we simulate success for downstream logic
         setCurrentStep('Sending notification...');
-        try {
-          const emailSuccess = await sendFacilityUpdateEmail();
-          if (emailSuccess) {
-            console.log('✅ Step 10 COMPLETED: Email notification sent successfully');
-            setSuccessMessages(prev => [...prev, 'Email notification sent']);
-            setOpenSnackbar(true);
+        // Simulate email success without making the API call
+        const emailSuccess = true;
+        if (emailSuccess) {
+          console.log('✅ Step 10 COMPLETED: (Email sending deactivated, simulated success)');
+          setSuccessMessages(prev => [...prev, 'Email notification (deactivated)']);
+          setOpenSnackbar(true);
+          
+          console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
+          // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
+          setCurrentStep('Completing application...');
+          setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
+          
+          // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
+          localStorage.setItem('autoSelectTab', 'facilityOwnership');
+          
+          // Add a short delay before reloading to ensure user sees the success message
+          setTimeout(() => {
+            console.log('🚀 EXECUTING Step 11: Triggering data refresh and tab switch...');
+            // Instead of reloading the page, trigger a data refresh from localStorage
+            // This will cause the parent component to re-fetch all data
+            const refreshEvent = new CustomEvent('refreshApplicationData', {
+              detail: { 
+                action: 'refresh',
+                timestamp: new Date().toISOString()
+              }
+            });
+            window.dispatchEvent(refreshEvent);
             
-            console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
-            // Step 11: Reload data and switch to Facility Ownership tab (only after successful email)
-            setCurrentStep('Completing application...');
-            setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
+            // Also trigger the tab switch
+            const tabSwitchEvent = new CustomEvent('switchToTab', {
+              detail: { 
+                tab: 'facilityOwnership',
+                timestamp: new Date().toISOString()
+              }
+            });
+            window.dispatchEvent(tabSwitchEvent);
             
-            // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
-            localStorage.setItem('autoSelectTab', 'facilityOwnership');
-            
-            // Add a short delay before reloading to ensure user sees the success message
-            setTimeout(() => {
-              console.log('🚀 EXECUTING Step 11: Triggering data refresh and tab switch...');
-              // Instead of reloading the page, trigger a data refresh from localStorage
-              // This will cause the parent component to re-fetch all data
-              const refreshEvent = new CustomEvent('refreshApplicationData', {
-                detail: { 
-                  action: 'refresh',
-                  timestamp: new Date().toISOString()
-                }
-              });
-              window.dispatchEvent(refreshEvent);
-              
-              // Also trigger the tab switch
-              const tabSwitchEvent = new CustomEvent('switchToTab', {
-                detail: { 
-                  tab: 'facilityOwnership',
-                  timestamp: new Date().toISOString()
-                }
-              });
-              window.dispatchEvent(tabSwitchEvent);
-              
-              console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
-            }, 1500);
-            
-          } else {
-            console.error('❌ Step 10 FAILED: Email notification failed');
-            setSuccessMessages(prev => [...prev, 'Email notification failed']);
-            setOpenSnackbar(true);
-          }
-        } catch (emailError) {
-          console.error('❌ Step 10 FAILED: Email sending error:', emailError);
+            console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
+          }, 1500);
+          
+        } else {
+          console.error('❌ Step 10 FAILED: Email notification failed');
           setSuccessMessages(prev => [...prev, 'Email notification failed']);
           setOpenSnackbar(true);
         }

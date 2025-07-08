@@ -986,13 +986,13 @@ const EditFacilityOwnershipDialog = ({
       if (!putRes.ok) throw new Error('Failed to add facility to Screening group');
 
       // 2. Send email to user
-      await fetch('http://134.255.180.98:5002/api/send-email', {
+      await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: 'qimsmohbots@gmail.com',
+          email: 'qimsmohbots@gmail.com',
           subject: 'Application Received',
           message: 'Your Application Has Been Received, we will contact you soon',
         }),
