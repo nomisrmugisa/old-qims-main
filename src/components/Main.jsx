@@ -11,6 +11,141 @@ import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
 import aboutImg from '../assets/about.jpg';
 
+const services = [
+  {
+    id: 1,
+    icon: 'fas fa-user-md',
+    title: 'Private Practice Licensing',
+    summary: 'Guidance and processing for individual private health practitioners seeking to establish a practice in Botswana.',
+    details: 'Eligibility checks, application requirements, submission and review.',
+    backDetails: (
+      <div>
+        <strong>Requirements:</strong>
+        <ul>
+          <li>Recognized by council (NMCB/BHPC)</li>
+          <li>Professional & Indemnity insurance</li>
+          <li>Resident in Botswana</li>
+          <li>Bachelor’s degree (or equivalent)</li>
+          <li>5 years clinical experience (citizens)</li>
+          <li>References, CV, council registration</li>
+        </ul>
+        <strong>Special Notes:</strong>
+        <ul>
+          <li>Non-citizen specialists: 5 years in Botswana</li>
+          <li>Attach to clinical setting if not in practice</li>
+        </ul>
+      </div>
+    )
+  },
+  {
+    id: 2,
+    icon: 'fas fa-users',
+    title: 'Group Practice & Specialized Facility Licensing',
+    summary: 'Support for group practices, poly-clinics, EMS, and radiology centers under the Botswana Health Professions Act.',
+    details: 'Reserved for citizen healthcare professionals. Proposal and documentation requirements. Five-year license validity.',
+    backDetails: (
+      <div>
+        <strong>Proposal Must Include:</strong>
+        <ul>
+          <li>Professional services to be offered</li>
+          <li>Human resources to be engaged</li>
+          <li>Structural resources (equipment, buildings, etc.)</li>
+          <li>Clinical governance structure</li>
+          <li>Public health benefits & equity</li>
+          <li>Innovations & sustainability plan</li>
+          <li>Share certifications & incorporation docs</li>
+        </ul>
+        <strong>Eligibility:</strong>
+        <ul>
+          <li>Majority shareholder must be a healthcare professional</li>
+        </ul>
+      </div>
+    )
+  },
+  {
+    id: 3,
+    icon: 'fas fa-hospital',
+    title: 'Private Hospital & Nursing Home Licensing',
+    summary: 'Licensing for hospitals, nursing homes, and specialized care facilities under the Private Hospitals and Nursing Homes Act.',
+    details: 'Application to the Minister of Health. Proposal must include services, HR, architectural plans, governance, public health benefits, and sustainability.',
+    backDetails: (
+      <div>
+        <strong>Categories:</strong>
+        <ul>
+          <li>Medical/surgical hospitals</li>
+          <li>Maternity hospitals</li>
+          <li>Homes for convalescent/chronically ill</li>
+          <li>Specialized centers</li>
+        </ul>
+        <strong>Proposal Must Include:</strong>
+        <ul>
+          <li>Services, HR, architectural drawings</li>
+          <li>Governance, public health benefits</li>
+          <li>Equity, innovation, sustainability</li>
+        </ul>
+      </div>
+    )
+  },
+  {
+    id: 4,
+    icon: 'fas fa-gavel',
+    title: 'Application Review & Committee Adjudication',
+    summary: 'Transparent, committee-based review of all applications to ensure compliance and quality.',
+    details: 'Monthly or as-needed committee meetings. Authority to approve, defer, or decline applications.',
+    backDetails: (
+      <div>
+        <strong>Process:</strong>
+        <ul>
+          <li>Committee meets monthly or as needed</li>
+          <li>Reviews all applications for compliance</li>
+          <li>Focus on public health impact</li>
+          <li>Applicants notified of decisions</li>
+        </ul>
+      </div>
+    )
+  },
+  {
+    id: 5,
+    icon: 'fas fa-clipboard-check',
+    title: 'Facility Inspection & Licensing',
+    summary: 'Inspection and licensing services for new and existing private health facilities.',
+    details: 'Inspection by the Department of Health Inspectorate. Issuance of license upon satisfactory inspection report.',
+    backDetails: (
+      <div>
+        <strong>Inspection Steps:</strong>
+        <ul>
+          <li>Apply for inspection after setup</li>
+          <li>Inspection conducted by Health Inspectorate</li>
+          <li>Report provided within 21 days</li>
+          <li>License issued if compliant</li>
+        </ul>
+        <strong>Note:</strong>
+        <ul>
+          <li>License holders cannot rent out licenses</li>
+        </ul>
+      </div>
+    )
+  },
+  {
+    id: 6,
+    icon: 'fas fa-life-ring',
+    title: 'Ongoing Support & Compliance',
+    summary: 'Continued support for license holders, including renewals, compliance checks, and updates on regulatory changes.',
+    details: 'Reminders for license validity and renewal. Updates on policy or legislative changes. Support for expanding or modifying existing facilities.',
+    backDetails: (
+      <div>
+        <strong>Support Includes:</strong>
+        <ul>
+          <li>Renewal reminders</li>
+          <li>Compliance checks</li>
+          <li>Updates on policy/legislation</li>
+          <li>Help with expansion or modification</li>
+        </ul>
+      </div>
+    )
+  }
+];
+
 const Main = () => {
     useEffect(() => {
         AOS.init({
@@ -21,19 +156,8 @@ const Main = () => {
         });
     }, []);
 
-    const [hoveredCards, setHoveredCards] = useState([false, false, false, false]);
-
-    const handleMouseEnter = (index) => {
-        const newHoveredCards = [...hoveredCards];
-        newHoveredCards[index] = true;
-        setHoveredCards(newHoveredCards);
-    };
-
-    const handleMouseLeave = (index) => {
-        const newHoveredCards = [...hoveredCards];
-        newHoveredCards[index] = false;
-        setHoveredCards(newHoveredCards);
-    };
+    const [flippedCard, setFlippedCard] = useState(null);
+    const [hoveredCards, setHoveredCards] = useState([false, false, false, false, false]);
 
     return (
         <main className="main">
@@ -77,8 +201,8 @@ const Main = () => {
                                             className="icon-box"
                                             data-aos="zoom-out"
                                             data-aos-delay="300"
-                                            onMouseEnter={() => handleMouseEnter(0)}
-                                            onMouseLeave={() => handleMouseLeave(0)}
+                                            onMouseEnter={() => setHoveredCards([true, false, false, false, false])}
+                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
                                             style={{
                                                 transform: hoveredCards[0] ? 'translateY(-5px)' : 'translateY(0px)',
                                                 transition: 'transform 0.3s ease-in-out',
@@ -96,8 +220,8 @@ const Main = () => {
                                             className="icon-box"
                                             data-aos="zoom-out"
                                             data-aos-delay="400"
-                                            onMouseEnter={() => handleMouseEnter(1)}
-                                            onMouseLeave={() => handleMouseLeave(1)}
+                                            onMouseEnter={() => setHoveredCards([false, true, false, false, false])}
+                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
                                             style={{
                                                 transform: hoveredCards[1] ? 'translateY(-5px)' : 'translateY(0px)',
                                                 transition: 'transform 0.3s ease-in-out',
@@ -116,8 +240,8 @@ const Main = () => {
                                             className="icon-box"
                                             data-aos="zoom-out"
                                             data-aos-delay="500"
-                                            onMouseEnter={() => handleMouseEnter(2)}
-                                            onMouseLeave={() => handleMouseLeave(2)}
+                                            onMouseEnter={() => setHoveredCards([false, false, true, false, false])}
+                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
                                             style={{
                                                 transform: hoveredCards[2] ? 'translateY(-5px)' : 'translateY(0px)',
                                                 transition: 'transform 0.3s ease-in-out',
@@ -136,8 +260,8 @@ const Main = () => {
                                             className="icon-box"
                                             data-aos="zoom-out"
                                             data-aos-delay="500"
-                                            onMouseEnter={() => handleMouseEnter(3)}
-                                            onMouseLeave={() => handleMouseLeave(3)}
+                                            onMouseEnter={() => setHoveredCards([false, false, false, true, false])}
+                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
                                             style={{
                                                 transform: hoveredCards[3] ? 'translateY(-5px)' : 'translateY(0px)',
                                                 transition: 'transform 0.3s ease-in-out',
@@ -154,10 +278,10 @@ const Main = () => {
                                             className="icon-box"
                                             data-aos="zoom-out"
                                             data-aos-delay="500"
-                                            onMouseEnter={() => handleMouseEnter(3)}
-                                            onMouseLeave={() => handleMouseLeave(3)}
+                                            onMouseEnter={() => setHoveredCards([false, false, false, false, true])}
+                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
                                             style={{
-                                                transform: hoveredCards[3] ? 'translateY(-5px)' : 'translateY(0px)',
+                                                transform: hoveredCards[4] ? 'translateY(-5px)' : 'translateY(0px)',
                                                 transition: 'transform 0.3s ease-in-out',
                                             }}
                                         >
@@ -173,98 +297,68 @@ const Main = () => {
                 </div>
             </section>
 
-            <section id="services" class="services section">
-
-      {/* Section Title  */}
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Services</h2>
-        <p>Necessitatibus eius consequatur ex aliquid fuga eum quidem sint consectetur velit</p>
-      </div>{/* End Section Title */}
-
-      <div class="container">
-
-        <div class="row gy-4">
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-            <div class="service-item  position-relative">
-              <div class="icon">
-                <i class="fas fa-heartbeat"></i>
+            <section id="services" className="services section">
+              <div className="container section-title" data-aos="fade-up">
+                <h2>Our Services</h2>
+                <p>Comprehensive support for private health practice and facility licensing in Botswana.</p>
               </div>
-              <a href="#" class="stretched-link">
-                <h3>Nesciunt Mete</h3>
-              </a>
-              <p>Provident nihil minus qui consequatur non omnis maiores. Eos accusantium minus dolores iure perferendis tempore et consequatur.</p>
-            </div>
-          </div>{/* End Service Item */}
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-pills"></i>
+              <div className="container">
+                <div className="row gy-4">
+                  {services.map((service, idx) => (
+                    <div key={service.id} className="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay={100 * (idx + 1)}>
+                      <div
+                        className={`service-flip-card${flippedCard === service.id ? ' flipped' : ''}`}
+                        role="button"
+                        aria-pressed={flippedCard === service.id}
+                        aria-label={flippedCard === service.id ? `Hide details for ${service.title}` : `Show details for ${service.title}`}
+                        onClick={() => setFlippedCard(flippedCard === service.id ? null : service.id)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setFlippedCard(flippedCard === service.id ? null : service.id);
+                          }
+                        }}
+                        style={{ minHeight: 260, height: '100%', cursor: 'pointer' }}
+                        tabIndex={0}
+                      >
+                        <div className="service-flip-inner">
+                          <div className="service-flip-front" aria-hidden={flippedCard === service.id ? 'true' : 'false'}>
+                            <div className="icon">
+                              <i className={service.icon}></i>
+                            </div>
+                            <h3>{service.title}</h3>
+                            <p>{service.summary}</p>
+                          </div>
+                          <div className="service-flip-back" aria-hidden={flippedCard === service.id ? 'false' : 'true'}>
+                            <h4>Details</h4>
+                            <p>{service.details}</p>
+                            {service.backDetails}
+                            <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                              <button
+                                className="btn btn-primary"
+                                style={{ background: '#1977cc', color: 'white', border: 'none', borderRadius: 4, padding: '8px 18px', fontWeight: 500, cursor: 'pointer' }}
+                                onClick={() => alert(`Start Application for: ${service.title}`)}
+                                aria-label={`Start application for ${service.title}`}
+                              >
+                                Start Application
+                              </button>
+                              <a
+                                href="#"
+                                className="btn btn-link"
+                                style={{ color: '#1977cc', textDecoration: 'underline', fontWeight: 500, padding: '8px 0' }}
+                                onClick={e => { e.preventDefault(); alert('Download coming soon!'); }}
+                                aria-label={`Download guide for ${service.title}`}
+                              >
+                                Download Guide
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <a href="#" class="stretched-link">
-                <h3>Eosle Commodi</h3>
-              </a>
-              <p>Ut autem aut autem non a. Sint sint sit facilis nam iusto sint. Libero corrupti neque eum hic non ut nesciunt dolorem.</p>
-            </div>
-          </div>{/* End Service Item */}
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-hospital-user"></i>
-              </div>
-              <a href="#" class="stretched-link">
-                <h3>Ledo Markt</h3>
-              </a>
-              <p>Ut excepturi voluptatem nisi sed. Quidem fuga consequatur. Minus ea aut. Vel qui id voluptas adipisci eos earum corrupti.</p>
-            </div>
-          </div>{/* End Service Item */}
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-dna"></i>
-              </div>
-              <a href="#" class="stretched-link">
-                <h3>Asperiores Commodit</h3>
-              </a>
-              <p>Non et temporibus minus omnis sed dolor esse consequatur. Cupiditate sed error ea fuga sit provident adipisci neque.</p>
-              <a href="#" class="stretched-link"></a>
-            </div>
-          </div>{/* End Service Item */}
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-wheelchair"></i>
-              </div>
-              <a href="#" class="stretched-link">
-                <h3>Velit Doloremque</h3>
-              </a>
-              <p>Cumque et suscipit saepe. Est maiores autem enim facilis ut aut ipsam corporis aut. Sed animi at autem alias eius labore.</p>
-              <a href="#" class="stretched-link"></a>
-            </div>
-          </div>{/* End Service Item */}
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-notes-medical"></i>
-              </div>
-              <a href="#" class="stretched-link">
-                <h3>Dolori Architecto</h3>
-              </a>
-              <p>Hic molestias ea quibusdam eos. Fugiat enim doloremque aut neque non et debitis iure. Corrupti recusandae ducimus enim.</p>
-              <a href="#" class="stretched-link"></a>
-            </div>
-          </div>{/* End Service Item */}
-
-        </div>
-
-      </div>
-
-    </section>{/*- End Services Section */}
+            </section>
 
             {/* Application Section */}
             <section id="Registration" className="Registration section">

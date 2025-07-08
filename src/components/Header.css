@@ -72,8 +72,8 @@
 }
 
 .header .logo img.header-logo {
-    height: 100px !important;
-    max-height: 100px !important;
+    height: 200px !important;
+    max-height: 200px !important;
     width: auto;
     margin-bottom: 5px;
 }
