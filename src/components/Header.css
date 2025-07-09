@@ -72,8 +72,8 @@
 }
 
 .header .logo img.header-logo {
-    height: 156px !important;
-    max-height: 156px !important;
+    height: 92px !important;
+    max-height: 92px !important;
     width: auto;
     margin-bottom: 5px;
 }
@@ -221,8 +221,8 @@
     }
     
     .header .logo img.header-logo {
-        height: 117px !important;
-        max-height: 117px !important;
+        height: 69px !important;
+        max-height: 69px !important;
     }
 }
 
