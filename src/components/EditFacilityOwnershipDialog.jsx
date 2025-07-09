@@ -970,7 +970,21 @@ const EditFacilityOwnershipDialog = ({
     try {
       // 1. Add facility to Screening org unit group
       const credentials = localStorage.getItem('userCredentials');
-      const putRes = await fetch('/api/29/organisationUnitGroups/nDAvPPtYHQP?mergeMode=REPLACE', {
+      // Fetch existing organisation units in the group
+      const groupRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      if (!groupRes.ok) throw new Error('Failed to fetch existing Screening group units');
+      const groupData = await groupRes.json();
+      const existingUnits = (groupData.organisationUnits || []).map(u => ({ id: u.id }));
+      // Add the new orgUnitId if not already present
+      if (!existingUnits.some(u => u.id === facilityOrgUnitId)) {
+        existingUnits.push({ id: facilityOrgUnitId });
+      }
+      const putRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -980,7 +994,7 @@ const EditFacilityOwnershipDialog = ({
           id: 'nDAvPPtYHQP',
           name: 'Screening Review',
           shortName: 'Screening Review',
-          organisationUnits: [{ id: facilityOrgUnitId }],
+          organisationUnits: existingUnits,
         }),
       });
       if (!putRes.ok) throw new Error('Failed to add facility to Screening group');
