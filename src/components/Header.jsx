@@ -6,6 +6,7 @@ import logo from '../assets/logo.png';
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
+  const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
   
@@ -77,6 +78,22 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     
     // Set up interval to check periodically
     const intervalId = setInterval(checkSituationalAnalysisStatus, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Monitor localStorage for changes to facilityOwnershipComplete
+  useEffect(() => {
+    const checkFacilityOwnershipStatus = () => {
+      const status = localStorage.getItem('facilityOwnershipComplete') === 'true';
+      setFacilityOwnershipComplete(status);
+    };
+    
+    // Check immediately
+    checkFacilityOwnershipStatus();
+    
+    // Set up interval to check periodically
+    const intervalId = setInterval(checkFacilityOwnershipStatus, 1000);
     
     return () => clearInterval(intervalId);
   }, []);
@@ -184,11 +201,13 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li>
                     <a
                       href="#overview"
-                      className={activeDashboardSection === 'overview' ? 'active' : ''}
+                      className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                       onClick={e => { 
                         e.preventDefault(); 
-                        setActiveDashboardSection('overview');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('overview');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
                       Overview
@@ -204,17 +223,19 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                     >
-                      Complete Registration
+                      Complete Application
                     </a>
                   </li>
                   <li>
                     <a
                       href="#inspections"
-                      className={activeDashboardSection === 'inspections' ? 'active' : ''}
+                      className={`${activeDashboardSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                       onClick={e => { 
                         e.preventDefault(); 
-                        setActiveDashboardSection('inspections');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('inspections');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
                       View Inspections
@@ -223,11 +244,13 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li>
                     <a
                       href="#services"
-                      className={activeDashboardSection === 'services' ? 'active' : ''}
+                      className={`${activeDashboardSection === 'services' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                       onClick={e => { 
                         e.preventDefault(); 
-                        setActiveDashboardSection('services');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('services');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
                       Services
@@ -236,11 +259,13 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li>
                     <a
                       href="#reports"
-                      className={activeDashboardSection === 'reports' ? 'active' : ''}
+                      className={`${activeDashboardSection === 'reports' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                       onClick={e => { 
                         e.preventDefault(); 
-                        setActiveDashboardSection('reports');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('reports');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
                       Reports
@@ -249,11 +274,13 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                   <li>
                     <a
                       href="#tasks"
-                      className={activeDashboardSection === 'tasks' ? 'active' : ''}
+                      className={`${activeDashboardSection === 'tasks' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                       onClick={e => { 
                         e.preventDefault(); 
-                        setActiveDashboardSection('tasks');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('tasks');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
                       Tasks

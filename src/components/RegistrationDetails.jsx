@@ -742,10 +742,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setIsLoading(false);
       
       // Update validation state after data is loaded
+      const facilityOwnershipComplete = validateFacilityOwnership(allEvents);
       setTabValidationStates(prev => ({
         ...prev,
-        facilityOwnership: validateFacilityOwnership(allEvents)
+        facilityOwnership: facilityOwnershipComplete
       }));
+      
+      // Store facility ownership status in localStorage for Header component access
+      localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
     } catch (error) {
       console.error("❌ Error fetching facility ownership data:", error);
       setIsLoading(false);
@@ -1542,7 +1546,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     Before you can add facility ownership information, you need to complete the facility registration process.
                   </p>
                   <ol style={{ color: '#721c24', paddingLeft: '20px' }}>
-                    <li>Click on the <strong>"Complete Registration"</strong> button in the left sidebar</li>
+                    <li>Click on the <strong>"Complete Application"</strong> button in the left sidebar</li>
                     <li>Fill out all required fields in the application form</li>
                     <li>Submit the application form</li>
                     <li>Return to this tab after completing those steps</li>
@@ -1559,7 +1563,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       marginTop: '10px'
                     }}
                   >
-                    Go to Complete Registration
+                                            Go to Complete Application
                   </button>
                 </div>
               ) : showReviewDialog && events.length === 0 ? (

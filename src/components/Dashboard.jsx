@@ -7,6 +7,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
     const [dashboardLoading, setDashboardLoading] = useState(true);
     const [trackedEntityInstanceId, setTrackedEntityInstanceId] = useState(null);
     const [showFacilityReviewDialog, setShowFacilityReviewDialog] = useState(false);
+    const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
 
     const fetchTrackedEntityInstance = async () => {
         const credentials = localStorage.getItem('userCredentials');
@@ -135,6 +136,22 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         
         // Set up interval to check periodically
         const intervalId = setInterval(checkSituationalAnalysisStatus, 1000);
+        
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // Monitor localStorage for changes to facilityOwnershipComplete
+    useEffect(() => {
+        const checkFacilityOwnershipStatus = () => {
+            const status = localStorage.getItem('facilityOwnershipComplete') === 'true';
+            setFacilityOwnershipComplete(status);
+        };
+        
+        // Check immediately
+        checkFacilityOwnershipStatus();
+        
+        // Set up interval to check periodically
+        const intervalId = setInterval(checkFacilityOwnershipStatus, 1000);
         
         return () => clearInterval(intervalId);
     }, []);
@@ -351,8 +368,9 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         Navigation
                     </div>
                     <button
-                        onClick={() => setActiveSection('overview')}
-                        className={activeSection === 'overview' ? 'active' : ''}
+                        onClick={() => facilityOwnershipComplete && setActiveSection('overview')}
+                        className={`${activeSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                        disabled={!facilityOwnershipComplete}
                     >
                         Overview
                     </button>
@@ -360,23 +378,26 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         onClick={() => setActiveSection('registration')}
                         className={activeSection === 'registration' ? 'active' : ''}
                     >
-                        Complete Registration
+                        Complete Application
                     </button>
                     <button
-                        onClick={() => setActiveSection('inspections')}
-                        className={activeSection === 'inspections' ? 'active' : ''}
+                        onClick={() => facilityOwnershipComplete && setActiveSection('inspections')}
+                        className={`${activeSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                        disabled={!facilityOwnershipComplete}
                     >
                         View Inspections
                     </button>
                     <button
-                        onClick={() => setActiveSection('reports')}
-                        className={activeSection === 'reports' ? 'active' : ''}
+                        onClick={() => facilityOwnershipComplete && setActiveSection('reports')}
+                        className={`${activeSection === 'reports' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                        disabled={!facilityOwnershipComplete}
                     >
                         Reports
                     </button>
                     <button
-                        onClick={() => setActiveSection('tasks')}
-                        className={activeSection === 'tasks' ? 'active' : ''}
+                        onClick={() => facilityOwnershipComplete && setActiveSection('tasks')}
+                        className={`${activeSection === 'tasks' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                        disabled={!facilityOwnershipComplete}
                     >
                         Tasks
                     </button>
