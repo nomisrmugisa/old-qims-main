@@ -742,10 +742,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setIsLoading(false);
       
       // Update validation state after data is loaded
+      const facilityOwnershipComplete = validateFacilityOwnership(allEvents);
       setTabValidationStates(prev => ({
         ...prev,
-        facilityOwnership: validateFacilityOwnership(allEvents)
+        facilityOwnership: facilityOwnershipComplete
       }));
+      
+      // Store facility ownership status in localStorage for Header component access
+      localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
     } catch (error) {
       console.error("❌ Error fetching facility ownership data:", error);
       setIsLoading(false);
@@ -1080,6 +1084,26 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       setInspectionEvents(fetchedEvents);
       setIsLoadingInspections(false);
+
+      // #3 Users inspection period
+      console.log("#3 Users inspection period");
+      if (fetchedEvents.length > 0) {
+        fetchedEvents.forEach((event, idx) => {
+          const facility = event.orgUnitName || event.facility || 'Unknown Facility';
+          const inspector = event.inspector || (event.dataValues && event.dataValues.find(dv => dv.dataElement === 'inspector')?.value) || 'Unknown Inspector';
+          const period = event.inspectionPeriod || { startDate: event.eventDate || event.dueDate, endDate: event.eventDate || event.dueDate };
+          console.log(`Assignment #${idx + 1}:`);
+          console.log(`  Facility: ${facility}`);
+          console.log(`  Inspector: ${inspector}`);
+          if (period && (period.startDate || period.endDate)) {
+            console.log(`  Inspection Period: ${period.startDate || 'N/A'} to ${period.endDate || 'N/A'}`);
+          } else {
+            console.log('  Inspection Period: Not available');
+          }
+        });
+      } else {
+        console.log('No inspection assignments found.');
+      }
 
     } catch (error) {
       console.error("Error fetching inspection data:", error);
@@ -1522,7 +1546,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     Before you can add facility ownership information, you need to complete the facility registration process.
                   </p>
                   <ol style={{ color: '#721c24', paddingLeft: '20px' }}>
-                    <li>Click on the <strong>"Complete Registration"</strong> button in the left sidebar</li>
+                    <li>Click on the <strong>"Complete Application"</strong> button in the left sidebar</li>
                     <li>Fill out all required fields in the application form</li>
                     <li>Submit the application form</li>
                     <li>Return to this tab after completing those steps</li>
@@ -1539,7 +1563,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       marginTop: '10px'
                     }}
                   >
-                    Go to Complete Registration
+                                            Go to Complete Application
                   </button>
                 </div>
               ) : showReviewDialog && events.length === 0 ? (

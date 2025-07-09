@@ -7,6 +7,7 @@ import {eventBus, EVENTS } from '../events';
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
+  const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
   
@@ -82,6 +83,22 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     
     // Set up interval to check periodically
     const intervalId = setInterval(checkSituationalAnalysisStatus, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Monitor localStorage for changes to facilityOwnershipComplete
+  useEffect(() => {
+    const checkFacilityOwnershipStatus = () => {
+      const status = localStorage.getItem('facilityOwnershipComplete') === 'true';
+      setFacilityOwnershipComplete(status);
+    };
+    
+    // Check immediately
+    checkFacilityOwnershipStatus();
+    
+    // Set up interval to check periodically
+    const intervalId = setInterval(checkFacilityOwnershipStatus, 1000);
     
     return () => clearInterval(intervalId);
   }, []);
@@ -181,133 +198,236 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           <nav id="navmenu" className="navmenu">
             <ul>
-              {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
-              <li>
-                <a 
-                  href="#home"
-                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
-                  onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('home');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  Home
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#about"
-                  className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                  onClick={(e) => {
-                    if (!isLoggedIn && !isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('about');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#check-validity"
-                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                  onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('check-validity');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  Check Validity
-                </a>
-              </li>
-              <li>
-                <a
-                    href="#report-incident"
-                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                    onClick={(e) => {
-                      if (isLoggedIn && isSituationalAnalysisGreen()) {
-                        setActiveDashboardSection('report-incident');
-                      } else {
-                        e.preventDefault();
-                      }
-                    }}
-                >
-                  Report Incident
-                </a>
-              </li>
-              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
-                <a 
-                  href="#"
-                  onClick={(e) => {
-                    if (!isLoggedIn || !isSituationalAnalysisGreen()) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <span>Documents Repository</span> 
-                  <i className="bi bi-chevron-down toggle-dropdown"></i>
-                </a>
-                <ul>
+              {isLoggedIn ? (
+                <>
                   <li>
-                    <a 
-                      href="#" 
-                      onClick={(e) => handleDocumentDownload(
-                        e, 
-                        'nO1LbjtYHO7', 
-                        'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf'
-                      )}
-                      style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        cursor: isDownloading ? 'wait' : 'pointer'
+                    <a
+                      href="#overview"
+                      className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('overview');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                     >
-                      {isDownloading ? (
-                        <>
-                          <i className="bi bi-arrow-clockwise me-2" style={{ animation: 'spin 1s linear infinite' }}></i>
-                          <span>Downloading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-file-pdf me-2"></i>
-                          <span>GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA</span>
-                        </>
-                      )}
+                      Overview
                     </a>
                   </li>
-                  <li className="dropdown">
-                    <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
+                  <li>
+                    <a
+                      href="#registration"
+                      className={activeDashboardSection === 'registration' ? 'active' : ''}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('registration');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      Complete Application
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#inspections"
+                      className={`${activeDashboardSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('inspections');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      View Inspections
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#services"
+                      className={`${activeDashboardSection === 'services' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('services');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      Services
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#reports"
+                      className={`${activeDashboardSection === 'reports' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('reports');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      Reports
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#tasks"
+                      className={`${activeDashboardSection === 'tasks' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        if (facilityOwnershipComplete) {
+                          setActiveDashboardSection('tasks');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      Tasks
+                    </a>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <a 
+                      href="#home"
+                      className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
+                      onClick={(e) => {
+                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('home');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      Home
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#about"
+                      className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                      onClick={(e) => {
+                        if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('about');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      About Us
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#check-validity"
+                      className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                      onClick={(e) => {
+                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('check-validity');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      Check Validity
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                        href="#services"
+                        className={`${activeDashboardSection === 'services' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                        onClick={(e) => {
+                          if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                            setActiveDashboardSection('services');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          } else {
+                            e.preventDefault();
+                          }
+                        }}
+                    >
+                      Services
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                        href="#report-incident"
+                        className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                        onClick={(e) => {
+                          if (isLoggedIn && isSituationalAnalysisGreen()) {
+                            setActiveDashboardSection('report-incident');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          } else {
+                            e.preventDefault();
+                          }
+                        }}
+                    >
+                      Report Incident
+                    </a>
+                  </li>
+                  <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
+                    <a 
+                      href="#"
+                      onClick={(e) => {
+                        if (!isLoggedIn || !isSituationalAnalysisGreen()) {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      <span>Documents Repository</span> 
+                      <i className="bi bi-chevron-down toggle-dropdown"></i>
+                    </a>
                     <ul>
-                      <li><a href="#">Deep Dropdown 1</a></li>
-                      <li><a href="#">Deep Dropdown 2</a></li>
-                      <li><a href="#">Deep Dropdown 3</a></li>
-                      <li><a href="#">Deep Dropdown 4</a></li>
-                      <li><a href="#">Deep Dropdown 5</a></li>
+                      <li>
+                        <a 
+                          href="#" 
+                          onClick={(e) => handleDocumentDownload(
+                            e, 
+                            'nO1LbjtYHO7', 
+                            'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf'
+                          )}
+                          style={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: isDownloading ? 'wait' : 'pointer'
+                          }}
+                        >
+                          {isDownloading ? (
+                            <>
+                              <i className="bi bi-arrow-clockwise me-2" style={{ animation: 'spin 1s linear infinite' }}></i>
+                              <span>Downloading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="bi bi-file-pdf me-2"></i>
+                              <span>GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA</span>
+                            </>
+                          )}
+                        </a>
+                      </li>
+                      <li className="dropdown">
+                        <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                          <li><a href="#">Deep Dropdown 1</a></li>
+                          <li><a href="#">Deep Dropdown 2</a></li>
+                          <li><a href="#">Deep Dropdown 3</a></li>
+                          <li><a href="#">Deep Dropdown 4</a></li>
+                          <li><a href="#">Deep Dropdown 5</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="#">Dropdown 2</a></li>
+                      <li><a href="#">Dropdown 3</a></li>
+                      <li><a href="#">Dropdown 4</a></li>
                     </ul>
                   </li>
-                  <li><a href="#">Dropdown 2</a></li>
-                  <li><a href="#">Dropdown 3</a></li>
-                  <li><a href="#">Dropdown 4</a></li>
-                </ul>
-              </li>
-              {/*<li>*/}
-              {/*  {isLoggedIn ? (*/}
-              {/*    <button className="login-button" onClick={onLogout}>*/}
-              {/*      Logout*/}
-              {/*    </button>*/}
-              {/*  ) : (*/}
-              {/*    <button className="login-button" onClick={onLoginClick}>*/}
-              {/*      Login*/}
-              {/*    </button>*/}
-              {/*  )}*/}
-              {/*</li>*/}
+                </>
+              )}
             </ul>
             <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
           </nav>

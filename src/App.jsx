@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import Dashboard from './components/Dashboard';
 import LoginModal from './components/LoginModal';
 import Loading from './components/Loading';
+import BackToTop from './components/BackToTop';
 import './App.css';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import {eventBus, useEvent, EVENTS } from './events';
@@ -149,6 +150,7 @@ function App() {
         <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
       )}
       {isLoading && <Loading />}
+      <BackToTop />
     </div>
   )
 }
