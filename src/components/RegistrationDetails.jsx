@@ -1081,6 +1081,26 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setInspectionEvents(fetchedEvents);
       setIsLoadingInspections(false);
 
+      // #3 Users inspection period
+      console.log("#3 Users inspection period");
+      if (fetchedEvents.length > 0) {
+        fetchedEvents.forEach((event, idx) => {
+          const facility = event.orgUnitName || event.facility || 'Unknown Facility';
+          const inspector = event.inspector || (event.dataValues && event.dataValues.find(dv => dv.dataElement === 'inspector')?.value) || 'Unknown Inspector';
+          const period = event.inspectionPeriod || { startDate: event.eventDate || event.dueDate, endDate: event.eventDate || event.dueDate };
+          console.log(`Assignment #${idx + 1}:`);
+          console.log(`  Facility: ${facility}`);
+          console.log(`  Inspector: ${inspector}`);
+          if (period && (period.startDate || period.endDate)) {
+            console.log(`  Inspection Period: ${period.startDate || 'N/A'} to ${period.endDate || 'N/A'}`);
+          } else {
+            console.log('  Inspection Period: Not available');
+          }
+        });
+      } else {
+        console.log('No inspection assignments found.');
+      }
+
     } catch (error) {
       console.error("Error fetching inspection data:", error);
       setIsLoadingInspections(false);

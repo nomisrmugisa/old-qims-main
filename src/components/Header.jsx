@@ -185,7 +185,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#overview"
                       className={activeDashboardSection === 'overview' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('overview'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('overview');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       Overview
                     </a>
@@ -194,7 +198,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#registration"
                       className={activeDashboardSection === 'registration' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('registration'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('registration');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       Complete Registration
                     </a>
@@ -203,7 +211,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#inspections"
                       className={activeDashboardSection === 'inspections' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('inspections'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('inspections');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       View Inspections
                     </a>
@@ -212,7 +224,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#services"
                       className={activeDashboardSection === 'services' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('services'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('services');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       Services
                     </a>
@@ -221,7 +237,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#reports"
                       className={activeDashboardSection === 'reports' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('reports'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('reports');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       Reports
                     </a>
@@ -230,7 +250,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                     <a
                       href="#tasks"
                       className={activeDashboardSection === 'tasks' ? 'active' : ''}
-                      onClick={e => { e.preventDefault(); setActiveDashboardSection('tasks'); }}
+                      onClick={e => { 
+                        e.preventDefault(); 
+                        setActiveDashboardSection('tasks');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     >
                       Tasks
                     </a>
@@ -245,6 +269,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       onClick={(e) => {
                         if (isLoggedIn && isSituationalAnalysisGreen()) {
                           setActiveDashboardSection('home');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         } else {
                           e.preventDefault();
                         }
@@ -260,6 +285,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       onClick={(e) => {
                         if (!isLoggedIn && !isSituationalAnalysisGreen()) {
                           setActiveDashboardSection('about');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         } else {
                           e.preventDefault();
                         }
@@ -275,6 +301,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       onClick={(e) => {
                         if (isLoggedIn && isSituationalAnalysisGreen()) {
                           setActiveDashboardSection('check-validity');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         } else {
                           e.preventDefault();
                         }
@@ -290,6 +317,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                         onClick={(e) => {
                           if (!isLoggedIn && !isSituationalAnalysisGreen()) {
                             setActiveDashboardSection('services');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           } else {
                             e.preventDefault();
                           }
@@ -305,6 +333,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                         onClick={(e) => {
                           if (isLoggedIn && isSituationalAnalysisGreen()) {
                             setActiveDashboardSection('report-incident');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           } else {
                             e.preventDefault();
                           }

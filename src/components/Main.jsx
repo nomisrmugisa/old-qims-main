@@ -1,5 +1,5 @@
 // components/Main.jsx
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {Swiper, SwiperSlide} from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -29,10 +29,16 @@ const services = [
           <li>5 years clinical experience (citizens)</li>
           <li>References, CV, council registration</li>
         </ul>
-        <strong>Special Notes:</strong>
+        <strong>Steps:</strong>
         <ul>
-          <li>Non-citizen specialists: 5 years in Botswana</li>
-          <li>Attach to clinical setting if not in practice</li>
+          <li>Submit application with all required documents</li>
+          <li>Committee review and adjudication</li>
+          <li>Permission to establish (if approved)</li>
+          <li>Inspection and final licensing</li>
+        </ul>
+        <strong>Note:</strong>
+        <ul>
+          <li>Special rules for non-citizens and specialists</li>
         </ul>
       </div>
     )
@@ -55,7 +61,13 @@ const services = [
           <li>Innovations & sustainability plan</li>
           <li>Share certifications & incorporation docs</li>
         </ul>
-        <strong>Eligibility:</strong>
+        <strong>Steps:</strong>
+        <ul>
+          <li>Submit proposal and documents</li>
+          <li>Committee review and approval</li>
+          <li>Inspection and licensing</li>
+        </ul>
+        <strong>Note:</strong>
         <ul>
           <li>Majority shareholder must be a healthcare professional</li>
         </ul>
@@ -83,6 +95,16 @@ const services = [
           <li>Governance, public health benefits</li>
           <li>Equity, innovation, sustainability</li>
         </ul>
+        <strong>Steps:</strong>
+        <ul>
+          <li>Submit application to Minister of Health</li>
+          <li>Committee review and site inspection</li>
+          <li>License issued if compliant</li>
+        </ul>
+        <strong>Note:</strong>
+        <ul>
+          <li>License valid for 5 years</li>
+        </ul>
       </div>
     )
   },
@@ -94,12 +116,22 @@ const services = [
     details: 'Monthly or as-needed committee meetings. Authority to approve, defer, or decline applications.',
     backDetails: (
       <div>
-        <strong>Process:</strong>
+        <strong>Committee Process:</strong>
         <ul>
-          <li>Committee meets monthly or as needed</li>
-          <li>Reviews all applications for compliance</li>
+          <li>Monthly or as-needed meetings</li>
+          <li>Review of all applications for compliance</li>
           <li>Focus on public health impact</li>
           <li>Applicants notified of decisions</li>
+        </ul>
+        <strong>Steps:</strong>
+        <ul>
+          <li>Application submission</li>
+          <li>Committee review</li>
+          <li>Decision (approve, defer, decline)</li>
+        </ul>
+        <strong>Note:</strong>
+        <ul>
+          <li>All decisions are final and communicated to applicants</li>
         </ul>
       </div>
     )
@@ -141,6 +173,16 @@ const services = [
           <li>Updates on policy/legislation</li>
           <li>Help with expansion or modification</li>
         </ul>
+        <strong>Steps:</strong>
+        <ul>
+          <li>Receive renewal reminders</li>
+          <li>Undergo compliance checks</li>
+          <li>Request support for changes</li>
+        </ul>
+        <strong>Note:</strong>
+        <ul>
+          <li>Stay updated with regulatory changes</li>
+        </ul>
       </div>
     )
   }
@@ -157,143 +199,42 @@ const Main = () => {
     }, []);
 
     const [flippedCard, setFlippedCard] = useState(null);
-    const [hoveredCards, setHoveredCards] = useState([false, false, false, false, false]);
+    // Create an array of refs for the service card backs
+    const backRefs = useRef([]);
+    useEffect(() => {
+      if (flippedCard != null && backRefs.current[flippedCard - 1]) {
+        backRefs.current[flippedCard - 1].scrollTop = 0;
+      }
+    }, [flippedCard]);
 
     return (
         <main className="main">
             {/* QIMS Section */}
-            <section id="hero" className="hero section" style={{ background: `url(${heroBg}) center center/cover no-repeat` }}>
-                {/* <img src={heroBg} alt="" data-aos="fade-in" style={{opacity: 0.7}}/> */}
-                <div className="container position-relative">
-                    {/*<div className="welcome position-relative" data-aos="fade-down" data-aos-delay="100"*/}
-                    {/*     style={{textAlign: 'center'}}>*/}
-                    {/*    <h2>GOVERNMENT FACILITY REGISTRY, SURVEY AND<br/>ASSESSMENT SYSTEM</h2>*/}
-                    {/*    <p style={{color: 'rgba(255, 255, 255, 0.8)'}}>Health Facility survey and assessment platform to*/}
-                    {/*        facilitate the planning, execution, and reporting of health-related surveys and assessments.*/}
-                    {/*        The module supports national health assessments, facility-based surveys, and specialized*/}
-                    {/*        research studies conducted by the HI, DHS, and other relevant stakeholders.</p>*/}
-                    {/*</div>*/}
-
-                    <div className="content row gy-4">
-                        <div className="col-lg-4 d-flex align-items-stretch">
-                            <div className="why-box" data-aos="zoom-out" data-aos-delay="200">
-                                <h3 style={{color: 'white'}}>HEALTH FACILITY INSPECTION, ASSESSMENT & LICENSING</h3>
-                                <p style={{color: 'rgba(255, 255, 255, 0.9)'}}>
-                                    The Health Facility Management Platform is an innovative system that revolutionizes
-                                    the licensing process for health facilities. It offers a user-friendly solution,
-                                    enhancing accessibility, transparency, and efficiency. </p><p>This platform reduces
-                                    processing time, minimizes required documentation, and eliminates physical visits to
-                                    regulatory offices.
-                                </p>
-                                <div className="text-center">
-                                    <a href="#about" className="more-btn"
-                                       style={{color: 'white'}}><span>Learn More</span> <i
-                                        className="bi bi-chevron-right"></i></a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-8 d-flex align-items-stretch">
-                            <div className="d-flex flex-column justify-content-center">
-                                <div className="row gy-4">
-                                    <div className="col-xl-4 d-flex align-items-stretch">
-                                        <div
-                                            className="icon-box"
-                                            data-aos="zoom-out"
-                                            data-aos-delay="300"
-                                            onMouseEnter={() => setHoveredCards([true, false, false, false, false])}
-                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
-                                            style={{
-                                                transform: hoveredCards[0] ? 'translateY(-5px)' : 'translateY(0px)',
-                                                transition: 'transform 0.3s ease-in-out',
-                                            }}
-                                        >
-                                            <i className="bi bi-clipboard-data" style={{color: 'white'}}></i>
-                                            <h4>New Facility</h4>
-                                            <p>Applying for New Services in Health Facility. It is an additional
-                                                services in the existing facility.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-xl-4 d-flex align-items-stretch">
-                                        <div
-                                            className="icon-box"
-                                            data-aos="zoom-out"
-                                            data-aos-delay="400"
-                                            onMouseEnter={() => setHoveredCards([false, true, false, false, false])}
-                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
-                                            style={{
-                                                transform: hoveredCards[1] ? 'translateY(-5px)' : 'translateY(0px)',
-                                                transition: 'transform 0.3s ease-in-out',
-                                            }}
-                                        >
-                                            <i className="bi bi-gem" style={{color: 'white'}}></i>
-                                            <h4>Upgrade</h4>
-                                            <p>Authorization for Upgrade from one category of Health Facility to
-                                                Another. It is a service requested by Private Health Facilities after
-                                                fullfulling the requirements to change the category.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-xl-4 d-flex align-items-stretch">
-                                        <div
-                                            className="icon-box"
-                                            data-aos="zoom-out"
-                                            data-aos-delay="500"
-                                            onMouseEnter={() => setHoveredCards([false, false, true, false, false])}
-                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
-                                            style={{
-                                                transform: hoveredCards[2] ? 'translateY(-5px)' : 'translateY(0px)',
-                                                transition: 'transform 0.3s ease-in-out',
-                                            }}
-                                        >
-                                            <i className="bi bi-inboxes" style={{color: 'white'}}></i>
-                                            <h4>Request for Inspection</h4>
-                                            <p>Request for Inspection of New Health Facility. This service is for an
-                                                entity holding provisional authorization for the registration of a
-                                                health facility. Inspections shall be conducted twice a year</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-xl-4 d-flex align-items-stretch">
-                                        <div
-                                            className="icon-box"
-                                            data-aos="zoom-out"
-                                            data-aos-delay="500"
-                                            onMouseEnter={() => setHoveredCards([false, false, false, true, false])}
-                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
-                                            style={{
-                                                transform: hoveredCards[3] ? 'translateY(-5px)' : 'translateY(0px)',
-                                                transition: 'transform 0.3s ease-in-out',
-                                            }}
-                                        >
-                                            <i className="bi bi-inboxes" style={{color: 'white'}}></i>
-                                            <h4>Request to amment Staff list</h4>
-                                            <p>Request to Add Staff. This is done when there is a changing in
-                                                staffing.</p>
-                                        </div>
-                                    </div>
-                                    <div className="col-xl-4 d-flex align-items-stretch">
-                                        <div
-                                            className="icon-box"
-                                            data-aos="zoom-out"
-                                            data-aos-delay="500"
-                                            onMouseEnter={() => setHoveredCards([false, false, false, false, true])}
-                                            onMouseLeave={() => setHoveredCards([false, false, false, false, false])}
-                                            style={{
-                                                transform: hoveredCards[4] ? 'translateY(-5px)' : 'translateY(0px)',
-                                                transition: 'transform 0.3s ease-in-out',
-                                            }}
-                                        >
-                                            <i className="bi bi-inboxes" style={{color: 'white'}}></i>
-                                            <h4>Request for public facility assessment</h4>
-                                            <p>Module to conducts quality improvement and accreditation.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <section id="hero" className="hero section" style={{ position: 'relative', background: `url(${heroBg}) center center/cover no-repeat`, minHeight: '420px' }}>
+                {/* Gradient overlay */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(120deg, rgba(25,119,204,0.7) 0%, rgba(0,0,0,0.5) 100%)',
+                  zIndex: 1
+                }}></div>
+                <div className="container position-relative" style={{ position: 'relative', zIndex: 2 }}>
+                  <div className="row justify-content-center align-items-center" style={{ minHeight: '420px' }}>
+                    <div className="col-lg-8 text-center">
+                      <h1 style={{ color: 'white', fontWeight: 700, fontSize: '2.7rem', marginBottom: 18, textShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                        Botswana Health Facility Licensing—<span style={{ color: '#ffd600' }}>Fast, Transparent, Secure</span>
+                      </h1>
+                      <p style={{ color: 'rgba(255,255,255,0.92)', fontSize: '1.25rem', marginBottom: 32, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
+                        Register, upgrade, or inspect your health facility with ease. Trusted by the Ministry of Health for a modern, efficient, and paperless experience.
+                      </p>
+                      <a href="#Registration" className="btn btn-primary btn-lg" style={{ background: '#ffd600', color: '#1977cc', fontWeight: 700, border: 'none', borderRadius: 8, padding: '14px 38px', fontSize: '1.15rem', boxShadow: '0 2px 8px rgba(25,119,204,0.18)', transition: 'background 0.2s' }}>
+                        Start Registration
+                      </a>
                     </div>
+                  </div>
                 </div>
             </section>
 
@@ -328,28 +269,35 @@ const Main = () => {
                             <h3>{service.title}</h3>
                             <p>{service.summary}</p>
                           </div>
-                          <div className="service-flip-back" aria-hidden={flippedCard === service.id ? 'false' : 'true'}>
-                            <h4>Details</h4>
-                            <p>{service.details}</p>
-                            {service.backDetails}
-                            <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                              <button
-                                className="btn btn-primary"
-                                style={{ background: '#1977cc', color: 'white', border: 'none', borderRadius: 4, padding: '8px 18px', fontWeight: 500, cursor: 'pointer' }}
-                                onClick={() => alert(`Start Application for: ${service.title}`)}
-                                aria-label={`Start application for ${service.title}`}
-                              >
-                                Start Application
-                              </button>
-                              <a
-                                href="#"
-                                className="btn btn-link"
-                                style={{ color: '#1977cc', textDecoration: 'underline', fontWeight: 500, padding: '8px 0' }}
-                                onClick={e => { e.preventDefault(); alert('Download coming soon!'); }}
-                                aria-label={`Download guide for ${service.title}`}
-                              >
-                                Download Guide
-                              </a>
+                          <div
+                            className="service-flip-back"
+                            aria-hidden={flippedCard === service.id ? 'false' : 'true'}
+                            ref={el => backRefs.current[idx] = el}
+                            style={{ maxHeight: 260, overflowY: 'auto' }}
+                          >
+                            <div style={{ padding: '32px 24px 32px 24px' }}>
+                              <h4>Details</h4>
+                              <p>{service.details}</p>
+                              {service.backDetails}
+                              <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                <button
+                                  className="btn btn-primary"
+                                  style={{ background: '#1977cc', color: 'white', border: 'none', borderRadius: 4, padding: '8px 18px', fontWeight: 500, cursor: 'pointer' }}
+                                  onClick={() => alert(`Start Application for: ${service.title}`)}
+                                  aria-label={`Start application for ${service.title}`}
+                                >
+                                  Start Application
+                                </button>
+                                <a
+                                  href="#"
+                                  className="btn btn-link"
+                                  style={{ color: '#1977cc', textDecoration: 'underline', fontWeight: 500, padding: '8px 0' }}
+                                  onClick={e => { e.preventDefault(); alert('Download coming soon!'); }}
+                                  aria-label={`Download guide for ${service.title}`}
+                                >
+                                  Download Guide
+                                </a>
+                              </div>
                             </div>
                           </div>
                         </div>
