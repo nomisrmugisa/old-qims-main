@@ -61,8 +61,8 @@ const UserSearch = ({ onSearch, onSelect, placeholder }) => {
                             className="d-flex justify-content-between align-items-start"
                         >
                             <div>
-                                <div>{user.name}</div>
-                                <small className="text-muted">{user.email}</small>
+                                <div>{user.displayName}</div>
+                                <small className="text-muted">{user.username}</small>
                             </div>
                         </ListGroup.Item>
                     ))}

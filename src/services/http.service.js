@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from './constants';
 
 const httpService = axios.create({
     baseURL: `${import.meta.env.VITE_DHIS2_URL}/api`,
-    timeout: parseInt(`${import.meta.env.REACT_APP_API_TIMEOUT}`) || 30000,
+    timeout: parseInt(`${import.meta.env.VITE_API_TIMEOUT}`) || 30000,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -19,6 +19,12 @@ const httpService = axios.create({
 const token = StorageService.get(STORAGE_KEYS.AUTH_TOKEN);
 if (token) {
     httpService.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+else {
+    let auth_key = StorageService.get(STORAGE_KEYS.USER_KEY);
+    if(auth_key) {
+        httpService.defaults.headers.common['Authorization'] = `Basic ${token}`;
+    }
 }
 
 let temporaryHeaders = {};
@@ -39,19 +45,32 @@ export const clearTemporaryHeaders = () => {
 // Setup interceptors
 setupInterceptors(httpService, temporaryHeaders);
 
-export const setAuthToken = (token) => {
+export const setAuthToken = (token, type) => {
+
+    let key = STORAGE_KEYS.USER_KEY;
+    if(!type) {
+        type = "Bearer";
+        key = STORAGE_KEYS.AUTH_TOKEN;
+    }
+
     if (token) {
-        httpService.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        StorageService.set(STORAGE_KEYS.AUTH_TOKEN, token);
+        httpService.defaults.headers.common['Authorization'] = `${type} ${token}`;
+        StorageService.set(key, token);
     } else {
         delete httpService.defaults.headers.common['Authorization'];
-        StorageService.remove(STORAGE_KEYS.AUTH_TOKEN);
+        StorageService.remove(key);
     }
+};
+
+export const getAuthToken = (type) => {
+    let key = (!type)? STORAGE_KEYS.AUTH_TOKEN: STORAGE_KEYS.USER_KEY;
+    return StorageService.get(key);
 };
 
 export const clearAuth = () => {
     delete httpService.defaults.headers.common['Authorization'];
     StorageService.remove(STORAGE_KEYS.AUTH_TOKEN);
+    StorageService.remove(STORAGE_KEYS.USER_KEY);
     StorageService.remove(STORAGE_KEYS.REFRESH_TOKEN);
     StorageService.remove(STORAGE_KEYS.USER_DATA);
 };

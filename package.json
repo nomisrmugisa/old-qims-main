@@ -25,6 +25,7 @@
     "axios": "^1.10.0",
     "bootstrap": "^5.3.6",
     "chart.js": "^4.5.0",
+    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "lodash": "^4.17.21",
     "react": "^19.1.0",

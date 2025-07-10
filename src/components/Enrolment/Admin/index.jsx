@@ -6,7 +6,7 @@ import { Alert } from 'react-bootstrap';
 import FacilitySearchForm from '../../Facility/Search/Form';
 import FacilitySearchResults from '../../Facility/Search/Results';
 import UserSearch from '../../User/Search';
-import {lookupFacilities, listAllUsers} from '../helpers';
+import {lookupFacilities, lookupUsers} from '../helpers';
 
 const EnrolmentAdmin = () => {
     const [activeTab, setActiveTab] = useState('user');
@@ -32,14 +32,10 @@ const EnrolmentAdmin = () => {
         setIsLoading(true);
         try {
             // Simulate API call
-            const results = await listAllUsers();
+            const results = await lookupUsers(query);
             window.console.log("user results");
             window.console.log(results);
-            return [
-                { id: 1, name: 'John Doe', email: 'john@example.com' },
-                { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-                { id: 3, name: 'Bob Johnson', email: 'bob@example.com' }
-            ];
+            return results;
         } catch (err) {
             setError('Failed to fetch users');
             return [];
@@ -103,7 +99,7 @@ const EnrolmentAdmin = () => {
 
             {selectedUser && (
                 <div className="alert alert-info mt-3">
-                    <strong>Selected User:</strong> {selectedUser.name} ({selectedUser.email})
+                    <strong>Selected User:</strong> {selectedUser.displayName} ({selectedUser.username})
                 </div>
             )}
 

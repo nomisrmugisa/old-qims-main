@@ -21,9 +21,9 @@ export const lookupFacilities = async (query) => {
     }
 };
 
-export const listAllUsers = async () => {
+export const listAllUsers = async (page, pageSize) => {
     try {
-        const data = await UserService.listAll();
+        const data = await UserService.listAll(page, pageSize);
         window.console.log("lookup result");
         window.console.log(data);
         /*if(data && data.length > 0 && data[0].newFacilityCode)
@@ -32,8 +32,26 @@ export const listAllUsers = async () => {
             return [];*/
         return data;
     } catch (err) {
-        console.error('Facilities fetch error:', err);
-        throw ('Failed to load facilities. Please try again later.');
+        console.error('Users fetch error:', err);
+        throw ('Failed to load users. Please try again later.');
+    } finally {
+
+    }
+};
+
+export const lookupUsers = async (query) => {
+    try {
+        const data = await UserService.searchUsers(query);
+        window.console.log("lookup result");
+        window.console.log(data);
+        /*if(data && data.length > 0 && data[0].newFacilityCode)
+         return data;
+         else
+         return [];*/
+        return data;
+    } catch (err) {
+        console.error('Users fetch error:', err);
+        throw ('Failed to search users. Please try again later.');
     } finally {
 
     }

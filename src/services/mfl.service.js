@@ -27,12 +27,12 @@ export const fetchFacilityById = async (id) => {
 };
 
 /*const mflService = axios.create({
-    baseURL: `${import.meta.env.REACT_APP_MFL_API_URL}/api/v1`,
-    timeout: parseInt(`${import.meta.env.REACT_APP_API_TIMEOUT}`) || 30000,
+    baseURL: `${import.meta.env.VITE_MFL_API_URL}/api/v1`,
+    timeout: parseInt(`${import.meta.env.VITE_API_TIMEOUT}`) || 30000,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization' : `${import.meta.env.REACT_APP_MFL_API_KEY}`
+        'Authorization' : `${import.meta.env.VITE_MFL_API_KEY}`
     },
 });*/
 

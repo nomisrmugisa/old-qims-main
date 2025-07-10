@@ -1,7 +1,6 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-// src/views/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField, InputAdornment, IconButton } from '@mui/material';
@@ -11,7 +10,7 @@ import { eventBus, EVENTS } from '../../events';
 import loginIllustration from '../../assets/logo.png'; // Add your image
 
 import './index.css';
-import { AuthService, MFLApiService } from '../../services';
+import { AuthService, MFLApiService, StorageService } from '../../services';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -53,7 +52,7 @@ const Login = () => {
         setIsSubmitting(true);
         try {
 
-            const response = await AuthService.login({
+            const response = await AuthService.me({
                 username: formData.email,
                 password: formData.password
             });
@@ -68,8 +67,7 @@ const Login = () => {
             });
             window.console.log("RESPONSE---");
             window.console.log(response);
-            window.console.log(response.code);
-            window.console.log(response.data);
+            StorageService.set(STORAGE_KEYS.USER_DATA, response);
             window.console.log("***---");
 
             /*const response = await fetch('/api/auth/login', {
