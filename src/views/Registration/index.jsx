@@ -1,15 +1,33 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-// src/views/Registration.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField } from '@mui/material';
 import { eventBus, EVENTS } from '../../events';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import registrationIllustration from '../../assets/MOH-logo-bots.png';
 import './index.css';
-import { AuthService } from '../../services';
+import { AuthService, UserService } from '../../services';
+
+
+const listUserGroups = async () => {
+    try {
+        const data = await UserService.listGroups();
+        window.console.log("lookup result");
+        window.console.log(data);
+        /*if(data && data.length > 0 && data[0].newFacilityCode)
+         return data;
+         else
+         return [];*/
+        return data;
+    } catch (err) {
+        console.error('User Groups fetch error:', err);
+        throw ('Failed to load user groups. Please try again later.');
+    } finally {
+
+    }
+};
 
 const Registration = () => {
     const [step, setStep] = useState(1);
@@ -67,8 +85,12 @@ const Registration = () => {
         try {
 
             const response = await AuthService.registerEmail({
-                email: formData.email
+                email: formData.email,
+                username: formData.email,
+                password: formData.password,
+                otp: formData.otp
             });
+
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'OTP Sent',
                 message: 'Verification code sent to your email',

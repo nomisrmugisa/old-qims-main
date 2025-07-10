@@ -68,7 +68,7 @@ const AuthService = {
     registerEmail: async (credentials) => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "registerEmail"});
         try {
-            const response = await httpService.post('/auth/forgot-password', credentials);
+            const response = await httpService.post('/auth/registration', credentials);
             window.console.log(response);
             return response;
         } catch (error) {
@@ -94,9 +94,11 @@ const AuthService = {
 
     me: async(credentials, headers={}) => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "me"});
+        const authorization_creds = btoa(`${credentials.username}:${credentials.password}`);
+
         try {
             const response = await httpService.post('/api/me', credentials, {
-                headers
+                'Authorization': `${authorization_creds}`
             });
 
 

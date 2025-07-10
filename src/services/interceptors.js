@@ -58,6 +58,8 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
         },
         async (error) => {
             const originalRequest = error.config;
+            window.console.log("Error Log");
+            window.console.log(error);
 
             if (error.response?.status === API_STATUS.UNAUTHORIZED && !originalRequest._retry) {
                 if (isRefreshing) {

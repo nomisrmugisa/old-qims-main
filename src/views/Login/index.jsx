@@ -53,9 +53,11 @@ const Login = () => {
         setIsSubmitting(true);
         try {
 
-            const response = await AuthService.registerEmail({
-                email: formData.email
+            const response = await AuthService.login({
+                username: formData.email,
+                password: formData.password
             });
+
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Login Successful',
                 message: 'Welcome back!',
