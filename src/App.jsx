@@ -25,6 +25,7 @@ import ConflictResolutionPage from './views/ConflictResolverPage';
 import CorrectiveActionPlanPage from './views/CorrectiveActionPlanPage';
 import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
+import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -141,6 +142,7 @@ function App() {
               <Route path="/corrective-action-plan" element={<CorrectiveActionPlanPage />} />
               <Route path="/inspection-final-report" element={<InspectionFinalReportPage />} />
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
+              <Route path="/facility-dashboard" element={<FacilityUserDashboardPage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>
