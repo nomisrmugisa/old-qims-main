@@ -37,6 +37,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedServiceEvent, setSelectedServiceEvent] = useState(null);
   const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
+  const [facilityName, setFacilityName] = useState('');
   
   // Situational Analysis state
   const [inspectionEvents, setInspectionEvents] = useState([]);
@@ -1530,6 +1531,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               <TrackerEventDetails 
                 onFormStatusChange={handleFormStatusChange}
                 onUpdateSuccess={handleApplicationUpdateSuccess}
+                // onFacilityNameChange={(name) => setFacilityName(name)}
               />
             </div>
           </div>
@@ -2480,6 +2482,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchFacilityOwnershipData();
           }}
           isEditMode={false}
+          // facilityName={facilityName}
         />
       )}
 
@@ -2499,6 +2502,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }}
           event={selectedEvent}
           isEditMode={true}
+          // facilityName={facilityName}
         />
       )}
 

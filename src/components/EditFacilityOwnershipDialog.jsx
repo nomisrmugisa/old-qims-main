@@ -9,7 +9,8 @@ const EditFacilityOwnershipDialog = ({
   onAddSuccess, 
   event, 
   trackedEntityInstanceId, 
-  isEditMode = true 
+  isEditMode = true,
+  // facilityName
 }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
   const [formData, setFormData] = useState({});
@@ -25,6 +26,7 @@ const EditFacilityOwnershipDialog = ({
   const [submitError, setSubmitError] = useState(null);
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [facilityOrgUnitId, setFacilityOrgUnitId] = useState(null);
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
@@ -1069,9 +1071,36 @@ const EditFacilityOwnershipDialog = ({
   };
 
   // Helper to get facility org unit ID (assuming event.trackedEntityInstance or event.orgUnit)
-  const facilityOrgUnitId = event?.orgUnit;
+  // const facilityOrgUnitId = event?.orgUnit;
 
+  // Function to fetch org unit ID by name
+  const fetchOrgUnitIdByName = async (name) => {
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials || !name) return null;
+      
+      const encodedName = encodeURIComponent(name);
+      const response = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits?paging=false&filter=displayName:ilike:${encodedName}`,
+        {
+          headers: { Authorization: `Basic ${credentials}` },
+        }
+      );
+      
+      if (!response.ok) throw new Error('Failed to fetch organization unit');
+      
+      const data = await response.json();
+      return data.organisationUnits?.[0]?.id || null;
+    } catch (error) {
+      console.error('Error fetching org unit ID:', error);
+      return null;
+    }
+  };
 
+  const handleClose = () => {
+    sessionStorage.removeItem('currentFacilityName');
+    onClose();
+  };
   
   // Actual submission after confirmation
   const handleConfirmedSubmit = async () => {
@@ -1079,7 +1108,21 @@ const EditFacilityOwnershipDialog = ({
     setSubmitInProgress(true);
     setSubmitError(null);
     try {
-      // 1. Set "Application Submitted" to true before saving
+      // 1. Get facility name from sessionStorage
+      const facilityName = sessionStorage.getItem('currentFacilityName');
+      if (!facilityName) {
+        throw new Error('Facility name not found');
+      }
+
+      // 2. Get org unit ID
+      const orgUnitId = await fetchOrgUnitIdByName(facilityName);
+      if (!orgUnitId) {
+        throw new Error('Could not find organization unit for the facility');
+      }
+      setFacilityOrgUnitId(orgUnitId);
+
+
+      // 1.1 Set "Application Submitted" to true before saving
       if (programStageMetadata && programStageMetadata.programStageSections) {
         const complianceSection = programStageMetadata.programStageSections.find(section => 
           section.name && section.name.toLowerCase().includes('compliance')
@@ -1099,13 +1142,25 @@ const EditFacilityOwnershipDialog = ({
       
       // 2. Save the record first (this will create or update the event)
       await handleSubmit(new Event('submit'));
+
+      // 3. Get the facility org unit ID from the facility name
+      if (facilityName) {
+        const orgUnitId = await fetchOrgUnitIdByName(facilityName);
+        if (orgUnitId) {
+          setFacilityOrgUnitId(orgUnitId);
+        } else {
+          throw new Error('Could not find organization unit for the facility');
+        }
+      } else {
+        throw new Error('Facility name is required');
+      }
       
-      // 3. Add facility to Screening org unit group
+      // 3.1 Add facility to Screening org unit group
       const credentials = localStorage.getItem('userCredentials');
       const nextGroupId = 'nDAvPPtYHQP';
       const nextGroupName = 'Screening Review';
       
-      // 3.1 First get the current group members
+      // 3.2 First get the current group members
       const getResponse = await fetch(
         `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
         {
@@ -1121,18 +1176,18 @@ const EditFacilityOwnershipDialog = ({
 
       const groupData = await getResponse.json();
 
-      // 3.2 Check if facility is already in group
-      const isAlreadyMember = groupData.organisationUnits?.some(ou => ou.id === facilityOrgUnitId) || false;
+      // 3.3 Check if facility is already in group
+      const isAlreadyMember = groupData.organisationUnits?.some(ou => ou.id === orgUnitId) || false;
 
       if (isAlreadyMember) {
         console.log('Facility is already in the target group');
         setErrorMessage(`Facility already in ${nextGroupName} stage`);
       }
 
-      // 3.3 Prepare updated organisationUnits array
+      // 3.4 Prepare updated organisationUnits array
       const updatedOrgUnits = [
         ...(groupData.organisationUnits || []),
-        { id: facilityOrgUnitId }
+        { id: orgUnitId }
       ];
 
       // 3.4 Update the group with all facilities
@@ -1184,7 +1239,7 @@ const EditFacilityOwnershipDialog = ({
       setIsInScreeningGroup(true);
       // 8. Close the form after successful submission
       setTimeout(() => {
-        onClose();
+        handleClose();
       }, 2000); // Close after 2 seconds to allow user to see success message
     } catch (err) {
       setSubmitError(err.message || 'Save or submission failed');
@@ -1205,7 +1260,7 @@ const EditFacilityOwnershipDialog = ({
   }
 
   return (
-    <ModalPortal open={open} onClose={onClose}>
+    <ModalPortal open={open} onClose={handleClose}>
       {/* Loading overlay during submission */}
       {isSubmitting && (
         <div style={{
@@ -1404,7 +1459,7 @@ const EditFacilityOwnershipDialog = ({
           <button 
             type="button" 
             className="close-btn" 
-            onClick={onClose} 
+            onClick={handleClose} 
             disabled={isSubmitting}
             style={{
               background: 'none',
@@ -1462,7 +1517,7 @@ const EditFacilityOwnershipDialog = ({
               <button 
                 type="button" 
                 className="btn-secondary" 
-                onClick={onClose} 
+                onClick={handleClose} 
                 disabled={isSubmitting}
                 style={{ 
                   padding: '10px 24px', 

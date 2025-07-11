@@ -78,6 +78,13 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     checkFormCompletion(dummyFormValues);
   };
 
+  // Notify parent when facility name changes
+  // useEffect(() => {
+  //   if (formValues['PdtizqOqE6Q'] && onFacilityNameChange) {
+  //     onFacilityNameChange(formValues['PdtizqOqE6Q']);
+  //   }
+  // }, [formValues['PdtizqOqE6Q']]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -157,11 +164,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             checkFormCompletion(initialFormValues);
 
             // Check if form has existing data
-            const hasData = requiredOtherDetailsFields.some(field => 
+            const hasData = requiredOtherDetailsFields.some(field =>
               initialFormValues[field] && initialFormValues[field].trim() !== ''
             );
             setHasExistingData(hasData);
-            
+
             // If form has existing data, disable editing and hide update button
             if (hasData) {
               setIsEditing(false);
@@ -228,7 +235,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         }
 
         const data = await response.json();
-        
+
         console.log('Received data:', data);
 
         if (data && data.name) {
@@ -248,7 +255,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
     // Add a small delay to ensure data is loaded
     const timer = setTimeout(fetchOrgUnitName, 100);
-    
+
     // Cleanup function to clear timeout
     return () => clearTimeout(timer);
   }, [formValues['VJzk8OdFJKA']]);
@@ -754,6 +761,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       setLoading(true);
       setSuccessMessages([]);
 
+      // Save facility name to sessionStorage before proceeding
+      if (formValues['PdtizqOqE6Q']) {
+        sessionStorage.setItem('currentFacilityName', formValues['PdtizqOqE6Q']);
+      }
+
       // Generate a new ID for org unit if complete is checked
       const orgUnitId = generate_orgUnitID();
       console.log('Step 2: Generated organization unit ID:', orgUnitId);
@@ -919,7 +931,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setSuccessMessages(prev => [...prev, '5 / 5']);
 
         setOpenSnackbar(true);
-        
+
         console.log('Step 10: Sending email notification...');
         // Step 10: Email sending is deactivated, but we simulate success for downstream logic
         setCurrentStep('Sending notification...');
@@ -929,46 +941,46 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           console.log('✅ Step 10 COMPLETED: (Email sending deactivated, simulated success)');
           setSuccessMessages(prev => [...prev, 'Email notification (deactivated)']);
           setOpenSnackbar(true);
-          
+
           console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
           // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
           setCurrentStep('Completing application...');
           setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
-          
+
           // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
           localStorage.setItem('autoSelectTab', 'facilityOwnership');
-          
+
           // Add a short delay before reloading to ensure user sees the success message
           setTimeout(() => {
             console.log('🚀 EXECUTING Step 11: Triggering data refresh and tab switch...');
             // Instead of reloading the page, trigger a data refresh from localStorage
             // This will cause the parent component to re-fetch all data
             const refreshEvent = new CustomEvent('refreshApplicationData', {
-              detail: { 
+              detail: {
                 action: 'refresh',
                 timestamp: new Date().toISOString()
               }
             });
             window.dispatchEvent(refreshEvent);
-            
+
             // Also trigger the tab switch
             const tabSwitchEvent = new CustomEvent('switchToTab', {
-              detail: { 
+              detail: {
                 tab: 'facilityOwnership',
                 timestamp: new Date().toISOString()
               }
             });
             window.dispatchEvent(tabSwitchEvent);
-            
+
             console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
           }, 1500);
-          
+
         } else {
           console.error('❌ Step 10 FAILED: Email notification failed');
           setSuccessMessages(prev => [...prev, 'Email notification failed']);
           setOpenSnackbar(true);
         }
-        
+
       } catch (error) {
         console.error('❌ Step 9 FAILED: Error in user enabling process:', error);
         // Continue even if user enabling fails - this shouldn't block the main process
@@ -1210,17 +1222,17 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           </Grid>
 
           {/* Location field */}
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               mt: { xs: 1, sm: 2 },
-              width: '100%' 
+              width: '100%'
             }}
           >
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                mb: { xs: 0.25, sm: 0.5 }, 
-                fontWeight: 'bold', 
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: { xs: 0.25, sm: 0.5 },
+                fontWeight: 'bold',
                 color: 'text.primary',
                 fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
               }}
@@ -1245,7 +1257,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                     }
                   }}
                   ListboxProps={{
-                    style: { 
+                    style: {
                       maxHeight: '200px',
                       fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
                     }
@@ -1321,14 +1333,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                       color="primary"
                       variant="outlined"
                       size="small"
-                      sx={{ 
+                      sx={{
                         fontWeight: 'medium',
                         fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
                       }}
                     />
                   ) : (
-                    <Typography 
-                      color="error" 
+                    <Typography
+                      color="error"
                       variant="body2"
                       sx={{
                         fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
@@ -1354,30 +1366,30 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 Edit Details
               </Button>
             ) : ( */}
-              {!hasExistingData && (
-                <>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={async () => {
-                      setShowProgress(true);
-                      setProgress(10);
-                      await handleSubmit();
-                      setProgress(60);
-                      await sendFacilityUpdateEmail();
-                      setProgress(100);
-                      setTimeout(() => {
-                        setShowProgress(false);
-                        setProgress(0);
-                      }, 800);
-                    }}
-                    disabled={updating}
-                    size="small"
-                  >
-                    {updating ? 'Updating...' : 'Update Application Details'}
-                  </Button>
-                </>
-              )}
+            {!hasExistingData && (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={async () => {
+                    setShowProgress(true);
+                    setProgress(10);
+                    await handleSubmit();
+                    setProgress(60);
+                    await sendFacilityUpdateEmail();
+                    setProgress(100);
+                    setTimeout(() => {
+                      setShowProgress(false);
+                      setProgress(0);
+                    }, 800);
+                  }}
+                  disabled={updating}
+                  size="small"
+                >
+                  {updating ? 'Updating...' : 'Update Application Details'}
+                </Button>
+              </>
+            )}
             {/* )} */}
           </Box>
         </CardContent>
