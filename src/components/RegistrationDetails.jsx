@@ -201,9 +201,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       "KRj1TOR5cVM", // copyOfIdPassport
       "yP49GKSQxPl", // professionalReference1
       "lC217zTgC6C", // professionalReference2
-      "pelCBFPIFY1", // qualificationCertificates
-      "cUObXSGtCuD", // validRecentPermit
-      "g9jXH9LJyxU"  // workPermitWaiver
+      "pelCBFPIFY1"  // qualificationCertificates
     ];
 
     console.log("- Required fields count:", requiredFields.length);
@@ -777,6 +775,30 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     const intervalId = setInterval(checkCompleteApplicationStatus, 2000);
     
     return () => clearInterval(intervalId);
+  }, []);
+  
+  // Auto-navigate to View Inspections when both Complete Application and Facility Ownership are complete
+  useEffect(() => {
+    const checkAndNavigateToInspections = () => {
+      try {
+        const completeApplicationStatus = localStorage.getItem('completeApplicationFormStatus');
+        const facilityOwnershipStatus = localStorage.getItem('facilityOwnershipComplete');
+        
+        const isCompleteApplicationDone = completeApplicationStatus === 'true';
+        const isFacilityOwnershipDone = facilityOwnershipStatus === 'true';
+        
+        if (isCompleteApplicationDone && isFacilityOwnershipDone) {
+          // Navigate to View Inspections tab
+          const event = new CustomEvent('switchToTab', { detail: 'inspections' });
+          window.dispatchEvent(event);
+        }
+      } catch (error) {
+        console.error("Error checking completion status for auto-navigation:", error);
+      }
+    };
+    
+    // Only check on component mount (login) and when facility ownership dialog closes
+    checkAndNavigateToInspections();
   }, []);
   
   useEffect(() => {

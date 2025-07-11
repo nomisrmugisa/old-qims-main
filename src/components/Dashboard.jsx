@@ -224,6 +224,21 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         fetchTrackedEntityInstance();
     }, []);
 
+    // Listen for auto-navigation to inspections tab
+    useEffect(() => {
+        const handleSwitchToTab = (event) => {
+            if (event.detail === 'inspections') {
+                setActiveSection('inspections');
+            }
+        };
+
+        window.addEventListener('switchToTab', handleSwitchToTab);
+        
+        return () => {
+            window.removeEventListener('switchToTab', handleSwitchToTab);
+        };
+    }, []);
+
     const renderContent = () => {
         switch (activeSection) {
             case 'overview':

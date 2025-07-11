@@ -59,6 +59,24 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   // Add state for progress
   const [progress, setProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
+  const [hasExistingData, setHasExistingData] = useState(false);
+
+  // Function to set dummy data for development/testing
+  const setDummyData = () => {
+    console.log('Setting dummy data');
+    const dummyFormValues = {
+      'aMFg2iq9VIg': '',
+      'HMk4LZ9ESOq': '',
+      'ykwhsQQPVH0': '',
+      'PdtizqOqE6Q': '',
+      'VJzk8OdFJKA': ''
+    };
+    setFormValues(dummyFormValues);
+    setEventData(null);
+    setLoading(false);
+    setHasExistingData(false);
+    checkFormCompletion(dummyFormValues);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,6 +156,15 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             // Check if all required fields are filled
             checkFormCompletion(initialFormValues);
 
+            // Check if form has existing data
+            const hasData = Object.values(initialFormValues).some(value => value && value.trim() !== '');
+            setHasExistingData(hasData);
+            
+            // If form has existing data, disable editing and hide update button
+            if (hasData) {
+              setIsEditing(false);
+            }
+
             setLoading(false);
             return;
           }
@@ -163,6 +190,66 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchOrgUnitName = async () => {
+      console.log('Debug - fetchOrgUnitName called');
+      console.log('formValues[VJzk8OdFJKA]:', formValues['VJzk8OdFJKA']);
+      console.log('loading state:', loading);
+
+      // Remove loading check to always attempt fetching
+      if (!formValues['VJzk8OdFJKA']) {
+        console.log('Skipping fetch: No location ID');
+        return;
+      }
+
+      try {
+        const credentials = localStorage.getItem('userCredentials');
+        if (!credentials) {
+          console.error('No credentials found for fetching org unit name');
+          return;
+        }
+
+        console.log('Fetching org unit name for ID:', formValues['VJzk8OdFJKA']);
+        console.log('Full API URL:', `/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`);
+
+        const response = await fetch(`/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch organization unit name: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('Received data:', data);
+
+        if (data && data.name) {
+          // Update selectedOrgUnit with the fetched name
+          setSelectedOrgUnit({
+            id: formValues['VJzk8OdFJKA'],
+            displayName: data.name
+          });
+          console.log('Updated selectedOrgUnit with name:', data.name);
+        } else {
+          console.warn('No name found in the response:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching organization unit name:', error);
+      }
+    };
+
+    // Add a small delay to ensure data is loaded
+    const timer = setTimeout(fetchOrgUnitName, 100);
+    
+    // Cleanup function to clear timeout
+    return () => clearTimeout(timer);
+  }, [formValues['VJzk8OdFJKA']]);
 
   // Check if all required fields are filled
   const checkFormCompletion = (values) => {
@@ -1046,11 +1133,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['aMFg2iq9VIg'] && !loading}
                 helperText={!formValues['aMFg2iq9VIg'] && !loading ? "This field is required" : ""}
-                className={!formValues['aMFg2iq9VIg'] && !loading ? 'blink-required' : ''}
+                className={!formValues['aMFg2iq9VIg'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1061,11 +1148,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['HMk4LZ9ESOq'] && !loading}
                 helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
-                className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : ''}
+                className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1076,11 +1163,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['ykwhsQQPVH0'] && !loading}
                 helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
-                className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : ''}
+                className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1091,11 +1178,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
-                className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : ''}
+                className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
               />
             </Grid>
           </Grid>
@@ -1115,7 +1202,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                     onChange={handleLocationChange}
                     onInputChange={handleSearchChange}
                     loading={isLoadingOrgUnits}
-                    disabled={updating}
+                    disabled={updating || hasExistingData}
                     fullWidth
                     size="small"
                     ListboxProps={{
@@ -1206,7 +1293,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 >
                   {formValues['VJzk8OdFJKA'] ? (
                     <Chip
-                      label={formValues['VJzk8OdFJKA']}
+                      label={selectedOrgUnit?.displayName || formValues['VJzk8OdFJKA']}
                       color="primary"
                       variant="outlined"
                       size="small"
@@ -1232,28 +1319,30 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 Edit Details
               </Button>
             ) : ( */}
-              <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={async () => {
-                    setShowProgress(true);
-                    setProgress(10);
-                    await handleSubmit();
-                    setProgress(60);
-                    await sendFacilityUpdateEmail();
-                    setProgress(100);
-                    setTimeout(() => {
-                      setShowProgress(false);
-                      setProgress(0);
-                    }, 800);
-                  }}
-                  disabled={updating}
-                  size="small"
-                >
-                  {updating ? 'Updating...' : 'Update Application Details'}
-                </Button>
-              </>
+              {!hasExistingData && (
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={async () => {
+                      setShowProgress(true);
+                      setProgress(10);
+                      await handleSubmit();
+                      setProgress(60);
+                      await sendFacilityUpdateEmail();
+                      setProgress(100);
+                      setTimeout(() => {
+                        setShowProgress(false);
+                        setProgress(0);
+                      }, 800);
+                    }}
+                    disabled={updating}
+                    size="small"
+                  >
+                    {updating ? 'Updating...' : 'Update Application Details'}
+                  </Button>
+                </>
+              )}
             {/* )} */}
           </Box>
         </CardContent>

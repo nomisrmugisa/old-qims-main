@@ -409,6 +409,22 @@ const EditFacilityOwnershipDialog = ({
     return section.name && section.name.toLowerCase().includes('special circumstances');
   };
 
+  // Function to check if ID Type is Omang
+  const isIdTypeOmang = () => {
+    const idTypeValue = formData['FLcrCfTNcQi']; // ID Type field
+    return idTypeValue === 'Omang' || idTypeValue === 'omang';
+  };
+
+  // Function to check if field should be hidden based on ID Type
+  const shouldHideField = (de) => {
+    if (isIdTypeOmang()) {
+      // Hide permit fields when ID Type is Omang
+      const permitFields = ['cUObXSGtCuD', 'g9jXH9LJyxU']; // Copy of Resident Permit, Work Permit / Waiver
+      return permitFields.includes(de.id);
+    }
+    return false;
+  };
+
   const renderFileInput = (de) => {
     const fileInputId = `file-input-${de.id}`;
     return (
@@ -670,6 +686,7 @@ const EditFacilityOwnershipDialog = ({
               </h4>
             )}
             {section.dataElements.map(de => (
+              shouldHideField(de) ? null : (
               <div key={de.id} className="form-group-dhis2" style={{
                 marginBottom: '16px'
               }}>
@@ -931,6 +948,7 @@ const EditFacilityOwnershipDialog = ({
                   )
                 )}
               </div>
+              )
             ))}
           </div>
         ))}
@@ -949,6 +967,11 @@ const EditFacilityOwnershipDialog = ({
       }
       
       for (const de of section.dataElements) {
+        // Skip hidden fields (permit fields when ID Type is Omang)
+        if (shouldHideField(de)) {
+          continue;
+        }
+        
         // Check ALL fields in required sections, not just those marked as compulsory
         const value = formData[de.id];
         if (value === undefined || value === null || value === '') {
@@ -988,42 +1011,70 @@ const EditFacilityOwnershipDialog = ({
         }
       }
       
-      // 2. Save the record first
+      // 2. Save the record first (this will create or update the event)
       await handleSubmit(new Event('submit'));
       
       // 3. Add facility to Screening org unit group
       const credentials = localStorage.getItem('userCredentials');
-      // Fetch existing organisation units in the group
-      const groupRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`,
-        },
-      });
-      if (!groupRes.ok) throw new Error('Failed to fetch existing Screening group units');
-      const groupData = await groupRes.json();
-      const existingUnits = (groupData.organisationUnits || []).map(u => ({ id: u.id }));
-      // Add the new orgUnitId if not already present
-      if (!existingUnits.some(u => u.id === facilityOrgUnitId)) {
-        existingUnits.push({ id: facilityOrgUnitId });
+      const nextGroupId = 'nDAvPPtYHQP';
+      const nextGroupName = 'Screening Review';
+      
+      // 3.1 First get the current group members
+      const getResponse = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
+        {
+          headers: {
+            'Authorization': `Basic ${credentials}`
+          }
+        }
+      );
+
+      if (!getResponse.ok) {
+        throw new Error('Failed to fetch current group members');
       }
-      const putRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`,
-        },
-        body: JSON.stringify({
-          id: 'nDAvPPtYHQP',
-          name: 'Screening Review',
-          shortName: 'Screening Review',
-          organisationUnits: existingUnits,
-        }),
-      });
-      if (!putRes.ok) throw new Error('Failed to add facility to Screening group');
+
+      const groupData = await getResponse.json();
+
+      // 3.2 Check if facility is already in group
+      const isAlreadyMember = groupData.organisationUnits?.some(ou => ou.id === facilityOrgUnitId) || false;
+
+      if (isAlreadyMember) {
+        console.log('Facility is already in the target group');
+        setErrorMessage(`Facility already in ${nextGroupName} stage`);
+      }
+
+      // 3.3 Prepare updated organisationUnits array
+      const updatedOrgUnits = [
+        ...(groupData.organisationUnits || []),
+        { id: facilityOrgUnitId }
+      ];
+
+      // 3.4 Update the group with all facilities
+      const groupResponse = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: nextGroupId,
+            name: nextGroupName,
+            shortName: nextGroupName,
+            organisationUnits: updatedOrgUnits
+          })
+        }
+      );
+
+      if (!groupResponse.ok) {
+        throw new Error(`Failed to add facility to ${nextGroupName} group`);
+      }
+
+      console.log(`Facility successfully added to ${nextGroupName} group`);
 
       // 4. Send email to user
-      await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
+      const emailResponse = await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1034,6 +1085,10 @@ const EditFacilityOwnershipDialog = ({
           message: 'Your Application Has Been Received, we will contact you soon',
         }),
       });
+      
+      if (!emailResponse.ok) {
+        console.error('Failed to send email notification, but continuing with submission');
+      }
 
       // 5. Show success feedback
       setSubmitSuccess(true);
@@ -1041,6 +1096,10 @@ const EditFacilityOwnershipDialog = ({
       setSubmitInProgress(false);
       // 7. Set isInScreeningGroup to true to disable Save Changes button
       setIsInScreeningGroup(true);
+      // 8. Close the form after successful submission
+      setTimeout(() => {
+        onClose();
+      }, 2000); // Close after 2 seconds to allow user to see success message
     } catch (err) {
       setSubmitError(err.message || 'Save or submission failed');
       setSubmitInProgress(false);

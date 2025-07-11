@@ -137,7 +137,15 @@ function RegistrationForm() {
     setRegistrationSubmittedMessage(false);
   };
 
-  const usernameRegex = /^[a-zA-Z0-9._@-]{4,255}$/;
+
+
+  // Generate random username function
+  const generateRandomUsername = () => {
+    const prefix = 'user';
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    return `${prefix}_${timestamp}_${random}`;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -145,18 +153,16 @@ function RegistrationForm() {
       ...prev,
       [name]: value
     }));
-    if (name === 'userName') {
-      if (!value) {
-        setUsernameError('Username is required.');
-      } else if (value.includes(' ')) {
-        setUsernameError('Username must not contain spaces.');
-      } else if (value.length < 4 || value.length > 255) {
-        setUsernameError('Username must be between 4 and 255 characters.');
-      } else if (!usernameRegex.test(value)) {
-        setUsernameError('Username can only contain letters, numbers, and . _ - @');
-      } else {
-        setUsernameError('');
-      }
+    
+    // Generate random username when email is entered
+    if (name === 'email') {
+      const randomUsername = generateRandomUsername();
+      setFormData(prev => ({
+        ...prev,
+        userName: randomUsername // Set username to random generated value
+      }));
+      // Clear any username errors since username is automatically generated
+      setUsernameError('');
     }
   };
 
@@ -173,9 +179,19 @@ function RegistrationForm() {
     setLoading(true);
 
     try {
+      // Generate random username if not already set
+      let finalUsername = formData.userName;
+      if (!finalUsername || finalUsername === formData.email) {
+        finalUsername = generateRandomUsername();
+        setFormData(prev => ({
+          ...prev,
+          userName: finalUsername
+        }));
+      }
+
       // 1. Create User Profile (switched to be first)
       const userPayload = {
-        username: formData.userName,
+        username: finalUsername,
         surname: "Place-Holder",
         firstName: "Place-Holder",
         password: "selfRegistration@123$",
@@ -251,7 +267,7 @@ function RegistrationForm() {
             dataValues: [
               { dataElement: "SReqZgQk0RY", value: formData.cellNumber },
               { dataElement: "SVzSsDiZMN5", value: formData.BHPCRegistrationNumber },
-              { dataElement: "g3J1CH26hSA", value: formData.userName },
+              { dataElement: "g3J1CH26hSA", value: finalUsername },
               { dataElement: "EAi89g7IBjp", value: formData.dhisRegistrationCode },
               { dataElement: "NVlLoMZbXIW", value: formData.email }
             ]
@@ -287,11 +303,12 @@ function RegistrationForm() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: formData.email,
-            username: formData.userName,
-            password: DEFAULT_PASSWORD
-          })
+                  body: JSON.stringify({
+          email: formData.email,
+          username: finalUsername,
+          password: DEFAULT_PASSWORD,
+          generatedUsername: finalUsername // Include the generated username in email
+        })
         });
 
         if (!emailResponse.ok) {
@@ -372,6 +389,7 @@ function RegistrationForm() {
                 },
               }}
               disabled={loading}
+              sx={{ display: 'none' }}
             />
 
             <TextField
@@ -474,7 +492,7 @@ function RegistrationForm() {
                 backgroundColor: "#303f9f",
               },
             }}
-            disabled={!!usernameError || !formData.userName || loading}
+            disabled={loading}
           >
             Apply
           </Button>
