@@ -1124,8 +1124,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             Other Details
           </Typography>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Private Practice Number"
                 value={formValues['aMFg2iq9VIg'] || ''}
@@ -1138,9 +1138,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 error={!formValues['aMFg2iq9VIg'] && !loading}
                 helperText={!formValues['aMFg2iq9VIg'] && !loading ? "This field is required" : ""}
                 className={!formValues['aMFg2iq9VIg'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Name of the License Holder"
                 value={formValues['HMk4LZ9ESOq'] || ''}
@@ -1153,9 +1158,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 error={!formValues['HMk4LZ9ESOq'] && !loading}
                 helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
                 className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Surname of License Holder"
                 value={formValues['ykwhsQQPVH0'] || ''}
@@ -1168,9 +1178,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 error={!formValues['ykwhsQQPVH0'] && !loading}
                 helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
                 className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Name of Facility to be Registered"
                 value={formValues['PdtizqOqE6Q'] || ''}
@@ -1183,109 +1198,116 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
                 className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
           </Grid>
 
           {/* Location field */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 'bold', color: 'text.primary' }}>
+          <Box 
+            sx={{ 
+              mt: { xs: 1, sm: 2 },
+              width: '100%' 
+            }}
+          >
+            <Typography 
+              variant="subtitle2" 
+              sx={{ 
+                mb: { xs: 0.25, sm: 0.5 }, 
+                fontWeight: 'bold', 
+                color: 'text.primary',
+                fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+              }}
+            >
               Location in Botswana (Ward) <span style={{ color: 'red' }}>*</span>
             </Typography>
-            <Box sx={{ position: 'relative' }}>
+            <Box sx={{ position: 'relative', width: '100%' }}>
               {isEditing ? (
-                <>
-                  <Autocomplete
-                    options={filteredOrgUnits}
-                    getOptionLabel={(option) => option.displayName || ''}
-                    value={selectedOrgUnit}
-                    onChange={handleLocationChange}
-                    onInputChange={handleSearchChange}
-                    loading={isLoadingOrgUnits}
-                    disabled={updating || hasExistingData}
-                    fullWidth
-                    size="small"
-                    ListboxProps={{
-                      style: { maxHeight: '200px' }
-                    }}
-                    PaperComponent={props => (
-                      <Paper
-                        {...props}
-                        elevation={3}
-                        sx={{
-                          maxHeight: 200,
-                          width: '100%',
-                          '& .MuiAutocomplete-option': {
-                            py: 1,
-                            px: 2,
-                            borderBottom: '1px solid #eee',
-                            '&:hover': {
-                              bgcolor: 'primary.light',
-                              color: 'white'
-                            }
-                          }
-                        }}
-                      />
-                    )}
-                    renderOption={(props, option) => (
-                      <li {...props} key={option.id}>
-                        <Typography noWrap>
-                          {option.displayName}
-                        </Typography>
-                      </li>
-                    )}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        variant="outlined"
-                        fullWidth
-                        placeholder="Search for a location (Ward)..."
-                        size="small"
-                        margin="dense"
-                        required
-                        error={!formValues['VJzk8OdFJKA'] && !loading}
-                        helperText={!formValues['VJzk8OdFJKA'] && !loading ? "Location is required" : ""}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '&.Mui-focused': {
-                              borderColor: 'primary.main',
-                              boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)'
-                            }
-                          }
-                        }}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {isLoadingOrgUnits ? <CircularProgress color="primary" size={16} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                  {filteredOrgUnits.length > 0 && searchQuery && (
-                    <Typography
-                      variant="caption"
+                <Autocomplete
+                  options={filteredOrgUnits}
+                  getOptionLabel={(option) => option.displayName || ''}
+                  value={selectedOrgUnit}
+                  onChange={handleLocationChange}
+                  onInputChange={handleSearchChange}
+                  loading={isLoadingOrgUnits}
+                  disabled={updating || hasExistingData}
+                  fullWidth
+                  size="small"
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                  ListboxProps={{
+                    style: { 
+                      maxHeight: '200px',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                  PaperComponent={props => (
+                    <Paper
+                      {...props}
+                      elevation={3}
                       sx={{
-                        display: 'block',
-                        mt: 0.5,
-                        color: 'text.secondary'
+                        maxHeight: 200,
+                        width: '100%',
+                        '& .MuiAutocomplete-option': {
+                          py: { xs: 0.5, sm: 1 },
+                          px: { xs: 1, sm: 2 },
+                          borderBottom: '1px solid #eee',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                          '&:hover': {
+                            bgcolor: 'primary.light',
+                            color: 'white'
+                          }
+                        }
                       }}
-                    >
-                      {filteredOrgUnits.length} location{filteredOrgUnits.length !== 1 ? 's' : ''} found
-                    </Typography>
+                    />
                   )}
-                </>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      fullWidth
+                      placeholder="Search for a location (Ward)..."
+                      size="small"
+                      margin="dense"
+                      required
+                      error={!formValues['VJzk8OdFJKA'] && !loading}
+                      helperText={!formValues['VJzk8OdFJKA'] && !loading ? "Location is required" : ""}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                          '&.Mui-focused': {
+                            borderColor: 'primary.main',
+                            boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)'
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {isLoadingOrgUnits ? <CircularProgress color="primary" size={16} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                />
               ) : (
                 <Box
                   sx={{
-                    p: 1.5,
+                    p: { xs: 1, sm: 1.5 },
                     border: '1px solid #ddd',
                     borderRadius: 1,
                     bgcolor: '#f9f9f9',
-                    minHeight: '40px',
+                    minHeight: { xs: '35px', sm: '40px' },
                     display: 'flex',
                     alignItems: 'center',
                     borderColor: !formValues['VJzk8OdFJKA'] && !loading ? 'error.main' : '#ddd'
@@ -1297,10 +1319,21 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                       color="primary"
                       variant="outlined"
                       size="small"
-                      sx={{ fontWeight: 'medium' }}
+                      sx={{ 
+                        fontWeight: 'medium',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                      }}
                     />
                   ) : (
-                    <Typography color="error" variant="body2">Location is required</Typography>
+                    <Typography 
+                      color="error" 
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                      }}
+                    >
+                      Location is required
+                    </Typography>
                   )}
                 </Box>
               )}
