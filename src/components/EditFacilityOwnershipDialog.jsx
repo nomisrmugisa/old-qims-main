@@ -379,15 +379,101 @@ const EditFacilityOwnershipDialog = ({
 
   // Helper function to get the current user's organization unit ID
   const getCurrentUserOrgUnit = async () => {
+    // Comprehensive logging of method entry
+    console.group('🏥 GET CURRENT USER ORGANIZATION UNIT');
+    console.log('Timestamp:', new Date().toISOString());
+
+    // Check credentials
     const credentials = localStorage.getItem('userCredentials');
-    const response = await fetch("/api/me.json", {
-      headers: { Authorization: `Basic ${credentials}` },
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user information: ${response.status}`);
+    if (!credentials) {
+      console.error('❌ NO CREDENTIALS FOUND IN LOCALSTORAGE');
+      console.groupEnd();
+      throw new Error('No user credentials available');
     }
-    const userInfo = await response.json();
-    return userInfo.organisationUnits[0].id;
+
+    try {
+      // Detailed fetch configuration
+      const fetchConfig = {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      };
+
+      console.log('🔍 Fetch Configuration:', {
+        url: `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`,
+        method: fetchConfig.method,
+        headers: Object.keys(fetchConfig.headers)
+      });
+
+      // Perform the fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`, 
+        {
+          ...fetchConfig,
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeoutId);
+
+      // Check response status
+      if (!response.ok) {
+        console.error('❌ FETCH FAILED', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        
+        // Try to get error details
+        const errorText = await response.text();
+        console.error('Error Response Body:', errorText);
+        
+        throw new Error(`Failed to fetch user information: ${response.status} - ${response.statusText}`);
+      }
+
+      // Parse response
+      const userInfo = await response.json();
+      console.log('✅ User Info Received:', userInfo);
+
+      // Validate organization units
+      if (!userInfo.organisationUnits || userInfo.organisationUnits.length === 0) {
+        console.error('❌ NO ORGANIZATION UNITS FOUND');
+        console.log('Full User Info:', JSON.stringify(userInfo, null, 2));
+        throw new Error('No organization units associated with this user');
+      }
+
+      // Log all organization units
+      console.log('🏢 ORGANIZATION UNITS:');
+      userInfo.organisationUnits.forEach((ou, index) => {
+        console.log(`[${index}] ID: ${ou.id}, Name: ${ou.name}`);
+      });
+
+      // Additional context logging
+      console.log('🔑 Context Information:', {
+        dhis2Url: import.meta.env.VITE_DHIS2_URL,
+        totalOrgUnits: userInfo.organisationUnits.length
+      });
+
+      console.groupEnd();
+
+      // Return the first organization unit's ID
+      return userInfo.organisationUnits[0].id;
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in getCurrentUserOrgUnit:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      console.groupEnd();
+      
+      // Rethrow with additional context
+      throw new Error(`Organization Unit Retrieval Failed: ${error.message}`);
+    }
   };
 
   const isFileValueType = (vt) => ['FILE_RESOURCE', 'FILE', 'fileResource'].includes(vt);
