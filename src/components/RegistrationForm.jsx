@@ -336,6 +336,17 @@ function RegistrationForm() {
     }
   };
 
+  const isFormValid = () => {
+    return (
+      formData.cellNumber &&
+      formData.email &&
+      formData.BHPCRegistrationNumber &&
+      formData.cellNumber.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      formData.BHPCRegistrationNumber.trim() !== ''
+    );
+  };
+
   return (
     <>
       <button className="cta-btn" variant="contained" onClick={handleClickOpen}>
@@ -492,7 +503,7 @@ function RegistrationForm() {
                 backgroundColor: "#303f9f",
               },
             }}
-            disabled={loading}
+            disabled={loading || !isFormValid()}
           >
             Apply
           </Button>
