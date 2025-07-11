@@ -157,7 +157,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             checkFormCompletion(initialFormValues);
 
             // Check if form has existing data
-            const hasData = Object.values(initialFormValues).some(value => value && value.trim() !== '');
+            const hasData = requiredOtherDetailsFields.some(field => 
+              initialFormValues[field] && initialFormValues[field].trim() !== ''
+            );
             setHasExistingData(hasData);
             
             // If form has existing data, disable editing and hide update button
