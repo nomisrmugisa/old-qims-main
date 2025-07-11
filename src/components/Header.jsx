@@ -191,7 +191,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
       <div className="branding d-flex align-items-center">
         <div className="container position-relative d-flex align-items-center justify-content-between">
           <div className="logo d-flex flex-column align-items-center">
-            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '180px', height: 'auto' }} />
+            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '90px', height: '90px' }} />
           </div>
 
           <nav id="navmenu" className="navmenu">
