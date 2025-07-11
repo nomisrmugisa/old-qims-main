@@ -371,6 +371,12 @@ const EditFacilityOwnershipDialog = ({
     }
   };
 
+  // Add a new handler for combined save and submit
+  const handleSaveAndSubmit = async () => {
+    // Show confirmation dialog first
+    setShowConfirmDialog(true);
+  };
+
   // Helper function to get the current user's organization unit ID
   const getCurrentUserOrgUnit = async () => {
     const credentials = localStorage.getItem('userCredentials');
@@ -956,11 +962,7 @@ const EditFacilityOwnershipDialog = ({
   // Helper to get facility org unit ID (assuming event.trackedEntityInstance or event.orgUnit)
   const facilityOrgUnitId = event?.orgUnit;
 
-  // Handler for submit application for review
-  const handleSubmitForReview = async () => {
-    // Show confirmation dialog instead of proceeding directly
-    setShowConfirmDialog(true);
-  };
+
   
   // Actual submission after confirmation
   const handleConfirmedSubmit = async () => {
@@ -968,7 +970,28 @@ const EditFacilityOwnershipDialog = ({
     setSubmitInProgress(true);
     setSubmitError(null);
     try {
-      // 1. Add facility to Screening org unit group
+      // 1. Set "Application Submitted" to true before saving
+      if (programStageMetadata && programStageMetadata.programStageSections) {
+        const complianceSection = programStageMetadata.programStageSections.find(section => 
+          section.name && section.name.toLowerCase().includes('compliance')
+        );
+        if (complianceSection) {
+          const applicationSubmittedDE = complianceSection.dataElements.find(de => 
+            de.displayFormName && de.displayFormName.toLowerCase().includes('application submitted')
+          );
+          if (applicationSubmittedDE) {
+            setFormData(prev => ({
+              ...prev,
+              [applicationSubmittedDE.id]: 'true'
+            }));
+          }
+        }
+      }
+      
+      // 2. Save the record first
+      await handleSubmit(new Event('submit'));
+      
+      // 3. Add facility to Screening org unit group
       const credentials = localStorage.getItem('userCredentials');
       // Fetch existing organisation units in the group
       const groupRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
@@ -999,7 +1022,7 @@ const EditFacilityOwnershipDialog = ({
       });
       if (!putRes.ok) throw new Error('Failed to add facility to Screening group');
 
-      // 2. Send email to user
+      // 4. Send email to user
       await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
@@ -1012,14 +1035,14 @@ const EditFacilityOwnershipDialog = ({
         }),
       });
 
-      // 3. Show success feedback
+      // 5. Show success feedback
       setSubmitSuccess(true);
-      // 4. Disable and toggle button
+      // 6. Disable and toggle button
       setSubmitInProgress(false);
-      // 5. Set isInScreeningGroup to true to disable Save Changes button
+      // 7. Set isInScreeningGroup to true to disable Save Changes button
       setIsInScreeningGroup(true);
     } catch (err) {
-      setSubmitError(err.message || 'Submission failed');
+      setSubmitError(err.message || 'Save or submission failed');
       setSubmitInProgress(false);
     }
   };
@@ -1038,6 +1061,62 @@ const EditFacilityOwnershipDialog = ({
 
   return (
     <ModalPortal open={open} onClose={onClose}>
+      {/* Loading overlay during submission */}
+      {isSubmitting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10002,
+          backdropFilter: 'blur(2px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '32px',
+            textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            minWidth: '300px'
+          }}>
+            <div style={{
+              fontSize: '18px',
+              fontWeight: '500',
+              marginBottom: '20px',
+              color: '#333'
+            }}>
+              {isEditMode ? 'Updating Facility Ownership...' : 'Adding Facility Ownership...'}
+            </div>
+            <div style={{
+              width: '100%',
+              height: '4px',
+              backgroundColor: '#e0e0e0',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#1976d2',
+                animation: 'loading-bar 1.5s ease-in-out infinite'
+              }} />
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              Please wait while we process your request...
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="modal-content" style={{ 
         padding: '0', 
         maxWidth: '700px',
@@ -1258,7 +1337,7 @@ const EditFacilityOwnershipDialog = ({
               <button 
                 type="submit" 
                 className="btn-primary" 
-                disabled={isSubmitting || isLoading || isInScreeningGroup}
+                disabled={isSubmitting || isLoading}
                 style={{ 
                   padding: '10px 24px', 
                   fontSize: '0.95rem',
@@ -1267,13 +1346,13 @@ const EditFacilityOwnershipDialog = ({
                   background: '#1976d2',
                   color: 'white',
                   fontWeight: '500',
-                  cursor: isSubmitting || isLoading || isInScreeningGroup ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || isLoading || isInScreeningGroup ? 0.7 : 1,
+                  cursor: isSubmitting || isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting || isLoading ? 0.7 : 1,
                   transition: 'all 0.2s ease',
                   boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
                 }}
               >
-                {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Record'}
+                {isSubmitting ? 'Saving...' : 'Save'}
               </button>
               {isInScreeningGroup && (
                 <div style={{ 
@@ -1299,14 +1378,14 @@ const EditFacilityOwnershipDialog = ({
                   fontSize: '0.95rem',
                   fontWeight: '500',
                   boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
-                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() || !isEditMode ? 'not-allowed' : 'pointer',
+                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
-                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess && isEditMode ? 1 : 0.7,
+                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
                 }}
-                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup || !isEditMode}
-                onClick={handleSubmitForReview}
+                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
+                onClick={handleSaveAndSubmit}
               >
-                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : !isEditMode ? 'Save Record First' : submitInProgress ? 'Submitting...' : 'Submit Application for Review'}
+                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
               </button>
               {submitSuccess && (
                 <div style={{ 

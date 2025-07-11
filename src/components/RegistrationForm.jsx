@@ -52,6 +52,9 @@ function RegistrationForm() {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentMessage, setEmailSentMessage] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  // Add a new state to control feedback dialog
+  const [feedbackDialog, setFeedbackDialog] = useState({ open: false, message: '', severity: 'success' });
 
   const credentials = 'YWRtaW46NUFtNTM4MDgwNTNA';
 
@@ -79,13 +82,13 @@ function RegistrationForm() {
         if (!response.ok) {
           throw new Error("Failed to fetch organisational units");
         }
-        const data = await response.json();
-        setOrganisationalUnits(data.organisationUnits);
-        setFilteredOrgUnits(data.organisationUnits);
+        await response.json();
+        // setOrganisationalUnits(data.organisationUnits);
+        // setFilteredOrgUnits(data.organisationUnits);
       } catch (error) {
         console.error("Error fetching organisational units:", error);
       } finally {
-        setIsLoadingOrgUnits(false);
+        // setIsLoadingOrgUnits(false);
       }
     };
 
@@ -93,7 +96,7 @@ function RegistrationForm() {
   }, [credentials]);
 
   const [formData, setFormData] = useState({
-    BHPCRegistrationNumber: "AUTO-GENERATED", // Auto-filled since hidden from user
+    BHPCRegistrationNumber: "",
     cellNumber: "",
     userName: "",
     dhisRegistrationCode: "",
@@ -134,12 +137,27 @@ function RegistrationForm() {
     setRegistrationSubmittedMessage(false);
   };
 
+  const usernameRegex = /^[a-zA-Z0-9._@-]{4,255}$/;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    if (name === 'userName') {
+      if (!value) {
+        setUsernameError('Username is required.');
+      } else if (value.includes(' ')) {
+        setUsernameError('Username must not contain spaces.');
+      } else if (value.length < 4 || value.length > 255) {
+        setUsernameError('Username must be between 4 and 255 characters.');
+      } else if (!usernameRegex.test(value)) {
+        setUsernameError('Username can only contain letters, numbers, and . _ - @');
+      } else {
+        setUsernameError('');
+      }
+    }
   };
 
   // Handle closing individual snackbars
@@ -208,7 +226,7 @@ function RegistrationForm() {
 
           // For any other errors, throw the original error
           throw new Error(`Failed to create user profile: ${errorText}`);
-        } catch (parseError) {
+        } catch {
           // If JSON parsing fails, throw the original error text
           throw new Error(`Failed to create user profile: ${errorText}`);
         }
@@ -290,16 +308,12 @@ function RegistrationForm() {
       }
 
       // Show final success message and close dialog after delay
-      setSuccessOpen(true);
-      setTimeout(() => {
-        handleClose();
-      }, 4000);
+      setFeedbackDialog({ open: true, message: 'APPLICATION COMPLETED SUCCESSFULLY!\nCheck your email for login credentials!', severity: 'success' });
+      // Remove setSuccessOpen(true) and setTimeout for handleClose
     } catch (err) {
       console.error("Submission error:", err);
       // For errors not handled specifically above
-      if (!errorDialogOpen) {
-        alert(`There was an error submitting your request: ${err.message}`);
-      }
+      setFeedbackDialog({ open: true, message: `There was an error submitting your request: ${err.message}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -348,6 +362,8 @@ function RegistrationForm() {
               variant="outlined"
               margin="dense"
               required
+              error={!!usernameError}
+              helperText={usernameError || "Username must be 4-255 characters, can include letters, numbers, ., _, -, @, and must not contain spaces."}
               InputLabelProps={{
                 sx: {
                   "& .MuiFormLabel-asterisk": {
@@ -355,6 +371,7 @@ function RegistrationForm() {
                   },
                 },
               }}
+              disabled={loading}
             />
 
             <TextField
@@ -373,6 +390,7 @@ function RegistrationForm() {
                   },
                 },
               }}
+              disabled={loading}
             />
 
             <TextField
@@ -391,6 +409,7 @@ function RegistrationForm() {
                   },
                 },
               }}
+              disabled={loading}
             />
 
             {/* B.H.P.C License Number - Hidden from user but still functional */}
@@ -403,7 +422,6 @@ function RegistrationForm() {
               variant="outlined"
               margin="dense"
               required
-              sx={{ display: 'none' }}
               InputLabelProps={{
                 sx: {
                   "& .MuiFormLabel-asterisk": {
@@ -411,6 +429,8 @@ function RegistrationForm() {
                   },
                 },
               }}
+              helperText="Enter your Botswana Health Professions Council (BHPC) registration/license number."
+              disabled={loading}
             />
 
             {/* DHIS2 Registration Code - Hidden from user but still generated */}
@@ -431,6 +451,7 @@ function RegistrationForm() {
                   },
                 },
               }}
+              disabled={loading}
             />
 
             {/* File upload section removed */}
@@ -453,6 +474,7 @@ function RegistrationForm() {
                 backgroundColor: "#303f9f",
               },
             }}
+            disabled={!!usernameError || !formData.userName || loading}
           >
             Apply
           </Button>
@@ -635,6 +657,21 @@ function RegistrationForm() {
       <Backdrop open={loading} sx={{ zIndex: 9999, color: "#fff" }}>
         <CircularProgress color="inherit" />
       </Backdrop>
+
+      {/* Feedback dialog */}
+      <Dialog open={feedbackDialog.open} onClose={() => setFeedbackDialog({ ...feedbackDialog, open: false })} maxWidth="xs" fullWidth>
+        <DialogTitle>{feedbackDialog.severity === 'success' ? 'Success' : 'Error'}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-line', textAlign: 'center', fontSize: '1.2rem', fontWeight: 500 }}>
+            {feedbackDialog.message}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setFeedbackDialog({ ...feedbackDialog, open: false }); handleClose(); }} color="primary" autoFocus>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

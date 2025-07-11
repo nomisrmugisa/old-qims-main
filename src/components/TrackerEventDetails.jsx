@@ -13,7 +13,11 @@ import {
   Autocomplete,
   Paper,
   Chip,
-  Container
+  Container,
+  LinearProgress,
+  Modal,
+  Backdrop,
+  Box as MuiBox
 } from '@mui/material';
 import debounce from 'lodash/debounce';
 
@@ -31,7 +35,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [error, setError] = useState(null);
   const [eventData, setEventData] = useState(null);
   const [formValues, setFormValues] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateError, setUpdateError] = useState(null);
@@ -51,6 +55,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   const [locationName, setLocationName] = useState('');
   const credentials = localStorage.getItem('userCredentials');
+
+  // Add state for progress
+  const [progress, setProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -952,10 +960,22 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
       {/* Form completion status indicator */}
       {!isFormComplete && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Please fill in all required fields to complete this section.
+        <Alert severity="warning" sx={{ mb: 2 }} className="blink-message">
+          Please fill in all required fields to complete Other Details section.
         </Alert>
       )}
+
+      <Modal
+        open={showProgress}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{ backdrop: { timeout: 500 } }}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+      >
+        <MuiBox sx={{ width: 300, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <LinearProgress variant="determinate" value={progress} sx={{ width: '100%', height: 8 }} />
+        </MuiBox>
+      </Modal>
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
@@ -971,6 +991,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -981,6 +1002,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -991,6 +1013,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -1001,6 +1024,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
           </Grid>
@@ -1026,6 +1050,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 required
                 error={!formValues['aMFg2iq9VIg'] && !loading}
                 helperText={!formValues['aMFg2iq9VIg'] && !loading ? "This field is required" : ""}
+                className={!formValues['aMFg2iq9VIg'] && !loading ? 'blink-required' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1040,6 +1065,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 required
                 error={!formValues['HMk4LZ9ESOq'] && !loading}
                 helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
+                className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1054,6 +1080,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 required
                 error={!formValues['ykwhsQQPVH0'] && !loading}
                 helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
+                className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : ''}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1068,6 +1095,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 required
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
+                className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : ''}
               />
             </Grid>
           </Grid>
@@ -1075,7 +1103,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           {/* Location field */}
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 'bold', color: 'text.primary' }}>
-              Location in Botswana <span style={{ color: 'red' }}>*</span>
+              Location in Botswana (Ward) <span style={{ color: 'red' }}>*</span>
             </Typography>
             <Box sx={{ position: 'relative' }}>
               {isEditing ? (
@@ -1124,7 +1152,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                         {...params}
                         variant="outlined"
                         fullWidth
-                        placeholder="Search for a location..."
+                        placeholder="Search for a location (Ward)..."
                         size="small"
                         margin="dense"
                         required
@@ -1193,7 +1221,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           </Box>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
-            {!isEditing ? (
+            {/* {!isEditing ? (
               <Button
                 variant="outlined"
                 color="primary"
@@ -1203,46 +1231,22 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
               >
                 Edit Details
               </Button>
-            ) : (
+            ) : ( */}
               <>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={handleToggleEdit}
-                  disabled={updating}
-                  size="small"
-                >
-                  Cancel
-                </Button>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={async () => {
-                    // First execute handleSubmit
+                    setShowProgress(true);
+                    setProgress(10);
                     await handleSubmit();
-
-                    // Then send email
-                    setCurrentStep('Sending notification...');
-                    try {
-                      const emailSuccess = await sendFacilityUpdateEmail();
-                      if (emailSuccess) {
-                        setSuccessMessages(prev => [...prev, 'Notification email sent']);
-                        setOpenSnackbar(true);
-                        
-                        // Add a short delay before reloading to ensure user sees the success message
-                        setTimeout(() => {
-                          // Store a flag in localStorage to indicate we should select the Facility Ownership tab after reload
-                          localStorage.setItem('autoSelectTab', 'facilityOwnership');
-                          
-                          // Reload the page
-                          window.location.reload();
-                        }, 1500);
-                      }
-                    } catch (emailError) {
-                      console.error('Email sending failed:', emailError);
-                      setSuccessMessages(prev => [...prev, 'Email notification failed']);
-                      setOpenSnackbar(true);
-                    }
+                    setProgress(60);
+                    await sendFacilityUpdateEmail();
+                    setProgress(100);
+                    setTimeout(() => {
+                      setShowProgress(false);
+                      setProgress(0);
+                    }, 800);
                   }}
                   disabled={updating}
                   size="small"
@@ -1250,7 +1254,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                   {updating ? 'Updating...' : 'Update Application Details'}
                 </Button>
               </>
-            )}
+            {/* )} */}
           </Box>
         </CardContent>
       </Card>

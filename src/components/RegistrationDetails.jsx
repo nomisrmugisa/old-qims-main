@@ -173,11 +173,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   // Handle successful application update - switch to facility ownership tab
-  const handleApplicationUpdateSuccess = () => {
-    console.log("Application updated successfully - switching to facility ownership tab");
+  const handleApplicationUpdateSuccess = async () => {
+    console.log("Application updated successfully - fetching facility ownership data before switching tab");
+    await fetchFacilityOwnershipData();
     setActiveTab('facilityOwnership');
-    // Also fetch facility ownership data to ensure it's up to date
-    fetchFacilityOwnershipData();
+    setOpenAddDialog(true); // Automatically open the Add Facility Ownership dialog
   };
 
   // Function to validate facility ownership completion
@@ -652,6 +652,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       fetchEquipmentData();
     }
   };
+
+
 
   const fetchFacilityOwnershipData = async (teiId, orgUnitId) => {
     console.log("🔄 === STARTING FACILITY OWNERSHIP DATA FETCH ===");
@@ -1591,12 +1593,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Organization Unit</th>
+                        <th>Facility</th>
                         <th>First Name</th>
                         <th>Surname</th>
                         <th>Citizenship</th>
                         <th>Ownership Type</th>
-                          <th>Actions</th>
+                        <th>Application Submitted</th>
+                        <th>Passed MOH Screening</th>
+                        <th>Complied for Licensing</th>
+                        <th>Date of Compliance</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1606,6 +1612,24 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
                           return dataValue ? dataValue.value : 'N/A';
                         };
+                        
+                        // Helper function to format boolean values
+                        const formatBoolean = (value) => {
+                          if (value === 'true') return 'Yes';
+                          if (value === 'false') return 'No';
+                          return 'N/A';
+                        };
+                        
+                        // Helper function to format date
+                        const formatDate = (dateString) => {
+                          if (!dateString || dateString === 'N/A') return 'N/A';
+                          try {
+                            return new Date(dateString).toLocaleDateString();
+                          } catch {
+                            return dateString;
+                          }
+                        };
+                        
                         return (
                           <tr 
                             key={event.event || index}
@@ -1619,23 +1643,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             <td>{getFormattedValue("ykwhsQQPVH0")}</td> {/* Surname */}
                             <td>{getFormattedValue("zVmmto7HwOc")}</td> {/* Citizenship */}
                             <td>{getFormattedValue("vAHHXaW0Pna")}</td> {/* Ownership Type */}
-                              <td>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRowClick(event);
-                                  }}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#007bff',
-                                    cursor: 'pointer',
-                                    padding: '5px'
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              </td>
+                            <td>{formatBoolean(getFormattedValue("nK8mP3fR9Lq"))}</td> {/* Application Submitted - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatBoolean(getFormattedValue("xT7wQ2gS8Mp"))}</td> {/* Passed MOH Screening - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatBoolean(getFormattedValue("bV5nR4hT1Nk"))}</td> {/* Complied for Licensing - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatDate(getFormattedValue("cW6oS5iU2Ol"))}</td> {/* Date of Compliance - TODO: Replace with actual data element ID from compliance section */}
+                            <td>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRowClick(event);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#007bff',
+                                  cursor: 'pointer',
+                                  padding: '5px'
+                                }}
+                              >
+                                Edit
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -2224,6 +2252,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     return () => clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'facilityOwnership') {
+      setOpenAddDialog(true);
+    }
+  }, [activeTab]);
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
@@ -2245,12 +2279,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <StepContainer>
           {[
             { number: 1, title: 'Complete Application', key: 'completeApplication' },
-            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-            { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-            { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-            { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-            { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-            { number: 7, title: 'Situational Analysis', key: 'inspectionSchedule' }
+            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' }
           ].map((step, index) => {
             // Determine if the tab should be disabled
             const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
@@ -2295,8 +2324,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 5 && <StyledDivider disabled={isDisabled} />}
-                {index === 5 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
+                {index < 1 && <StyledDivider disabled={isDisabled} />}
+                {index === 1 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
               </React.Fragment>
             );
           })}

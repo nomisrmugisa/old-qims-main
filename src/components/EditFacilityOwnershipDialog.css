@@ -315,9 +315,20 @@
 
 .button-container {
   display: flex;
+  gap: 12px;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #dee2e6;
+  margin-top: 20px;
+}
+
+/* Loading bar animation for submission progress */
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 } 

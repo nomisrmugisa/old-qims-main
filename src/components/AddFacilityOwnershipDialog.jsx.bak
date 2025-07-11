@@ -898,6 +898,86 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
     }
   };
 
+  // Add a new handler for combined save and submit
+  const handleSaveAndSubmit = async () => {
+    setSubmitInProgress(true);
+    setSubmitError(null);
+    try {
+      // 1. Save (call handleSubmit logic, but without e.preventDefault and onClose)
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) throw new Error('Authentication required.');
+      // Get all data elements from compliance sections to exclude them
+      const complianceDataElementIds = new Set();
+      if (programStageMetadata) {
+        programStageMetadata.programStageSections.forEach(section => {
+          if (isComplianceSection(section)) {
+            section.dataElements.forEach(de => {
+              complianceDataElementIds.add(de.id);
+            });
+          }
+        });
+      }
+      // Upload files first if any, excluding compliance fields
+      const dataValues = await Promise.all(
+        Object.entries(formData)
+          .filter(([dataElement]) => !complianceDataElementIds.has(dataElement))
+          .map(async ([dataElement, value]) => {
+            if (value instanceof File) {
+              const fileData = new FormData();
+              fileData.append('file', value);
+              const fileRes = await fetch('/api/fileResources', {
+                method: 'POST',
+                headers: { Authorization: `Basic ${credentials}` },
+                body: fileData,
+              });
+              if (!fileRes.ok) {
+                const errorText = await fileRes.text();
+                throw new Error(`File upload failed: ${fileRes.status} - ${errorText}`);
+              }
+              const responseJson = await fileRes.json();
+              return { dataElement, value: responseJson.response.fileResource.id };
+            } else {
+              return { dataElement, value: value };
+            }
+          })
+      );
+      if (event && event.dataValues) {
+        event.dataValues.forEach(dv => {
+          if (complianceDataElementIds.has(dv.dataElement)) {
+            dataValues.push({ dataElement: dv.dataElement, value: dv.value });
+          }
+        });
+      }
+      const orgUnitId = await getCurrentUserOrgUnit();
+      const payload = {
+        event: event.event,
+        orgUnit: orgUnitId,
+        program: 'EE8yeLVo6cN',
+        programStage: 'MuJubgTzJrY',
+        status: 'COMPLETED',
+        trackedEntityInstance: event.trackedEntityInstance,
+        dataValues,
+      };
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Save failed: ${response.status} - ${errorText}`);
+      }
+      // 2. If save is successful, submit for review
+      await handleSubmitForReview();
+    } catch (err) {
+      setSubmitError(err.message || 'Save or submission failed');
+      setSubmitInProgress(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -982,37 +1062,26 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
                 Cancel
               </button>
               <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={isSubmitting || isLoading || isInScreeningGroup}
-                style={{ 
-                  padding: '10px 24px', 
+                type="button"
+                className="btn-primary"
+                disabled={isSubmitting || isLoading}
+                onClick={handleSubmit} // Save only
+                style={{
+                  padding: '10px 24px',
                   fontSize: '0.95rem',
                   borderRadius: '4px',
                   border: 'none',
                   background: '#1976d2',
                   color: 'white',
                   fontWeight: '500',
-                  cursor: isSubmitting || isLoading || isInScreeningGroup ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || isLoading || isInScreeningGroup ? 0.7 : 1,
+                  cursor: isSubmitting || isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting || isLoading ? 0.7 : 1,
                   transition: 'all 0.2s ease',
                   boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
                 }}
               >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'Saving...' : 'Save'}
               </button>
-              {isInScreeningGroup && (
-                <div style={{ 
-                  color: '#ed6c02', 
-                  marginLeft: 8, 
-                  fontSize: '0.9em',
-                  display: 'flex',
-                  alignItems: 'center' 
-                }}>
-                  <span style={{ marginRight: '6px', fontSize: '1.2em' }}>⚠️</span>
-                  This application has already been submitted for review
-                </div>
-              )}
               <button
                 type="button"
                 className="btn-primary"
@@ -1030,9 +1099,9 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
                   opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
                 }}
                 disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
-                onClick={handleSubmitForReview}
+                onClick={handleSaveAndSubmit}
               >
-                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Submit Application for Review'}
+                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application for Review'}
               </button>
               {submitSuccess && (
                 <div style={{ 

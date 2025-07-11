@@ -220,3 +220,27 @@
 @keyframes blink-orange {
     50% { opacity: 0; }
 } 
+
+/* Blinking effect for required fields */
+.blink-required .MuiOutlinedInput-notchedOutline {
+  border-color: #ff9800 !important;
+  animation: blink-border 1s steps(2, start) infinite;
+}
+@keyframes blink-border {
+  to {
+    border-color: #fff;
+  }
+}
+/* Grey background for disabled fields */
+.grey-disabled .MuiOutlinedInput-root {
+  background-color: #e0e0e0 !important; /* Darker gray for more contrast */
+} 
+
+.blink-message {
+  animation: blink-message 1s steps(2, start) infinite;
+}
+@keyframes blink-message {
+  to {
+    opacity: 0.2;
+  }
+} 
