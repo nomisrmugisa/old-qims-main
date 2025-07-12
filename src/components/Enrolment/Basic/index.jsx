@@ -55,7 +55,7 @@ const EnrolmentBasic = () => {
 
     return (
         <div className="mt-4">
-            <h4>Regular User Enrolment</h4>
+            <h4>Facility User Enrolment</h4>
             <p className="text-muted">
                 Search for a facility and request enrolment
             </p>

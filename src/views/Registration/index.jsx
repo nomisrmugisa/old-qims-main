@@ -145,7 +145,7 @@ const Registration = () => {
                 message: 'Your account has been created successfully',
                 type: 'success',
                 options: {
-                    willClose: () => window.location.href = '/main/login'
+                    willClose: () => window.location.href = '/login'
                 }
             });
             window.console.log("RESPONSE---");

@@ -38,8 +38,13 @@ const UserService = {
     },
     listGroups: async () => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: "listGroups"});
+        let token = await getAuthToken('Basic');
         try {
-            const response = await httpService.get('/groups');
+            const response = await httpService.get('/userGroups', {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
             return response;
         } catch (error) {
             throw error;
@@ -68,7 +73,47 @@ const UserService = {
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: "searchUsers"});
         }
-    }
+    },
+    listGroupUsers: async (groupId) => {
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: "listGroupUsers"});
+        let token = await getAuthToken('Basic');
+        try {
+            const response = await httpService.get(`/users?filter=userGroups.id:eq:${groupId}&fields=id,email,displayName`, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+            window.console.log("listGroupUsers***");
+            window.console.log(response);
+            window.console.log("---***");
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: "listGroupUsers"});
+        }
+    },
+    searchGroupUsers: async (groupId) => {
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: "searchGroupUsers"});
+        let token = await getAuthToken('Basic');
+        try {
+            const response = await httpService.get(`/users?filter=userGroups.id=${groupId}`, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+            window.console.log("listGroupUsers***");
+            window.console.log(response);
+            window.console.log("---***");
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: "searchGroupUsers"});
+        }
+    },
 };
 
 export default UserService;

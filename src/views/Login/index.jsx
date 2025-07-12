@@ -31,10 +31,6 @@ const Login = () => {
         }
     };
 
-    const getFacilityList = () => {
-        MFLApiService.allFacilities();
-    };
-
     const validateForm = () => {
         const newErrors = {};
 
@@ -57,6 +53,11 @@ const Login = () => {
                 password: formData.password
             });
 
+            window.console.log("RESPONSE---");
+            window.console.log(response);
+            await StorageService.setUserData(response);
+            window.console.log("***---");
+
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Login Successful',
                 message: 'Welcome back!',
@@ -65,10 +66,7 @@ const Login = () => {
                     willClose: () => navigate('/dashboard')
                 }
             });
-            window.console.log("RESPONSE---");
-            window.console.log(response);
-            StorageService.set(STORAGE_KEYS.USER_DATA, response);
-            window.console.log("***---");
+
 
             /*const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -188,7 +186,7 @@ const Login = () => {
                                     />
                                 </Form.Group>
                                 <div className="d-flex justify-content-end mb-3">
-                                    <Link to="/main/forgot-password" className="text-decoration-none">
+                                    <Link to="/forgot-password" className="text-decoration-none">
                                         Forgot password?
                                     </Link>
                                 </div>
@@ -202,12 +200,6 @@ const Login = () => {
                                 </Button>
                             </Form>
 
-                            <div className="text-center mt-4">
-                                <Button onClick={getFacilityList}>Facility List</Button>
-                                <p className="text-muted">
-                                    Don't have an account? <Link to="/main/register" className="text-decoration-none">Sign up</Link>
-                                </p>
-                            </div>
                         </Card.Body>
                     </Card>
                 </Col>

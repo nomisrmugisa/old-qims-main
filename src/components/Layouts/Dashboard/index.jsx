@@ -1,7 +1,7 @@
 /**
  * Created by fulle on 2025/07/11.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Navbar, Nav, Offcanvas } from 'react-bootstrap';
 import {
     House,
@@ -13,9 +13,26 @@ import {
     CardChecklist,
     BoxArrowRight
 } from 'react-bootstrap-icons';
+import StorageService from '../../../services/storage.service';
 
 const DashboardLayout = ({ children }) => {
     const [showSidebar, setShowSidebar] = useState(false);
+    const [authUser, setAuthUser] = useState(null);
+
+
+
+    useEffect(() => {
+
+        const getUserData = async() => {
+            const userData = await StorageService.getUserData();
+            window.console.log(userData);
+            setAuthUser(userData);
+        };
+
+        getUserData();
+    }, []);
+
+
 
     return (
         <div className="dashboard-container">
@@ -37,10 +54,13 @@ const DashboardLayout = ({ children }) => {
                 3
               </span>
                         </Nav.Link>
-                        <Nav.Link>
-                            <Person size={20} className="me-1" />
-                            John Doe
-                        </Nav.Link>
+                        {authUser && (
+                            <Nav.Link>
+                                <Person size={20} className="me-1" />
+                                {authUser.displayName}
+                            </Nav.Link>
+                        )}
+
                     </Nav>
                 </Container>
             </Navbar>

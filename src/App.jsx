@@ -26,6 +26,7 @@ import CorrectiveActionPlanPage from './views/CorrectiveActionPlanPage';
 import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
+import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -102,6 +103,11 @@ function App() {
       }
   };
 
+  const triggerLoginClick = () => {
+      setShowLoginModal(true);
+      navigate('/login');
+  };
+
   const handleLogout = () => {
     setIsLoading(true);
     localStorage.clear(); // Clear local storage on logout
@@ -115,7 +121,7 @@ function App() {
   return (
     <div className="app-container">
       <Header 
-        onLoginClick={() => setShowLoginModal(true)} 
+        onLoginClick={() => triggerLoginClick()}
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
         activeDashboardSection={activeDashboardSection}
@@ -142,7 +148,8 @@ function App() {
               <Route path="/corrective-action-plan" element={<CorrectiveActionPlanPage />} />
               <Route path="/inspection-final-report" element={<InspectionFinalReportPage />} />
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
-              <Route path="/facility-dashboard" element={<FacilityUserDashboardPage />} />
+              <Route path="/dashboard" element={<FacilityUserDashboardPage />} />
+              <Route path="/facility-user-management" element={<FacilityUserManagementPage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

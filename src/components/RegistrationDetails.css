@@ -165,12 +165,12 @@
     transition: background-color 0.2s ease;
 }
 
-.table thead th {
+/*.table thead th {
     background-color: #dc3545;
     color: white;
     font-weight: bold;
     text-transform: uppercase;
-}
+}*/
 
 .table tbody tr:nth-child(even) {
     background-color: #f2f2f2;

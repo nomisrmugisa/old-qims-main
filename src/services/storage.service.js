@@ -189,6 +189,12 @@ const StorageService = {
     getAuthToken(type) {
         let key = (!type)? STORAGE_KEYS.AUTH_TOKEN: STORAGE_KEYS.USER_KEY;
         return StorageService.get(key);
+    },
+    async getUserData () {
+        return StorageService.get(STORAGE_KEYS.USER_DATA);
+    },
+    async setUserData(value) {
+        return StorageService.set(STORAGE_KEYS.USER_DATA, value);
     }
 };
 

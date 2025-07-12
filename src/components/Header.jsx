@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react';
 import './Header.css';
 import logo from '../assets/logo.png';
 import {eventBus, EVENTS } from '../events';
+import { useNavigate } from 'react-router-dom';
 
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
-  
+    const navigate = useNavigate();
+
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
     return situationalAnalysisComplete;
@@ -15,6 +17,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
   const onApplyClick = () => {
     eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
+    navigate('/register')
   };
   
   // Monitor localStorage for changes to situationalAnalysisComplete
@@ -228,7 +231,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </button>
             )}
             {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Apply</a>
+                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Join</a>
             )}
           </div>
         </div>

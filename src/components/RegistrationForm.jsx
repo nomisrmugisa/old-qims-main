@@ -162,7 +162,7 @@ function RegistrationForm() {
     try {
       // 1. Create User Profile (switched to be first)
       const userPayload = {
-        username: formData.userName,
+        username: formData.email,
         surname: "Place-Holder",
         firstName: "Place-Holder",
         password: "selfRegistration@123$",

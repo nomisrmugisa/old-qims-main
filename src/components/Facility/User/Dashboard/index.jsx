@@ -24,15 +24,21 @@ import {
 import DashboardLayout from '../../../Layouts/Dashboard';
 import FacilityCard from '../../../Facility/Card';
 import NotificationCenter from '../../NotificationCenter';
-import EnrolmentManager from '../../../Enrolment/Manager';
-//import ProfileEditor from '../components/ProfileEditor';
-//import PasswordChanger from '../components/PasswordChanger';
+import EnrolmentBasic from '../../../Enrolment/Basic';
+import ProfileEditor from '../../../User/ProfileEditor';
+import PasswordChanger from '../../../User/PasswordChanger';
+import StorageService from '../../../../services/storage.service';
+import UserService from '../../../../services/user.service';
 
 const FacilityUserDashboard = () => {
     const [facilities, setFacilities] = useState([]);
-    const [activeTab, setActiveTab] = useState('facilities');
+    const [activeTab, setActiveTab] = useState('overview');
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    const getUserData = async() => {
+        const userData = await StorageService.getUserData();
+    };
 
     // Load initial data
     useEffect(() => {
@@ -75,8 +81,13 @@ const FacilityUserDashboard = () => {
             setNotifications(notificationsData);
             setUnreadCount(notificationsData.filter(n => !n.read).length);
         };
+        const loadUserList = async() => {
+            const data = UserService.listGroupUsers(`${import.meta.env.VITE_FACILITY_USER_GROUP_ID}`);
+            window.console.log(data);
+        };
 
         loadData();
+        loadUserList();
     }, []);
 
     const handleFacilityUpdate = (updatedFacility) => {
@@ -100,11 +111,71 @@ const FacilityUserDashboard = () => {
                 id="dashboard-tabs"
                 className="mb-4"
             >
+                <Tab eventKey="overview" title={
+                    <span>
+            <ClipboardCheck className="me-1" /> Overview
+          </span>
+                }>
+                    <Card className="mb-4">
+                        <Card.Body>
+                            <Row className="g-4">
+                                <Col md={6}>
+                                    <Card className="h-100 shadow-sm">
+                                        <Card.Body className="text-center py-5">
+                                            <Building size={48} className="text-primary mb-3" />
+                                            <Card.Title>Register New Facility</Card.Title>
+                                            <Card.Text className="text-muted mb-4">
+                                                Start the registration process for a new healthcare facility
+                                            </Card.Text>
+                                            <Button variant="primary">Begin Registration</Button>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+
+                                <Col md={6}>
+                                    <Card className="h-100 shadow-sm">
+                                        <Card.Body className="text-center py-5">
+                                            <ClipboardCheck size={48} className="text-success mb-3" />
+                                            <Card.Title>Enrol with a Facility</Card.Title>
+                                            <Card.Text className="text-muted mb-4">
+                                                Enrol with an existing facility
+                                            </Card.Text>
+                                            <Button
+                                                variant="outline-primary"
+                                                onClick={() => setActiveTab('enrolment')}
+                                            >
+                                                <PlusCircle className="me-1" /> Enroll in New Facility
+                                            </Button>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+
+                                <Col md={6}>
+                                    <Card className="h-100 shadow-sm">
+                                        <Card.Body className="text-center py-5">
+                                            <ClipboardCheck size={48} className="text-success mb-3" />
+                                            <Card.Title>Renew Facility License</Card.Title>
+                                            <Card.Text className="text-muted mb-4">
+                                                Renew the license for an existing healthcare facility
+                                            </Card.Text>
+                                            <Button variant="success">Start Renewal</Button>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+
+                            </Row>
+                        </Card.Body>
+                    </Card>
+                </Tab>
+
+
                 <Tab eventKey="facilities" title={
                     <span>
             <Building className="me-1" /> Facilities
           </span>
                 }>
+
+
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h2>Your Assigned Facilities</h2>
                         <Button variant="primary" size="sm">
@@ -154,7 +225,7 @@ const FacilityUserDashboard = () => {
                     />
                 </Tab>
 
-                {/*<Tab eventKey="profile" title={
+                <Tab eventKey="profile" title={
                     <span>
             <Person className="me-1" /> Profile
           </span>
@@ -168,54 +239,16 @@ const FacilityUserDashboard = () => {
           </span>
                 }>
                     <PasswordChanger />
-                </Tab>*/}
-
-                <Tab eventKey="applications" title={
-                    <span>
-            <ClipboardCheck className="me-1" /> Applications
-          </span>
-                }>
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <h3 className="mb-4">Facility Applications</h3>
-
-                            <Row className="g-4">
-                                <Col md={6}>
-                                    <Card className="h-100 shadow-sm">
-                                        <Card.Body className="text-center py-5">
-                                            <Building size={48} className="text-primary mb-3" />
-                                            <Card.Title>Register New Facility</Card.Title>
-                                            <Card.Text className="text-muted mb-4">
-                                                Start the registration process for a new healthcare facility
-                                            </Card.Text>
-                                            <Button variant="primary">Begin Registration</Button>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-
-                                <Col md={6}>
-                                    <Card className="h-100 shadow-sm">
-                                        <Card.Body className="text-center py-5">
-                                            <ClipboardCheck size={48} className="text-success mb-3" />
-                                            <Card.Title>Renew Facility License</Card.Title>
-                                            <Card.Text className="text-muted mb-4">
-                                                Renew the license for an existing healthcare facility
-                                            </Card.Text>
-                                            <Button variant="success">Start Renewal</Button>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
                 </Tab>
+
+
 
                 <Tab eventKey="enrolment" title={
                     <span>
             <PlusCircle className="me-1" /> Enrolment
           </span>
                 }>
-                    <EnrolmentManager />
+                    <EnrolmentBasic />
                 </Tab>
             </Tabs>
         </DashboardLayout>
