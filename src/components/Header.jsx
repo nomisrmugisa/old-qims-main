@@ -103,6 +103,63 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     return () => clearInterval(intervalId);
   }, []);
 
+  // Function to manually refresh organization unit data
+  const refreshOrgUnitData = async () => {
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials) {
+        console.error('No credentials found in localStorage');
+        return;
+      }
+
+      console.log('📊 MANUALLY REFRESHING ORGANIZATION UNIT DATA');
+      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
+        headers: {
+          Authorization: `Basic ${credentials}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('- API Response:', data);
+        
+        if (data && data.organisationUnits && data.organisationUnits.length > 0) {
+          const orgUnitName = data.organisationUnits[0].displayName;
+          const orgUnitId = data.organisationUnits[0].id;
+          
+          console.log('✅ UPDATED ORGANIZATION UNIT DATA:');
+          console.log('- Name:', orgUnitName);
+          console.log('- ID:', orgUnitId);
+          
+          setOrgUnitName(orgUnitName);
+          // Also store in localStorage for future use
+          localStorage.setItem('userOrgUnitName', orgUnitName);
+          localStorage.setItem('userOrgUnitId', orgUnitId);
+        } else {
+          console.log('❌ No organization units found in response');
+        }
+      } else {
+        console.error('Failed to fetch organization unit data');
+      }
+    } catch (error) {
+      console.error('Error refreshing organization unit data:', error);
+    }
+  };
+
+  // Add event listener for manual refresh
+  useEffect(() => {
+    const handleRefreshOrgUnit = () => {
+      console.log('Received event to refresh organization unit');
+      refreshOrgUnitData();
+    };
+
+    window.addEventListener('refreshOrgUnitData', handleRefreshOrgUnit);
+    
+    return () => {
+      window.removeEventListener('refreshOrgUnitData', handleRefreshOrgUnit);
+    };
+  }, []);
+
   useEffect(() => {
     // Get organization unit name when component mounts or isLoggedIn changes
     if (isLoggedIn) {
@@ -193,7 +250,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
       <div className="branding d-flex align-items-center">
         <div className="container position-relative d-flex align-items-center justify-content-between">
           <div className="logo d-flex flex-column align-items-center">
-            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '180px', height: 'auto' }} />
+            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '90px', height: '90px' }} />
           </div>
 
           <nav id="navmenu" className="navmenu">

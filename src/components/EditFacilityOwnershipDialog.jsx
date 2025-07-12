@@ -9,7 +9,8 @@ const EditFacilityOwnershipDialog = ({
   onAddSuccess, 
   event, 
   trackedEntityInstanceId, 
-  isEditMode = true 
+  isEditMode = true,
+  // facilityName
 }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
   const [formData, setFormData] = useState({});
@@ -25,6 +26,7 @@ const EditFacilityOwnershipDialog = ({
   const [submitError, setSubmitError] = useState(null);
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [facilityOrgUnitId, setFacilityOrgUnitId] = useState(null);
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
@@ -371,17 +373,109 @@ const EditFacilityOwnershipDialog = ({
     }
   };
 
+  // Add a new handler for combined save and submit
+  const handleSaveAndSubmit = async () => {
+    // Show confirmation dialog first
+    setShowConfirmDialog(true);
+  };
+
   // Helper function to get the current user's organization unit ID
   const getCurrentUserOrgUnit = async () => {
+    // Comprehensive logging of method entry
+    console.group('🏥 GET CURRENT USER ORGANIZATION UNIT');
+    console.log('Timestamp:', new Date().toISOString());
+
+    // Check credentials
     const credentials = localStorage.getItem('userCredentials');
-    const response = await fetch("/api/me.json", {
-      headers: { Authorization: `Basic ${credentials}` },
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user information: ${response.status}`);
+    if (!credentials) {
+      console.error('❌ NO CREDENTIALS FOUND IN LOCALSTORAGE');
+      console.groupEnd();
+      throw new Error('No user credentials available');
     }
-    const userInfo = await response.json();
-    return userInfo.organisationUnits[0].id;
+
+    try {
+      // Detailed fetch configuration
+      const fetchConfig = {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      };
+
+      console.log('🔍 Fetch Configuration:', {
+        url: `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`,
+        method: fetchConfig.method,
+        headers: Object.keys(fetchConfig.headers)
+      });
+
+      // Perform the fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`, 
+        {
+          ...fetchConfig,
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeoutId);
+
+      // Check response status
+      if (!response.ok) {
+        console.error('❌ FETCH FAILED', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        
+        // Try to get error details
+        const errorText = await response.text();
+        console.error('Error Response Body:', errorText);
+        
+        throw new Error(`Failed to fetch user information: ${response.status} - ${response.statusText}`);
+      }
+
+      // Parse response
+      const userInfo = await response.json();
+      console.log('✅ User Info Received:', userInfo);
+
+      // Validate organization units
+      if (!userInfo.organisationUnits || userInfo.organisationUnits.length === 0) {
+        console.error('❌ NO ORGANIZATION UNITS FOUND');
+        console.log('Full User Info:', JSON.stringify(userInfo, null, 2));
+        throw new Error('No organization units associated with this user');
+      }
+
+      // Log all organization units
+      console.log('🏢 ORGANIZATION UNITS:');
+      userInfo.organisationUnits.forEach((ou, index) => {
+        console.log(`[${index}] ID: ${ou.id}, Name: ${ou.name}`);
+      });
+
+      // Additional context logging
+      console.log('🔑 Context Information:', {
+        dhis2Url: import.meta.env.VITE_DHIS2_URL,
+        totalOrgUnits: userInfo.organisationUnits.length
+      });
+
+      console.groupEnd();
+
+      // Return the first organization unit's ID
+      return userInfo.organisationUnits[0].id;
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in getCurrentUserOrgUnit:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      console.groupEnd();
+      
+      // Rethrow with additional context
+      throw new Error(`Organization Unit Retrieval Failed: ${error.message}`);
+    }
   };
 
   const isFileValueType = (vt) => ['FILE_RESOURCE', 'FILE', 'fileResource'].includes(vt);
@@ -401,6 +495,22 @@ const EditFacilityOwnershipDialog = ({
   const isSpecialCircumstancesSection = (section) => {
     // Check for section name containing "special circumstances" (case insensitive)
     return section.name && section.name.toLowerCase().includes('special circumstances');
+  };
+
+  // Function to check if ID Type is Omang
+  const isIdTypeOmang = () => {
+    const idTypeValue = formData['FLcrCfTNcQi']; // ID Type field
+    return idTypeValue === 'Omang' || idTypeValue === 'omang';
+  };
+
+  // Function to check if field should be hidden based on ID Type
+  const shouldHideField = (de) => {
+    if (isIdTypeOmang()) {
+      // Hide permit fields when ID Type is Omang
+      const permitFields = ['cUObXSGtCuD', 'g9jXH9LJyxU']; // Copy of Resident Permit, Work Permit / Waiver
+      return permitFields.includes(de.id);
+    }
+    return false;
   };
 
   const renderFileInput = (de) => {
@@ -664,6 +774,7 @@ const EditFacilityOwnershipDialog = ({
               </h4>
             )}
             {section.dataElements.map(de => (
+              shouldHideField(de) ? null : (
               <div key={de.id} className="form-group-dhis2" style={{
                 marginBottom: '16px'
               }}>
@@ -925,6 +1036,7 @@ const EditFacilityOwnershipDialog = ({
                   )
                 )}
               </div>
+              )
             ))}
           </div>
         ))}
@@ -943,6 +1055,11 @@ const EditFacilityOwnershipDialog = ({
       }
       
       for (const de of section.dataElements) {
+        // Skip hidden fields (permit fields when ID Type is Omang)
+        if (shouldHideField(de)) {
+          continue;
+        }
+        
         // Check ALL fields in required sections, not just those marked as compulsory
         const value = formData[de.id];
         if (value === undefined || value === null || value === '') {
@@ -954,12 +1071,35 @@ const EditFacilityOwnershipDialog = ({
   };
 
   // Helper to get facility org unit ID (assuming event.trackedEntityInstance or event.orgUnit)
-  const facilityOrgUnitId = event?.orgUnit;
+  // const facilityOrgUnitId = event?.orgUnit;
 
-  // Handler for submit application for review
-  const handleSubmitForReview = async () => {
-    // Show confirmation dialog instead of proceeding directly
-    setShowConfirmDialog(true);
+  // Function to fetch org unit ID by name
+  const fetchOrgUnitIdByName = async (name) => {
+    try {
+      const credentials = localStorage.getItem('userCredentials');
+      if (!credentials || !name) return null;
+      
+      const encodedName = encodeURIComponent(name);
+      const response = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits?paging=false&filter=displayName:ilike:${encodedName}`,
+        {
+          headers: { Authorization: `Basic ${credentials}` },
+        }
+      );
+      
+      if (!response.ok) throw new Error('Failed to fetch organization unit');
+      
+      const data = await response.json();
+      return data.organisationUnits?.[0]?.id || null;
+    } catch (error) {
+      console.error('Error fetching org unit ID:', error);
+      return null;
+    }
+  };
+
+  const handleClose = () => {
+    sessionStorage.removeItem('currentFacilityName');
+    onClose();
   };
   
   // Actual submission after confirmation
@@ -968,39 +1108,114 @@ const EditFacilityOwnershipDialog = ({
     setSubmitInProgress(true);
     setSubmitError(null);
     try {
-      // 1. Add facility to Screening org unit group
-      const credentials = localStorage.getItem('userCredentials');
-      // Fetch existing organisation units in the group
-      const groupRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`,
-        },
-      });
-      if (!groupRes.ok) throw new Error('Failed to fetch existing Screening group units');
-      const groupData = await groupRes.json();
-      const existingUnits = (groupData.organisationUnits || []).map(u => ({ id: u.id }));
-      // Add the new orgUnitId if not already present
-      if (!existingUnits.some(u => u.id === facilityOrgUnitId)) {
-        existingUnits.push({ id: facilityOrgUnitId });
+      // 1. Get facility name from sessionStorage
+      const facilityName = sessionStorage.getItem('currentFacilityName');
+      if (!facilityName) {
+        throw new Error('Facility name not found');
       }
-      const putRes = await fetch('/api/organisationUnitGroups/nDAvPPtYHQP?fields=id,name,organisationUnits[id]', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`,
-        },
-        body: JSON.stringify({
-          id: 'nDAvPPtYHQP',
-          name: 'Screening Review',
-          shortName: 'Screening Review',
-          organisationUnits: existingUnits,
-        }),
-      });
-      if (!putRes.ok) throw new Error('Failed to add facility to Screening group');
 
-      // 2. Send email to user
-      await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
+      // 2. Get org unit ID
+      const orgUnitId = await fetchOrgUnitIdByName(facilityName);
+      if (!orgUnitId) {
+        throw new Error('Could not find organization unit for the facility');
+      }
+      setFacilityOrgUnitId(orgUnitId);
+
+
+      // 1.1 Set "Application Submitted" to true before saving
+      if (programStageMetadata && programStageMetadata.programStageSections) {
+        const complianceSection = programStageMetadata.programStageSections.find(section => 
+          section.name && section.name.toLowerCase().includes('compliance')
+        );
+        if (complianceSection) {
+          const applicationSubmittedDE = complianceSection.dataElements.find(de => 
+            de.displayFormName && de.displayFormName.toLowerCase().includes('application submitted')
+          );
+          if (applicationSubmittedDE) {
+            setFormData(prev => ({
+              ...prev,
+              [applicationSubmittedDE.id]: 'true'
+            }));
+          }
+        }
+      }
+      
+      // 2. Save the record first (this will create or update the event)
+      await handleSubmit(new Event('submit'));
+
+      // 3. Get the facility org unit ID from the facility name
+      if (facilityName) {
+        const orgUnitId = await fetchOrgUnitIdByName(facilityName);
+        if (orgUnitId) {
+          setFacilityOrgUnitId(orgUnitId);
+        } else {
+          throw new Error('Could not find organization unit for the facility');
+        }
+      } else {
+        throw new Error('Facility name is required');
+      }
+      
+      // 3.1 Add facility to Screening org unit group
+      const credentials = localStorage.getItem('userCredentials');
+      const nextGroupId = 'nDAvPPtYHQP';
+      const nextGroupName = 'Screening Review';
+      
+      // 3.2 First get the current group members
+      const getResponse = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
+        {
+          headers: {
+            'Authorization': `Basic ${credentials}`
+          }
+        }
+      );
+
+      if (!getResponse.ok) {
+        throw new Error('Failed to fetch current group members');
+      }
+
+      const groupData = await getResponse.json();
+
+      // 3.3 Check if facility is already in group
+      const isAlreadyMember = groupData.organisationUnits?.some(ou => ou.id === orgUnitId) || false;
+
+      if (isAlreadyMember) {
+        console.log('Facility is already in the target group');
+        setErrorMessage(`Facility already in ${nextGroupName} stage`);
+      }
+
+      // 3.4 Prepare updated organisationUnits array
+      const updatedOrgUnits = [
+        ...(groupData.organisationUnits || []),
+        { id: orgUnitId }
+      ];
+
+      // 3.4 Update the group with all facilities
+      const groupResponse = await fetch(
+        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: nextGroupId,
+            name: nextGroupName,
+            shortName: nextGroupName,
+            organisationUnits: updatedOrgUnits
+          })
+        }
+      );
+
+      if (!groupResponse.ok) {
+        throw new Error(`Failed to add facility to ${nextGroupName} group`);
+      }
+
+      console.log(`Facility successfully added to ${nextGroupName} group`);
+
+      // 4. Send email to user
+      const emailResponse = await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1011,15 +1226,23 @@ const EditFacilityOwnershipDialog = ({
           message: 'Your Application Has Been Received, we will contact you soon',
         }),
       });
+      
+      if (!emailResponse.ok) {
+        console.error('Failed to send email notification, but continuing with submission');
+      }
 
-      // 3. Show success feedback
+      // 5. Show success feedback
       setSubmitSuccess(true);
-      // 4. Disable and toggle button
+      // 6. Disable and toggle button
       setSubmitInProgress(false);
-      // 5. Set isInScreeningGroup to true to disable Save Changes button
+      // 7. Set isInScreeningGroup to true to disable Save Changes button
       setIsInScreeningGroup(true);
+      // 8. Close the form after successful submission
+      setTimeout(() => {
+        handleClose();
+      }, 2000); // Close after 2 seconds to allow user to see success message
     } catch (err) {
-      setSubmitError(err.message || 'Submission failed');
+      setSubmitError(err.message || 'Save or submission failed');
       setSubmitInProgress(false);
     }
   };
@@ -1037,7 +1260,63 @@ const EditFacilityOwnershipDialog = ({
   }
 
   return (
-    <ModalPortal open={open} onClose={onClose}>
+    <ModalPortal open={open} onClose={handleClose}>
+      {/* Loading overlay during submission */}
+      {isSubmitting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10002,
+          backdropFilter: 'blur(2px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '32px',
+            textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            minWidth: '300px'
+          }}>
+            <div style={{
+              fontSize: '18px',
+              fontWeight: '500',
+              marginBottom: '20px',
+              color: '#333'
+            }}>
+              {isEditMode ? 'Updating Facility Ownership...' : 'Adding Facility Ownership...'}
+            </div>
+            <div style={{
+              width: '100%',
+              height: '4px',
+              backgroundColor: '#e0e0e0',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#1976d2',
+                animation: 'loading-bar 1.5s ease-in-out infinite'
+              }} />
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              Please wait while we process your request...
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="modal-content" style={{ 
         padding: '0', 
         maxWidth: '700px',
@@ -1180,7 +1459,7 @@ const EditFacilityOwnershipDialog = ({
           <button 
             type="button" 
             className="close-btn" 
-            onClick={onClose} 
+            onClick={handleClose} 
             disabled={isSubmitting}
             style={{
               background: 'none',
@@ -1238,7 +1517,7 @@ const EditFacilityOwnershipDialog = ({
               <button 
                 type="button" 
                 className="btn-secondary" 
-                onClick={onClose} 
+                onClick={handleClose} 
                 disabled={isSubmitting}
                 style={{ 
                   padding: '10px 24px', 
@@ -1258,7 +1537,7 @@ const EditFacilityOwnershipDialog = ({
               <button 
                 type="submit" 
                 className="btn-primary" 
-                disabled={isSubmitting || isLoading || isInScreeningGroup}
+                disabled={isSubmitting || isLoading}
                 style={{ 
                   padding: '10px 24px', 
                   fontSize: '0.95rem',
@@ -1267,13 +1546,13 @@ const EditFacilityOwnershipDialog = ({
                   background: '#1976d2',
                   color: 'white',
                   fontWeight: '500',
-                  cursor: isSubmitting || isLoading || isInScreeningGroup ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || isLoading || isInScreeningGroup ? 0.7 : 1,
+                  cursor: isSubmitting || isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting || isLoading ? 0.7 : 1,
                   transition: 'all 0.2s ease',
                   boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
                 }}
               >
-                {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Record'}
+                {isSubmitting ? 'Saving...' : 'Save'}
               </button>
               {isInScreeningGroup && (
                 <div style={{ 
@@ -1299,14 +1578,14 @@ const EditFacilityOwnershipDialog = ({
                   fontSize: '0.95rem',
                   fontWeight: '500',
                   boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
-                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() || !isEditMode ? 'not-allowed' : 'pointer',
+                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
-                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess && isEditMode ? 1 : 0.7,
+                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
                 }}
-                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup || !isEditMode}
-                onClick={handleSubmitForReview}
+                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
+                onClick={handleSaveAndSubmit}
               >
-                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : !isEditMode ? 'Save Record First' : submitInProgress ? 'Submitting...' : 'Submit Application for Review'}
+                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
               </button>
               {submitSuccess && (
                 <div style={{ 

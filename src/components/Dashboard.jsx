@@ -224,6 +224,29 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         fetchTrackedEntityInstance();
     }, []);
 
+    // Listen for auto-navigation to inspections tab
+    useEffect(() => {
+        const handleSwitchToTab = (event) => {
+            if (event.detail === 'inspections') {
+                setActiveSection('inspections');
+            }
+        };
+
+        window.addEventListener('switchToTab', handleSwitchToTab);
+        
+        return () => {
+            window.removeEventListener('switchToTab', handleSwitchToTab);
+        };
+    }, []);
+
+    // Add global styles for blinking
+    // Removed unused blinkStyles variable
+
+  // Removed unused state
+  // const [hasFacilityOwnershipEvents, setHasFacilityOwnershipEvents] = useState(false);
+
+  // Removed unused effect for checking facility ownership events
+
     const renderContent = () => {
         switch (activeSection) {
             case 'overview':
@@ -375,7 +398,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         Overview
                     </button>
                     <button
-                        onClick={() => setActiveSection('registration')}
+                        onClick={() => facilityOwnershipComplete && setActiveSection('registration')}
                         className={activeSection === 'registration' ? 'active' : ''}
                     >
                         Complete Application

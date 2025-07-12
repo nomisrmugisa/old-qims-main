@@ -37,6 +37,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedServiceEvent, setSelectedServiceEvent] = useState(null);
   const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
+  const [facilityName, setFacilityName] = useState('');
   
   // Situational Analysis state
   const [inspectionEvents, setInspectionEvents] = useState([]);
@@ -173,11 +174,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   // Handle successful application update - switch to facility ownership tab
-  const handleApplicationUpdateSuccess = () => {
-    console.log("Application updated successfully - switching to facility ownership tab");
+  const handleApplicationUpdateSuccess = async () => {
+    console.log("Application updated successfully - fetching facility ownership data before switching tab");
+    await fetchFacilityOwnershipData();
     setActiveTab('facilityOwnership');
-    // Also fetch facility ownership data to ensure it's up to date
-    fetchFacilityOwnershipData();
+    setOpenAddDialog(true); // Automatically open the Add Facility Ownership dialog
   };
 
   // Function to validate facility ownership completion
@@ -201,9 +202,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       "KRj1TOR5cVM", // copyOfIdPassport
       "yP49GKSQxPl", // professionalReference1
       "lC217zTgC6C", // professionalReference2
-      "pelCBFPIFY1", // qualificationCertificates
-      "cUObXSGtCuD", // validRecentPermit
-      "g9jXH9LJyxU"  // workPermitWaiver
+      "pelCBFPIFY1"  // qualificationCertificates
     ];
 
     console.log("- Required fields count:", requiredFields.length);
@@ -653,6 +652,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+
+
   const fetchFacilityOwnershipData = async (teiId, orgUnitId) => {
     console.log("🔄 === STARTING FACILITY OWNERSHIP DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
@@ -721,18 +722,28 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("- Response status:", response.status);
       console.log("- Response data:", data);
 
+      console.log("📊 === FACILITY OWNERSHIP DATA PROCESSING ===");
+      console.log("- Raw API Response:", data);
+      console.log("- Enrollments found:", data.enrollments?.length || 0);
+      
       // Process the events data
       let allEvents = [];
       if (data.enrollments && data.enrollments.length > 0) {
-        data.enrollments.forEach(enrollment => {
+        data.enrollments.forEach((enrollment, index) => {
+          console.log(`- Enrollment [${index}]:`, enrollment);
           if (enrollment.events && enrollment.events.length > 0) {
+            console.log(`  • Events in Enrollment [${index}]:`, enrollment.events.length);
             allEvents = [...allEvents, ...enrollment.events];
+          } else {
+            console.log(`  • No events found in Enrollment [${index}]`);
           }
         });
+      } else {
+        console.log("❌ NO ENROLLMENTS FOUND");
       }
       
-      console.log("- Found events:", allEvents.length);
-      console.log("- Events data:", allEvents);
+      console.log("- Total events processed:", allEvents.length);
+      console.log("- Processed events:", allEvents);
 
       // Sort events by created date (newest first)
       allEvents.sort((a, b) => new Date(b.created) - new Date(a.created));
@@ -750,6 +761,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       // Store facility ownership status in localStorage for Header component access
       localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
+      
+      // Dispatch event to refresh organization unit data
+      const refreshOrgUnitEvent = new CustomEvent('refreshOrgUnitData');
+      window.dispatchEvent(refreshOrgUnitEvent);
+      
+      console.log('✅ DISPATCHED refreshOrgUnitData EVENT');
+      
+      // Store events in localStorage for Dashboard component
+      localStorage.setItem('facilityOwnershipEvents', JSON.stringify(allEvents));
     } catch (error) {
       console.error("❌ Error fetching facility ownership data:", error);
       setIsLoading(false);
@@ -775,6 +795,30 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     const intervalId = setInterval(checkCompleteApplicationStatus, 2000);
     
     return () => clearInterval(intervalId);
+  }, []);
+  
+  // Auto-navigate to View Inspections when both Complete Application and Facility Ownership are complete
+  useEffect(() => {
+    const checkAndNavigateToInspections = () => {
+      try {
+        const completeApplicationStatus = localStorage.getItem('completeApplicationFormStatus');
+        const facilityOwnershipStatus = localStorage.getItem('facilityOwnershipComplete');
+        
+        const isCompleteApplicationDone = completeApplicationStatus === 'true';
+        const isFacilityOwnershipDone = facilityOwnershipStatus === 'true';
+        
+        if (isCompleteApplicationDone && isFacilityOwnershipDone) {
+          // Navigate to View Inspections tab
+          const event = new CustomEvent('switchToTab', { detail: 'inspections' });
+          window.dispatchEvent(event);
+        }
+      } catch (error) {
+        console.error("Error checking completion status for auto-navigation:", error);
+      }
+    };
+    
+    // Only check on component mount (login) and when facility ownership dialog closes
+    checkAndNavigateToInspections();
   }, []);
   
   useEffect(() => {
@@ -1487,6 +1531,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               <TrackerEventDetails 
                 onFormStatusChange={handleFormStatusChange}
                 onUpdateSuccess={handleApplicationUpdateSuccess}
+                // onFacilityNameChange={(name) => setFacilityName(name)}
               />
             </div>
           </div>
@@ -1504,7 +1549,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="facility-ownership-details">
-              <h2>
+              <h2 
+                style={{
+                  ...(events.length === 0 && {
+                    animation: 'blink 1.5s infinite',
+                    color: '#dc3545',
+                    fontWeight: 'bold'
+                  })
+                }}
+              >
                 Facility Ownership
                 <button 
                   className="add-icon" 
@@ -1513,7 +1566,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     background: 'none',
                     border: 'none',
                     fontSize: '28px',
-                    color: '#28a745',
+                    color: events.length === 0 ? '#dc3545' : '#28a745',
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     padding: '0 5px'
@@ -1522,6 +1575,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   +
                 </button>
               </h2>
+
+              {/* Add global keyframes for blinking */}
+              <style>
+                {`
+                  @keyframes blink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                  }
+                `}
+              </style>
               
               {/* Debug information panel */}
               <div style={{ padding: '10px', backgroundColor: '#e2f0ff', borderRadius: '5px', marginBottom: '15px', fontSize: '12px' }}>
@@ -1539,6 +1602,39 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               
               {isLoading ? (
                 <p>Loading facility ownership data...</p>
+              ) : showReviewDialog && events.length === 0 ? (
+                <div>
+                  <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
+                    <h4 style={{ color: '#721c24', marginTop: 0 }}>Reloading Facility Ownership Data</h4>
+                    <p style={{ color: '#721c24' }}>
+                      We're refreshing your facility ownership information. Please wait a moment.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        // Force a full data reload
+                        fetchFacilityOwnershipData();
+                        // Ensure we're on the correct tab
+                        setActiveTab('facilityOwnership');
+                      }} 
+                      style={{
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        marginTop: '10px'
+                      }}
+                    >
+                      Retry Loading
+                    </button>
+                  </div>
+                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
+                    Debug: isLoading={isLoading.toString()}, 
+                    events.length={events.length}, 
+                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
+                  </p>
+                </div>
               ) : !effectiveTrackedEntityInstanceId ? (
                 <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
                   <h4 style={{ color: '#721c24', marginTop: 0 }}>Missing Facility Registration</h4>
@@ -1591,12 +1687,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Organization Unit</th>
+                        <th>Facility</th>
                         <th>First Name</th>
                         <th>Surname</th>
                         <th>Citizenship</th>
                         <th>Ownership Type</th>
-                          <th>Actions</th>
+                        <th>Application Submitted</th>
+                        <th>Passed MOH Screening</th>
+                        <th>Complied for Licensing</th>
+                        <th>Date of Compliance</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1606,6 +1706,24 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
                           return dataValue ? dataValue.value : 'N/A';
                         };
+                        
+                        // Helper function to format boolean values
+                        const formatBoolean = (value) => {
+                          if (value === 'true') return 'Yes';
+                          if (value === 'false') return 'No';
+                          return 'N/A';
+                        };
+                        
+                        // Helper function to format date
+                        const formatDate = (dateString) => {
+                          if (!dateString || dateString === 'N/A') return 'N/A';
+                          try {
+                            return new Date(dateString).toLocaleDateString();
+                          } catch {
+                            return dateString;
+                          }
+                        };
+                        
                         return (
                           <tr 
                             key={event.event || index}
@@ -1619,23 +1737,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             <td>{getFormattedValue("ykwhsQQPVH0")}</td> {/* Surname */}
                             <td>{getFormattedValue("zVmmto7HwOc")}</td> {/* Citizenship */}
                             <td>{getFormattedValue("vAHHXaW0Pna")}</td> {/* Ownership Type */}
-                              <td>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRowClick(event);
-                                  }}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#007bff',
-                                    cursor: 'pointer',
-                                    padding: '5px'
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              </td>
+                            <td>{formatBoolean(getFormattedValue("nK8mP3fR9Lq"))}</td> {/* Application Submitted - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatBoolean(getFormattedValue("xT7wQ2gS8Mp"))}</td> {/* Passed MOH Screening - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatBoolean(getFormattedValue("bV5nR4hT1Nk"))}</td> {/* Complied for Licensing - TODO: Replace with actual data element ID from compliance section */}
+                            <td>{formatDate(getFormattedValue("cW6oS5iU2Ol"))}</td> {/* Date of Compliance - TODO: Replace with actual data element ID from compliance section */}
+                            <td>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRowClick(event);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#007bff',
+                                  cursor: 'pointer',
+                                  padding: '5px'
+                                }}
+                              >
+                                Edit
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -2224,6 +2346,51 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     return () => clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'facilityOwnership') {
+      setOpenAddDialog(true);
+    }
+  }, [activeTab]);
+
+  // Automatic retry mechanism for facility ownership data
+  useEffect(() => {
+    const autoRetryFacilityOwnershipData = () => {
+      // Only attempt retry if we're on the facility ownership tab and have no events
+      if (activeTab === 'facilityOwnership' && events.length === 0 && !isLoading) {
+        console.log('🔄 Automatically retrying facility ownership data fetch');
+        fetchFacilityOwnershipData();
+      }
+    };
+
+    // Try retry after a short delay
+    const retryTimeout = setTimeout(autoRetryFacilityOwnershipData, 2000);
+
+    return () => clearTimeout(retryTimeout);
+  }, [activeTab, events.length, isLoading]);
+
+  // Log events.length for debugging
+  useEffect(() => {
+    console.log('🔍 FACILITY OWNERSHIP EVENTS CHECK');
+    console.log('- events.length:', events.length);
+    console.log('- Should blink:', events.length === 0);
+  }, [events.length]);
+
+  // Log events details whenever events change
+  useEffect(() => {
+    console.group('🏥 FACILITY OWNERSHIP EVENTS DETAILS');
+    console.log('Current Events:', events);
+    console.log('Events Length:', events.length);
+    
+    // Additional detailed logging
+    if (events.length > 0) {
+      console.log('First Event Details:', events[0]);
+      console.log('Event IDs:', events.map(event => event.event));
+      console.log('Event Program Stages:', events.map(event => event.programStage));
+    }
+    
+    console.groupEnd();
+  }, [events]);
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
@@ -2245,12 +2412,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <StepContainer>
           {[
             { number: 1, title: 'Complete Application', key: 'completeApplication' },
-            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-            { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-            { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-            { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-            { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-            { number: 7, title: 'Situational Analysis', key: 'inspectionSchedule' }
+            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' }
           ].map((step, index) => {
             // Determine if the tab should be disabled
             const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
@@ -2295,8 +2457,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 5 && <StyledDivider disabled={isDisabled} />}
-                {index === 5 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
+                {index < 1 && <StyledDivider disabled={isDisabled} />}
+                {index === 1 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
               </React.Fragment>
             );
           })}
@@ -2320,6 +2482,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchFacilityOwnershipData();
           }}
           isEditMode={false}
+          // facilityName={facilityName}
         />
       )}
 
@@ -2339,6 +2502,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }}
           event={selectedEvent}
           isEditMode={true}
+          // facilityName={facilityName}
         />
       )}
 

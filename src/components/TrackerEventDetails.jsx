@@ -13,7 +13,11 @@ import {
   Autocomplete,
   Paper,
   Chip,
-  Container
+  Container,
+  LinearProgress,
+  Modal,
+  Backdrop,
+  Box as MuiBox
 } from '@mui/material';
 import debounce from 'lodash/debounce';
 
@@ -31,7 +35,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [error, setError] = useState(null);
   const [eventData, setEventData] = useState(null);
   const [formValues, setFormValues] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateError, setUpdateError] = useState(null);
@@ -51,6 +55,35 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   const [locationName, setLocationName] = useState('');
   const credentials = localStorage.getItem('userCredentials');
+
+  // Add state for progress
+  const [progress, setProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
+  const [hasExistingData, setHasExistingData] = useState(false);
+
+  // Function to set dummy data for development/testing
+  const setDummyData = () => {
+    console.log('Setting dummy data');
+    const dummyFormValues = {
+      'aMFg2iq9VIg': '',
+      'HMk4LZ9ESOq': '',
+      'ykwhsQQPVH0': '',
+      'PdtizqOqE6Q': '',
+      'VJzk8OdFJKA': ''
+    };
+    setFormValues(dummyFormValues);
+    setEventData(null);
+    setLoading(false);
+    setHasExistingData(false);
+    checkFormCompletion(dummyFormValues);
+  };
+
+  // Notify parent when facility name changes
+  // useEffect(() => {
+  //   if (formValues['PdtizqOqE6Q'] && onFacilityNameChange) {
+  //     onFacilityNameChange(formValues['PdtizqOqE6Q']);
+  //   }
+  // }, [formValues['PdtizqOqE6Q']]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -130,6 +163,17 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             // Check if all required fields are filled
             checkFormCompletion(initialFormValues);
 
+            // Check if form has existing data
+            const hasData = requiredOtherDetailsFields.some(field =>
+              initialFormValues[field] && initialFormValues[field].trim() !== ''
+            );
+            setHasExistingData(hasData);
+
+            // If form has existing data, disable editing and hide update button
+            if (hasData) {
+              setIsEditing(false);
+            }
+
             setLoading(false);
             return;
           }
@@ -155,6 +199,66 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchOrgUnitName = async () => {
+      console.log('Debug - fetchOrgUnitName called');
+      console.log('formValues[VJzk8OdFJKA]:', formValues['VJzk8OdFJKA']);
+      console.log('loading state:', loading);
+
+      // Remove loading check to always attempt fetching
+      if (!formValues['VJzk8OdFJKA']) {
+        console.log('Skipping fetch: No location ID');
+        return;
+      }
+
+      try {
+        const credentials = localStorage.getItem('userCredentials');
+        if (!credentials) {
+          console.error('No credentials found for fetching org unit name');
+          return;
+        }
+
+        console.log('Fetching org unit name for ID:', formValues['VJzk8OdFJKA']);
+        console.log('Full API URL:', `/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`);
+
+        const response = await fetch(`/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`, {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch organization unit name: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('Received data:', data);
+
+        if (data && data.name) {
+          // Update selectedOrgUnit with the fetched name
+          setSelectedOrgUnit({
+            id: formValues['VJzk8OdFJKA'],
+            displayName: data.name
+          });
+          console.log('Updated selectedOrgUnit with name:', data.name);
+        } else {
+          console.warn('No name found in the response:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching organization unit name:', error);
+      }
+    };
+
+    // Add a small delay to ensure data is loaded
+    const timer = setTimeout(fetchOrgUnitName, 100);
+
+    // Cleanup function to clear timeout
+    return () => clearTimeout(timer);
+  }, [formValues['VJzk8OdFJKA']]);
 
   // Check if all required fields are filled
   const checkFormCompletion = (values) => {
@@ -657,6 +761,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       setLoading(true);
       setSuccessMessages([]);
 
+      // Save facility name to sessionStorage before proceeding
+      if (formValues['PdtizqOqE6Q']) {
+        sessionStorage.setItem('currentFacilityName', formValues['PdtizqOqE6Q']);
+      }
+
       // Generate a new ID for org unit if complete is checked
       const orgUnitId = generate_orgUnitID();
       console.log('Step 2: Generated organization unit ID:', orgUnitId);
@@ -822,7 +931,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setSuccessMessages(prev => [...prev, '5 / 5']);
 
         setOpenSnackbar(true);
-        
+
         console.log('Step 10: Sending email notification...');
         // Step 10: Email sending is deactivated, but we simulate success for downstream logic
         setCurrentStep('Sending notification...');
@@ -832,46 +941,46 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           console.log('✅ Step 10 COMPLETED: (Email sending deactivated, simulated success)');
           setSuccessMessages(prev => [...prev, 'Email notification (deactivated)']);
           setOpenSnackbar(true);
-          
+
           console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
           // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
           setCurrentStep('Completing application...');
           setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
-          
+
           // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
           localStorage.setItem('autoSelectTab', 'facilityOwnership');
-          
+
           // Add a short delay before reloading to ensure user sees the success message
           setTimeout(() => {
             console.log('🚀 EXECUTING Step 11: Triggering data refresh and tab switch...');
             // Instead of reloading the page, trigger a data refresh from localStorage
             // This will cause the parent component to re-fetch all data
             const refreshEvent = new CustomEvent('refreshApplicationData', {
-              detail: { 
+              detail: {
                 action: 'refresh',
                 timestamp: new Date().toISOString()
               }
             });
             window.dispatchEvent(refreshEvent);
-            
+
             // Also trigger the tab switch
             const tabSwitchEvent = new CustomEvent('switchToTab', {
-              detail: { 
+              detail: {
                 tab: 'facilityOwnership',
                 timestamp: new Date().toISOString()
               }
             });
             window.dispatchEvent(tabSwitchEvent);
-            
+
             console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
           }, 1500);
-          
+
         } else {
           console.error('❌ Step 10 FAILED: Email notification failed');
           setSuccessMessages(prev => [...prev, 'Email notification failed']);
           setOpenSnackbar(true);
         }
-        
+
       } catch (error) {
         console.error('❌ Step 9 FAILED: Error in user enabling process:', error);
         // Continue even if user enabling fails - this shouldn't block the main process
@@ -952,10 +1061,22 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
       {/* Form completion status indicator */}
       {!isFormComplete && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Please fill in all required fields to complete this section.
+        <Alert severity="warning" sx={{ mb: 2 }} className="blink-message">
+          Please fill in all required fields to complete Other Details section.
         </Alert>
       )}
+
+      <Modal
+        open={showProgress}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{ backdrop: { timeout: 500 } }}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+      >
+        <MuiBox sx={{ width: 300, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <LinearProgress variant="determinate" value={progress} sx={{ width: '100%', height: 8 }} />
+        </MuiBox>
+      </Modal>
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
@@ -971,6 +1092,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -981,6 +1103,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -991,6 +1114,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -1001,6 +1125,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
+                className="grey-disabled"
               />
             </Grid>
           </Grid>
@@ -1013,8 +1138,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             Other Details
           </Typography>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Private Practice Number"
                 value={formValues['aMFg2iq9VIg'] || ''}
@@ -1022,13 +1147,19 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['aMFg2iq9VIg'] && !loading}
                 helperText={!formValues['aMFg2iq9VIg'] && !loading ? "This field is required" : ""}
+                className={!formValues['aMFg2iq9VIg'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Name of the License Holder"
                 value={formValues['HMk4LZ9ESOq'] || ''}
@@ -1036,13 +1167,19 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['HMk4LZ9ESOq'] && !loading}
                 helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
+                className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Surname of License Holder"
                 value={formValues['ykwhsQQPVH0'] || ''}
@@ -1050,13 +1187,19 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['ykwhsQQPVH0'] && !loading}
                 helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
+                className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Name of Facility to be Registered"
                 value={formValues['PdtizqOqE6Q'] || ''}
@@ -1064,113 +1207,121 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 fullWidth
                 size="small"
                 margin="dense"
-                disabled={!isEditing || updating}
+                disabled={!isEditing || updating || hasExistingData}
                 required
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
+                className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                  }
+                }}
               />
             </Grid>
           </Grid>
 
           {/* Location field */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 'bold', color: 'text.primary' }}>
-              Location in Botswana <span style={{ color: 'red' }}>*</span>
+          <Box
+            sx={{
+              mt: { xs: 1, sm: 2 },
+              width: '100%'
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: { xs: 0.25, sm: 0.5 },
+                fontWeight: 'bold',
+                color: 'text.primary',
+                fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+              }}
+            >
+              Location in Botswana (Ward) <span style={{ color: 'red' }}>*</span>
             </Typography>
-            <Box sx={{ position: 'relative' }}>
+            <Box sx={{ position: 'relative', width: '100%' }}>
               {isEditing ? (
-                <>
-                  <Autocomplete
-                    options={filteredOrgUnits}
-                    getOptionLabel={(option) => option.displayName || ''}
-                    value={selectedOrgUnit}
-                    onChange={handleLocationChange}
-                    onInputChange={handleSearchChange}
-                    loading={isLoadingOrgUnits}
-                    disabled={updating}
-                    fullWidth
-                    size="small"
-                    ListboxProps={{
-                      style: { maxHeight: '200px' }
-                    }}
-                    PaperComponent={props => (
-                      <Paper
-                        {...props}
-                        elevation={3}
-                        sx={{
-                          maxHeight: 200,
-                          width: '100%',
-                          '& .MuiAutocomplete-option': {
-                            py: 1,
-                            px: 2,
-                            borderBottom: '1px solid #eee',
-                            '&:hover': {
-                              bgcolor: 'primary.light',
-                              color: 'white'
-                            }
-                          }
-                        }}
-                      />
-                    )}
-                    renderOption={(props, option) => (
-                      <li {...props} key={option.id}>
-                        <Typography noWrap>
-                          {option.displayName}
-                        </Typography>
-                      </li>
-                    )}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        variant="outlined"
-                        fullWidth
-                        placeholder="Search for a location..."
-                        size="small"
-                        margin="dense"
-                        required
-                        error={!formValues['VJzk8OdFJKA'] && !loading}
-                        helperText={!formValues['VJzk8OdFJKA'] && !loading ? "Location is required" : ""}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '&.Mui-focused': {
-                              borderColor: 'primary.main',
-                              boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)'
-                            }
-                          }
-                        }}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {isLoadingOrgUnits ? <CircularProgress color="primary" size={16} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                  {filteredOrgUnits.length > 0 && searchQuery && (
-                    <Typography
-                      variant="caption"
+                <Autocomplete
+                  options={filteredOrgUnits}
+                  getOptionLabel={(option) => option.displayName || ''}
+                  value={selectedOrgUnit}
+                  onChange={handleLocationChange}
+                  onInputChange={handleSearchChange}
+                  loading={isLoadingOrgUnits}
+                  disabled={updating || hasExistingData}
+                  fullWidth
+                  size="small"
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                  ListboxProps={{
+                    style: {
+                      maxHeight: '200px',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                  PaperComponent={props => (
+                    <Paper
+                      {...props}
+                      elevation={3}
                       sx={{
-                        display: 'block',
-                        mt: 0.5,
-                        color: 'text.secondary'
+                        maxHeight: 200,
+                        width: '100%',
+                        '& .MuiAutocomplete-option': {
+                          py: { xs: 0.5, sm: 1 },
+                          px: { xs: 1, sm: 2 },
+                          borderBottom: '1px solid #eee',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                          '&:hover': {
+                            bgcolor: 'primary.light',
+                            color: 'white'
+                          }
+                        }
                       }}
-                    >
-                      {filteredOrgUnits.length} location{filteredOrgUnits.length !== 1 ? 's' : ''} found
-                    </Typography>
+                    />
                   )}
-                </>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      fullWidth
+                      placeholder="Search for a location (Ward)..."
+                      size="small"
+                      margin="dense"
+                      required
+                      error={!formValues['VJzk8OdFJKA'] && !loading}
+                      helperText={!formValues['VJzk8OdFJKA'] && !loading ? "Location is required" : ""}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                          '&.Mui-focused': {
+                            borderColor: 'primary.main',
+                            boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)'
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {isLoadingOrgUnits ? <CircularProgress color="primary" size={16} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                />
               ) : (
                 <Box
                   sx={{
-                    p: 1.5,
+                    p: { xs: 1, sm: 1.5 },
                     border: '1px solid #ddd',
                     borderRadius: 1,
                     bgcolor: '#f9f9f9',
-                    minHeight: '40px',
+                    minHeight: { xs: '35px', sm: '40px' },
                     display: 'flex',
                     alignItems: 'center',
                     borderColor: !formValues['VJzk8OdFJKA'] && !loading ? 'error.main' : '#ddd'
@@ -1178,14 +1329,25 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 >
                   {formValues['VJzk8OdFJKA'] ? (
                     <Chip
-                      label={formValues['VJzk8OdFJKA']}
+                      label={selectedOrgUnit?.displayName || formValues['VJzk8OdFJKA']}
                       color="primary"
                       variant="outlined"
                       size="small"
-                      sx={{ fontWeight: 'medium' }}
+                      sx={{
+                        fontWeight: 'medium',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                      }}
                     />
                   ) : (
-                    <Typography color="error" variant="body2">Location is required</Typography>
+                    <Typography
+                      color="error"
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                      }}
+                    >
+                      Location is required
+                    </Typography>
                   )}
                 </Box>
               )}
@@ -1193,7 +1355,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           </Box>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
-            {!isEditing ? (
+            {/* {!isEditing ? (
               <Button
                 variant="outlined"
                 color="primary"
@@ -1203,46 +1365,23 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
               >
                 Edit Details
               </Button>
-            ) : (
+            ) : ( */}
+            {!hasExistingData && (
               <>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={handleToggleEdit}
-                  disabled={updating}
-                  size="small"
-                >
-                  Cancel
-                </Button>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={async () => {
-                    // First execute handleSubmit
+                    setShowProgress(true);
+                    setProgress(10);
                     await handleSubmit();
-
-                    // Then send email
-                    setCurrentStep('Sending notification...');
-                    try {
-                      const emailSuccess = await sendFacilityUpdateEmail();
-                      if (emailSuccess) {
-                        setSuccessMessages(prev => [...prev, 'Notification email sent']);
-                        setOpenSnackbar(true);
-                        
-                        // Add a short delay before reloading to ensure user sees the success message
-                        setTimeout(() => {
-                          // Store a flag in localStorage to indicate we should select the Facility Ownership tab after reload
-                          localStorage.setItem('autoSelectTab', 'facilityOwnership');
-                          
-                          // Reload the page
-                          window.location.reload();
-                        }, 1500);
-                      }
-                    } catch (emailError) {
-                      console.error('Email sending failed:', emailError);
-                      setSuccessMessages(prev => [...prev, 'Email notification failed']);
-                      setOpenSnackbar(true);
-                    }
+                    setProgress(60);
+                    await sendFacilityUpdateEmail();
+                    setProgress(100);
+                    setTimeout(() => {
+                      setShowProgress(false);
+                      setProgress(0);
+                    }, 800);
                   }}
                   disabled={updating}
                   size="small"
@@ -1251,6 +1390,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 </Button>
               </>
             )}
+            {/* )} */}
           </Box>
         </CardContent>
       </Card>
