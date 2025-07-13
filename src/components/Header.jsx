@@ -499,7 +499,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </button>
             )}
             {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Apply</a>
+                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Register</a>
             )}
           </div>
         </div>

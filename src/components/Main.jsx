@@ -313,8 +313,8 @@ const Main = () => {
 
                 {/* Section Title */}
                 <div className="container section-title" data-aos="fade-up">
-                    <h2>Apply to Register your Facility</h2>
-                    <p>Apply for your health facility to begin the licensing process</p>
+                    <h2>Register your Facility</h2>
+                    <p>Register for your health facility to begin the licensing process</p>
                 </div>
                 {/* End Section Title */}
 

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import RegistrationDetails from './RegistrationDetails';
 
-const Dashboard = ({ activeSection, setActiveSection }) => {
+const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
     const [dashboardLoading, setDashboardLoading] = useState(true);
-    const [trackedEntityInstanceId, setTrackedEntityInstanceId] = useState(null);
     const [showFacilityReviewDialog, setShowFacilityReviewDialog] = useState(false);
     const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
+    const [inspectionEvents, setInspectionEvents] = useState([]);
+    const [isLoadingInspections, setIsLoadingInspections] = useState(false);
 
     const fetchTrackedEntityInstance = async () => {
         const credentials = localStorage.getItem('userCredentials');
@@ -99,13 +100,13 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
             if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
                 const instance = data.trackedEntityInstances[0];
                 console.log('- Found trackedEntityInstance:', instance.trackedEntityInstance);
-                setTrackedEntityInstanceId(instance.trackedEntityInstance);
+                // setTrackedEntityInstanceId(instance.trackedEntityInstance); // This line is removed
             } else {
                 // Handle case where no tracked entity instance is found
                 // This might indicate a fresh registration or an issue.
                 // For now, set to null and allow the child components to handle
                 console.log('- No tracked entity instances found - user needs to complete registration first');
-                setTrackedEntityInstanceId(null);
+                // setTrackedEntityInstanceId(null); // This line is removed
                 // Don't set showFacilityReviewDialog to true here, let the component handle it
             }
         } catch (error) {
@@ -113,7 +114,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
             console.error("- Error name:", error.name);
             console.error("- Error message:", error.message);
             console.error("- Error stack:", error.stack);
-            setTrackedEntityInstanceId(null); // Ensure TEI is null on error
+            // setTrackedEntityInstanceId(null); // This line is removed
             // Only set showFacilityReviewDialog to true for actual errors, not for missing data
             if (error.message !== "No tracked entity instances found") {
             setShowFacilityReviewDialog(true);
@@ -165,7 +166,7 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         if (tempTrackedEntityInstanceId) {
             console.log("📌 Found temporary trackedEntityInstanceId:", tempTrackedEntityInstanceId);
             console.log("- Using this instead of fetching");
-            setTrackedEntityInstanceId(tempTrackedEntityInstanceId);
+            // setTrackedEntityInstanceId(tempTrackedEntityInstanceId); // This line is removed
             // Clear the temporary ID so we don't use it again unnecessarily
             localStorage.removeItem('tempTrackedEntityInstanceId');
             setDashboardLoading(false);
@@ -223,6 +224,47 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
         testApiAccess();
         fetchTrackedEntityInstance();
     }, []);
+
+    useEffect(() => {
+        if (activeSection === 'inspections') {
+            fetchInspectionEvents();
+        }
+        // eslint-disable-next-line
+    }, [activeSection, trackedEntityInstanceId]);
+
+    const fetchInspectionEvents = async () => {
+        setIsLoadingInspections(true);
+        const credentials = localStorage.getItem('userCredentials');
+        const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+        if (!trackedEntityInstanceId || !credentials || !userOrgUnitId) {
+            setInspectionEvents([]);
+            setIsLoadingInspections(false);
+            return;
+        }
+        try {
+            const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+            const response = await fetch(url, {
+                headers: { Authorization: `Basic ${credentials}` },
+            });
+            if (!response.ok) throw new Error('Failed to fetch inspection events');
+            const data = await response.json();
+            let fetchedEvents = [];
+            if (data.enrollments && data.enrollments.length > 0) {
+                data.enrollments.forEach(enrollment => {
+                    if (enrollment.events && enrollment.events.length > 0) {
+                        // Only include events from the inspection program stage
+                        const inspectionEvents = enrollment.events.filter(event => event.programStage === 'Eupjm3J0dt2');
+                        fetchedEvents = fetchedEvents.concat(inspectionEvents);
+                    }
+                });
+            }
+            setInspectionEvents(fetchedEvents);
+        } catch (error) {
+            setInspectionEvents([]);
+        } finally {
+            setIsLoadingInspections(false);
+        }
+    };
 
     // Listen for auto-navigation to inspections tab
     useEffect(() => {
@@ -317,63 +359,38 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
             case 'inspections':
                 return (
                     <div className="dashboard-section">
-                        <h2>Facility Inspections</h2>
-                        <div className="inspections-container">
-                            <div className="inspections-actions">
-                                <button className="action-button">New Inspection</button>
-                                <button className="action-button">Schedule Inspection</button>
-                                <button className="action-button">Download Report</button>
-                            </div>
+                        <h2>View Inspection Results</h2>
+                        {isLoadingInspections ? (
+                            <p>Loading inspection results...</p>
+                        ) : inspectionEvents.length === 0 ? (
+                            <p>No inspection results found for this facility.</p>
+                        ) : (
                             <div className="inspections-table-container">
                                 <table className="table table-striped table-hover">
                                     <thead>
                                         <tr>
                                             <th>Inspection Date</th>
-                                            <th>Facility Name</th>
-                                            <th>Inspector</th>
                                             <th>Status</th>
+                                            <th>Inspector</th>
                                             <th>Findings</th>
-                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>2024-03-20</td>
-                                            <td>Central Clinic</td>
-                                            <td>John Doe</td>
-                                            <td><span className="status-badge completed">Completed</span></td>
-                                            <td>Minor non-compliance</td>
-                                            <td>
-                                                <button className="btn-view">View</button>
-                                                <button className="btn-edit">Edit</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>2024-03-22</td>
-                                            <td>City Hospital</td>
-                                            <td>Jane Smith</td>
-                                            <td><span className="status-badge pending">Pending</span></td>
-                                            <td>N/A</td>
-                                            <td>
-                                                <button className="btn-view">View</button>
-                                                <button className="btn-edit">Edit</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>2024-03-25</td>
-                                            <td>Rural Health Post</td>
-                                            <td>Peter Jones</td>
-                                            <td><span className="status-badge scheduled">Scheduled</span></td>
-                                            <td>Pending</td>
-                                            <td>
-                                                <button className="btn-view">View</button>
-                                                <button className="btn-cancel">Cancel</button>
-                                            </td>
-                                        </tr>
+                                        {inspectionEvents.map((event, idx) => {
+                                            const getValue = (id) => (event.dataValues || []).find(dv => dv.dataElement === id)?.value || '';
+                                            return (
+                                                <tr key={event.event || idx}>
+                                                    <td>{event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'N/A'}</td>
+                                                    <td>{event.status || 'N/A'}</td>
+                                                    <td>{getValue('inspector') || 'N/A'}</td>
+                                                    <td>{getValue('findings') || 'N/A'}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        )}
                     </div>
                 );
             default:
@@ -401,14 +418,14 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         onClick={() => facilityOwnershipComplete && setActiveSection('registration')}
                         className={activeSection === 'registration' ? 'active' : ''}
                     >
-                        Complete Application
+                        Registration & Permission to Establish
                     </button>
                     <button
                         onClick={() => facilityOwnershipComplete && setActiveSection('inspections')}
                         className={`${activeSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
                         disabled={!facilityOwnershipComplete}
                     >
-                        View Inspections
+                        View Inspection Results
                     </button>
                     <button
                         onClick={() => facilityOwnershipComplete && setActiveSection('reports')}

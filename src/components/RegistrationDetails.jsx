@@ -1518,6 +1518,30 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+  // Add state for facility ownership metadata
+  const [facilityOwnershipMetadata, setFacilityOwnershipMetadata] = useState(null);
+
+  // Fetch facility ownership program stage metadata on mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const credentials = localStorage.getItem('userCredentials');
+        const response = await fetch(
+          `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
+          {
+            headers: { Authorization: `Basic ${credentials}` },
+          }
+        );
+        if (!response.ok) throw new Error('Failed to fetch metadata');
+        const metadata = await response.json();
+        setFacilityOwnershipMetadata(metadata);
+      } catch (error) {
+        setFacilityOwnershipMetadata(null);
+      }
+    };
+    fetchMetadata();
+  }, []);
+
   const renderTabContent = () => {
     // Prepare variables used in multiple cases
     const effectiveTrackedEntityInstanceId = localTrackedEntityInstanceId || trackedEntityInstanceId;
@@ -1561,7 +1585,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 Facility Ownership
                 <button 
                   className="add-icon" 
-                  onClick={() => setOpenAddDialog(true)}
+                  onClick={() => {
+                    if (events.length === 0) setOpenAddDialog(true);
+                  }}
                   style={{ 
                     background: 'none',
                     border: 'none',
@@ -1586,22 +1612,44 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 `}
               </style>
               
-              {/* Debug information panel */}
-              <div style={{ padding: '10px', backgroundColor: '#e2f0ff', borderRadius: '5px', marginBottom: '15px', fontSize: '12px' }}>
-                <p style={{ margin: '0 0 5px 0' }}><strong>Debug Information:</strong></p>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>trackedEntityInstanceId (prop): {trackedEntityInstanceId || 'null'}</li>
-                  <li>localTrackedEntityInstanceId (state): {localTrackedEntityInstanceId || 'null'}</li>
-                  <li>effectiveTrackedEntityInstanceId: {effectiveTrackedEntityInstanceId || 'null'}</li>
-                  <li>events.length: {events.length}</li>
-                  <li>isLoading: {isLoading.toString()}</li>
-                  <li>showReviewDialog: {showReviewDialog.toString()}</li>
-                  <li>localStorage TEI: {localStorage.getItem('tempTrackedEntityInstanceId') || 'null'}</li>
-                </ul>
-              </div>
-              
               {isLoading ? (
                 <p>Loading facility ownership data...</p>
+              ) : events.length > 0 ? (
+                <div style={{
+                  background: '#e2f0ff',
+                  borderRadius: '8px',
+                  padding: '24px',
+                  margin: '24px 0',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                  maxWidth: '340px',
+                  minWidth: '220px',
+                  fontSize: '0.98rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                }}>
+                  <h3 style={{marginBottom: '12px', fontSize: '1.08rem'}}>Compliance Section (Read Only)</h3>
+                  {facilityOwnershipMetadata && facilityOwnershipMetadata.programStageSections
+                    ? facilityOwnershipMetadata.programStageSections.filter(section =>
+                        section.name && section.name.toLowerCase().includes('compliance')
+                      ).map(section => (
+                        <div key={section.id} style={{marginBottom: '18px'}}>
+                          <h4 style={{fontSize: '1.1rem', fontWeight: 600, marginBottom: '10px'}}>{section.name}</h4>
+                          {section.dataElements.map(de => {
+                            const value = (events[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
+                            return (
+                              <div key={de.id} style={{marginBottom: '10px'}}>
+                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>Not provided</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))
+                    : <p>Loading compliance section metadata...</p>}
+                </div>
               ) : showReviewDialog && events.length === 0 ? (
                 <div>
                   <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
@@ -1659,7 +1707,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       marginTop: '10px'
                     }}
                   >
-                                            Go to Complete Application
+                    Go to Complete Application
                   </button>
                 </div>
               ) : showReviewDialog && events.length === 0 ? (
@@ -1673,99 +1721,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
                   </p>
                 </div>
-              ) : (
-                <div>
-                  {!tabValidationStates.facilityOwnership && (
-                    <div style={{ padding: '10px', backgroundColor: '#fff3cd', borderRadius: '5px', marginBottom: '15px', border: '1px solid #ffeeba' }}>
-                      <p style={{ color: '#856404', margin: 0 }}>
-                        <strong>⚠️ Warning:</strong> Some facility ownership records are incomplete. Please ensure all required fields are filled.
-                      </p>
-                    </div>
-                  )}
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Facility</th>
-                        <th>First Name</th>
-                        <th>Surname</th>
-                        <th>Citizenship</th>
-                        <th>Ownership Type</th>
-                        <th>Application Submitted</th>
-                        <th>Passed MOH Screening</th>
-                        <th>Complied for Licensing</th>
-                        <th>Date of Compliance</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {events.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : 'N/A';
-                        };
-                        
-                        // Helper function to format boolean values
-                        const formatBoolean = (value) => {
-                          if (value === 'true') return 'Yes';
-                          if (value === 'false') return 'No';
-                          return 'N/A';
-                        };
-                        
-                        // Helper function to format date
-                        const formatDate = (dateString) => {
-                          if (!dateString || dateString === 'N/A') return 'N/A';
-                          try {
-                            return new Date(dateString).toLocaleDateString();
-                          } catch {
-                            return dateString;
-                          }
-                        };
-                        
-                        return (
-                          <tr 
-                            key={event.event || index}
-                            onClick={() => handleRowClick(event)}
-                            style={{ cursor: 'pointer' }}
-                            className="hover-row"
-                          >
-                            <td>{event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'N/A'}</td>
-                            <td>{localStorage.getItem('userOrgUnitName')}</td>
-                            <td>{getFormattedValue("HMk4LZ9ESOq")}</td> {/* First Name */}
-                            <td>{getFormattedValue("ykwhsQQPVH0")}</td> {/* Surname */}
-                            <td>{getFormattedValue("zVmmto7HwOc")}</td> {/* Citizenship */}
-                            <td>{getFormattedValue("vAHHXaW0Pna")}</td> {/* Ownership Type */}
-                            <td>{formatBoolean(getFormattedValue("nK8mP3fR9Lq"))}</td> {/* Application Submitted - TODO: Replace with actual data element ID from compliance section */}
-                            <td>{formatBoolean(getFormattedValue("xT7wQ2gS8Mp"))}</td> {/* Passed MOH Screening - TODO: Replace with actual data element ID from compliance section */}
-                            <td>{formatBoolean(getFormattedValue("bV5nR4hT1Nk"))}</td> {/* Complied for Licensing - TODO: Replace with actual data element ID from compliance section */}
-                            <td>{formatDate(getFormattedValue("cW6oS5iU2Ol"))}</td> {/* Date of Compliance - TODO: Replace with actual data element ID from compliance section */}
-                            <td>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRowClick(event);
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#007bff',
-                                  cursor: 'pointer',
-                                  padding: '5px'
-                                }}
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  </div>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         );
@@ -2347,10 +2303,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'facilityOwnership') {
+    if (activeTab === 'facilityOwnership' && events.length === 0) {
       setOpenAddDialog(true);
     }
-  }, [activeTab]);
+  }, [activeTab, events.length]);
 
   // Automatic retry mechanism for facility ownership data
   useEffect(() => {
@@ -2390,6 +2346,18 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     
     console.groupEnd();
   }, [events]);
+
+  useEffect(() => {
+    console.log('[Debug Information]', {
+      'trackedEntityInstanceId (prop)': trackedEntityInstanceId || 'null',
+      'localTrackedEntityInstanceId (state)': localTrackedEntityInstanceId || 'null',
+      // 'effectiveTrackedEntityInstanceId': effectiveTrackedEntityInstanceId || 'null', // Removed to fix ReferenceError
+      'events.length': events.length,
+      'isLoading': isLoading,
+      'showReviewDialog': showReviewDialog,
+      'localStorage TEI': localStorage.getItem('tempTrackedEntityInstanceId') || 'null',
+    });
+  }, [trackedEntityInstanceId, localTrackedEntityInstanceId, events.length, isLoading, showReviewDialog]); // Removed effectiveTrackedEntityInstanceId from dependencies
 
   return (
     <div className="registration-details-container">

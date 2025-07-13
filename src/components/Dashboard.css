@@ -61,18 +61,21 @@
 
 .dashboard-sidebar button {
     width: 100%;
-    padding: 12px 20px;
+    padding: 8px 10px;
     margin: 10px 0;
     border: 1px solid #c0c0c0;
     background-color: #dddddd;
     text-align: left;
-    font-size: 16px;
+    font-size: 13px; /* reduced from default for compactness */
     color: #222;
     font-weight: 500;
     cursor: pointer;
     border-radius: 6px;
     transition: all 0.3s ease;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    height: auto;
+    white-space: normal;
+    line-height: 1.2;
 }
 
 .dashboard-sidebar button:hover {
@@ -158,22 +161,34 @@
 }
 
 .stat-card {
-    background-color: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 10px;
     text-align: center;
     transition: transform 0.3s ease;
+    max-width: 120px;
+    min-width: 100px;
+    height: 90px;
+    box-shadow: 0 2px 8px rgba(25, 119, 204, 0.10);
+    margin: 0 auto 10px auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-.stat-card:hover {
-    transform: translateY(-5px);
+.stat-card h3 {
+    font-size: 0.95rem;
+    margin: 0 0 4px 0;
+    font-weight: 500;
+    color: #1977cc;
 }
 
 .stat-number {
-    font-size: 32px;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #1977cc;
-    margin: 10px 0;
+    margin: 2px 0 0 0;
 }
 
 .reports-list, .tasks-list {

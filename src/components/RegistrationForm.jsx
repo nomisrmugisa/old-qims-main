@@ -17,10 +17,12 @@ import {
   Dialog as ErrorDialog,
   DialogContent as ErrorDialogContent,
   DialogTitle as ErrorDialogTitle,
-  DialogActions as ErrorDialogActions
+  DialogActions as ErrorDialogActions,
+  Paper
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { API_URL } from '../config'; // Import API_URL
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 // Add CSS for animations
 const styles = `
@@ -52,9 +54,10 @@ function RegistrationForm() {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentMessage, setEmailSentMessage] = useState(false);
-  const [usernameError, setUsernameError] = useState('');
   // Add a new state to control feedback dialog
   const [feedbackDialog, setFeedbackDialog] = useState({ open: false, message: '', severity: 'success' });
+  // Add emailError state
+  const [emailError, setEmailError] = useState(false);
 
   const credentials = 'YWRtaW46NUFtNTM4MDgwNTNA';
 
@@ -162,7 +165,6 @@ function RegistrationForm() {
         userName: randomUsername // Set username to random generated value
       }));
       // Clear any username errors since username is automatically generated
-      setUsernameError('');
     }
   };
 
@@ -338,19 +340,16 @@ function RegistrationForm() {
 
   const isFormValid = () => {
     return (
-      formData.cellNumber &&
       formData.email &&
-      formData.BHPCRegistrationNumber &&
-      formData.cellNumber.trim() !== '' &&
       formData.email.trim() !== '' &&
-      formData.BHPCRegistrationNumber.trim() !== ''
+      !emailError
     );
   };
 
   return (
     <>
       <button className="cta-btn" variant="contained" onClick={handleClickOpen}>
-        Apply for License
+        Register
       </button>
 
       <Dialog
@@ -360,7 +359,7 @@ function RegistrationForm() {
         fullWidth
       >
         <DialogTitle sx={{ m: 0, p: 2, fontWeight: "bold", textAlign: "left" }}>
-          Application Form
+          Register
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -375,137 +374,63 @@ function RegistrationForm() {
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ px: 4 }}>
-          {/* User Profile Section */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
-            User Profile
-          </Typography>
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              label="Preferred User Name"
-              name="userName"
-              value={formData.userName}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              error={!!usernameError}
-              helperText={usernameError || "Username must be 4-255 characters, can include letters, numbers, ., _, -, @, and must not contain spaces."}
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
+        <DialogContent dividers sx={{ px: 4, py: 5, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f6f8fa' }}>
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 3, minWidth: 340, maxWidth: 400, width: '100%', boxShadow: '0 4px 24px rgba(25, 119, 204, 0.08)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                name="email"
+                value={formData.email}
+                onChange={e => {
+                  handleChange(e);
+                  setEmailError(!/^\S+@\S+\.\S+$/.test(e.target.value));
+                }}
+                variant="outlined"
+                margin="normal"
+                required
+                error={emailError}
+                helperText={emailError ? 'Please enter a valid email address.' : ''}
+                InputLabelProps={{
+                  sx: {
+                    "& .MuiFormLabel-asterisk": {
+                      color: "red",
+                    },
                   },
-                },
-              }}
-              disabled={loading}
-              sx={{ display: 'none' }}
-            />
-
-            <TextField
-              fullWidth
-              label="Phone Number"
-              name="cellNumber"
-              value={formData.cellNumber}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
+                }}
+                disabled={loading}
+                sx={{ backgroundColor: '#fff', borderRadius: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+              />
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                sx={{
+                  background: 'linear-gradient(90deg, #1977cc 0%, #21a1e1 100%)',
+                  color: '#fff',
+                  borderRadius: 2,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  boxShadow: '0 2px 8px rgba(25,119,204,0.10)',
+                  textTransform: 'none',
+                  letterSpacing: 0.5,
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, #155fa0 0%, #1977cc 100%)',
                   },
-                },
-              }}
-              disabled={loading}
-            />
-
-            <TextField
-              fullWidth
-              label="Email Address"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              disabled={loading}
-            />
-
-            {/* B.H.P.C License Number - Hidden from user but still functional */}
-            <TextField
-              fullWidth
-              label="B.H.P.C License Number"
-              name="BHPCRegistrationNumber"
-              value={formData.BHPCRegistrationNumber}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              helperText="Enter your Botswana Health Professions Council (BHPC) registration/license number."
-              disabled={loading}
-            />
-
-            {/* DHIS2 Registration Code - Hidden from user but still generated */}
-            <TextField
-              fullWidth
-              label="DHIS2-Registration CODE"
-              name="dhisRegistrationCode"
-              value={formData.dhisRegistrationCode}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              sx={{ display: 'none' }}
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              disabled={loading}
-            />
-
-            {/* File upload section removed */}
-          </Box>
+                }}
+                disabled={loading || !isFormValid()}
+                fullWidth
+              >
+                Register
+              </Button>
+            </Box>
+          </Paper>
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
           <Button onClick={handleClose} color="inherit">
             Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            sx={{
-              backgroundColor: "#3f51b5",
-              color: "#fff",
-              borderRadius: 2,
-              px: 4,
-              "&:hover": {
-                backgroundColor: "#303f9f",
-              },
-            }}
-            disabled={loading || !isFormValid()}
-          >
-            Apply
           </Button>
         </DialogActions>
       </Dialog>
@@ -538,37 +463,27 @@ function RegistrationForm() {
         autoHideDuration={6000}
         onClose={handleUserCreatedClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ 
-          zIndex: 999999,
-          top: '10px !important',
-          '& .MuiSnackbar-root': {
-            top: '10px !important'
+        ContentProps={{
+          sx: {
+            background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)',
+            color: '#155724',
+            borderRadius: 2,
+            boxShadow: '0 4px 24px rgba(67, 233, 123, 0.15)',
+            fontWeight: 500,
+            fontSize: '1.1rem',
+            display: 'flex',
+            alignItems: 'center',
+            px: 3,
+            py: 2,
           }
         }}
-      >
-        <Alert
-          severity="success"
-          variant="filled"
-          sx={{ 
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            minWidth: '450px',
-            maxWidth: '600px',
-            boxShadow: '0 10px 40px rgba(46, 125, 50, 0.5)',
-            border: '3px solid #2e7d32',
-            animation: 'slideInFromTop 0.5s ease-out',
-            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-            '& .MuiAlert-message': {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }
-          }}
-          icon={<span style={{ fontSize: '2rem' }}>✅</span>}
-        >
-          <strong>🎉 STEP 1/3: User profile created successfully! 🎉</strong>
-        </Alert>
-      </Snackbar>
+        message={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CheckCircleIcon style={{ color: '#21b573', fontSize: 28 }} />
+            Registration successful! Please check your email for the next steps.
+          </span>
+        }
+      />
 
       <Snackbar
         open={registrationSubmittedMessage}

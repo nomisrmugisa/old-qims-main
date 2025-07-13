@@ -88,7 +88,38 @@ const EditFacilityOwnershipDialog = ({
 
   // Initialize form data from event and fetch metadata
   useEffect(() => {
+    async function repopulateLocalStorage() {
+      // Example: Fetch user info and org unit as on page load
+      try {
+        // Fetch user credentials (assume already in memory or session)
+        const userCredentials = sessionStorage.getItem('userCredentials') || localStorage.getItem('userCredentials');
+        if (userCredentials) localStorage.setItem('userCredentials', userCredentials);
+
+        // Fetch user org unit
+        const credentials = userCredentials;
+        if (credentials) {
+          const meRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
+            headers: { Authorization: `Basic ${credentials}` },
+          });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            const orgUnitId = meData.organisationUnits?.[0]?.id;
+            if (orgUnitId) localStorage.setItem('userOrgUnitId', orgUnitId);
+          }
+        }
+
+        // Set trackedEntityInstanceId if available in session or props
+        const tei = sessionStorage.getItem('trackedEntityInstanceId') || sessionStorage.getItem('tempTrackedEntityInstanceId');
+        if (tei) localStorage.setItem('trackedEntityInstanceId', tei);
+      } catch (err) {
+        // Handle errors silently
+      }
+    }
+
     if (open) {
+      document.body.style.overflow = 'hidden';
+      localStorage.clear();
+      repopulateLocalStorage();
       fetchProgramStageMetadata();
       
       // Only check screening group in edit mode
@@ -121,7 +152,14 @@ const EditFacilityOwnershipDialog = ({
         hasEvent: !!event,
         trackedEntityInstanceId 
       });
+    } else {
+      // Unfreeze background
+      document.body.style.overflow = 'auto';
     }
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, [open, event, fetchProgramStageMetadata, checkIfInScreeningGroup, isEditMode, trackedEntityInstanceId]);
 
   // On dialog open, fetch file names for existing FILE_RESOURCE fields
@@ -225,12 +263,18 @@ const EditFacilityOwnershipDialog = ({
     try {
       console.log("Form submission started", { isEditMode, hasEvent: !!event });
       
-      const dataValues = Object.entries(formData)
-        .filter(([, value]) => value !== null && value !== '')
-        .map(([dataElement, value]) => ({
-          dataElement,
-          value: value.toString(),
-        }));
+      const dataValues = [
+        ...Object.entries(formData)
+          .filter(([, value]) => value !== null && value !== '')
+          .map(([dataElement, value]) => ({
+            dataElement,
+            value: value.toString(),
+          })),
+        {
+          dataElement: 'N3bVE3GRqdf',
+          value: 'true',
+        }
+      ];
       
       console.log(`Prepared ${dataValues.length} data values for submission`);
 
