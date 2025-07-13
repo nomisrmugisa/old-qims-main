@@ -144,76 +144,40 @@
 /* Style for the table */
 .table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     margin-top: 20px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    background-color: white;
 }
 
 .table th,
 .table td {
-    padding: 16px 20px;
+    padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #dee2e6;
 }
 
 .table th {
     background-color: #f8f9fa;
     font-weight: 600;
     color: #495057;
-    font-size: 0.875rem;
-    letter-spacing: 0.5px;
 }
 
 .table tbody tr {
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
-.table thead th {
-    background-color: #495057;
+/*.table thead th {
+    background-color: #dc3545;
     color: white;
     font-weight: bold;
     text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 1px;
-    padding: 18px 20px;
-}
+}*/
 
 .table tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-.table tbody tr:nth-child(odd) {
-    background-color: white;
+    background-color: #f2f2f2;
 }
 
 .table tbody tr:hover {
-    background-color: #e3f2fd;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.table thead th:first-child {
-    border-top-left-radius: 12px;
-}
-
-.table thead th:last-child {
-    border-top-right-radius: 12px;
-}
-
-.table tbody tr:last-child td:first-child {
-    border-bottom-left-radius: 12px;
-}
-
-.table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: 12px;
+    background-color: #e2e6ea;
 }
 
 .facility-ownership-details .table-responsive {
@@ -255,28 +219,4 @@
 
 @keyframes blink-orange {
     50% { opacity: 0; }
-} 
-
-/* Blinking effect for required fields */
-.blink-required .MuiOutlinedInput-notchedOutline {
-  border-color: #ff9800 !important;
-  animation: blink-border 1s steps(2, start) infinite;
-}
-@keyframes blink-border {
-  to {
-    border-color: #fff;
-  }
-}
-/* Grey background for disabled fields */
-.grey-disabled .MuiOutlinedInput-root {
-  background-color: #e0e0e0 !important; /* Darker gray for more contrast */
-} 
-
-.blink-message {
-  animation: blink-message 1s steps(2, start) infinite;
-}
-@keyframes blink-message {
-  to {
-    opacity: 0.2;
-  }
 } 

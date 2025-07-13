@@ -3,65 +3,13 @@ import React, { useEffect, useState } from 'react';
 import './Header.css';
 import logo from '../assets/logo.png';
 import {eventBus, EVENTS } from '../events';
+import { useNavigate } from 'react-router-dom';
 
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
-  const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState(null);
-  
-  // Function to handle document download
-  const handleDocumentDownload = async (e, documentId, fileName) => {
-    e.preventDefault();
-    setIsDownloading(true);
-    setDownloadError(null);
-    
-    try {
-      const credentials = localStorage.getItem('userCredentials');
-      if (!credentials) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
-      const downloadUrl = `${import.meta.env.VITE_DHIS2_URL}/api/documents/${documentId}/data`;
-      
-      // Fetch the document with authentication
-      const response = await fetch(downloadUrl, {
-        headers: {
-          Authorization: `Basic ${credentials}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-      }
-      
-      // Get the file as a blob
-      const blob = await response.blob();
-      
-      // Create a download link and trigger it
-      const url = window.URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.setAttribute('download', fileName);
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(downloadLink);
-      
-      // Show success message or notification here if needed
-      console.log('Download successful');
-    } catch (error) {
-      console.error('Download error:', error);
-      setDownloadError(error.message);
-      // You could display this error to the user with a toast notification
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-  
+    const navigate = useNavigate();
+
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
     return situationalAnalysisComplete;
@@ -69,6 +17,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
   const onApplyClick = () => {
     eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
+    navigate('/register')
   };
   
   // Monitor localStorage for changes to situationalAnalysisComplete
@@ -87,79 +36,6 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     return () => clearInterval(intervalId);
   }, []);
 
-  // Monitor localStorage for changes to facilityOwnershipComplete
-  useEffect(() => {
-    const checkFacilityOwnershipStatus = () => {
-      const status = localStorage.getItem('facilityOwnershipComplete') === 'true';
-      setFacilityOwnershipComplete(status);
-    };
-    
-    // Check immediately
-    checkFacilityOwnershipStatus();
-    
-    // Set up interval to check periodically
-    const intervalId = setInterval(checkFacilityOwnershipStatus, 1000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Function to manually refresh organization unit data
-  const refreshOrgUnitData = async () => {
-    try {
-      const credentials = localStorage.getItem('userCredentials');
-      if (!credentials) {
-        console.error('No credentials found in localStorage');
-        return;
-      }
-
-      console.log('📊 MANUALLY REFRESHING ORGANIZATION UNIT DATA');
-      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
-        headers: {
-          Authorization: `Basic ${credentials}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('- API Response:', data);
-        
-        if (data && data.organisationUnits && data.organisationUnits.length > 0) {
-          const orgUnitName = data.organisationUnits[0].displayName;
-          const orgUnitId = data.organisationUnits[0].id;
-          
-          console.log('✅ UPDATED ORGANIZATION UNIT DATA:');
-          console.log('- Name:', orgUnitName);
-          console.log('- ID:', orgUnitId);
-          
-          setOrgUnitName(orgUnitName);
-          // Also store in localStorage for future use
-          localStorage.setItem('userOrgUnitName', orgUnitName);
-          localStorage.setItem('userOrgUnitId', orgUnitId);
-        } else {
-          console.log('❌ No organization units found in response');
-        }
-      } else {
-        console.error('Failed to fetch organization unit data');
-      }
-    } catch (error) {
-      console.error('Error refreshing organization unit data:', error);
-    }
-  };
-
-  // Add event listener for manual refresh
-  useEffect(() => {
-    const handleRefreshOrgUnit = () => {
-      console.log('Received event to refresh organization unit');
-      refreshOrgUnitData();
-    };
-
-    window.addEventListener('refreshOrgUnitData', handleRefreshOrgUnit);
-    
-    return () => {
-      window.removeEventListener('refreshOrgUnitData', handleRefreshOrgUnit);
-    };
-  }, []);
-
   useEffect(() => {
     // Get organization unit name when component mounts or isLoggedIn changes
     if (isLoggedIn) {
@@ -171,10 +47,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
             return;
           }
 
-          console.log('📊 FETCHING ORGANIZATION UNIT DATA');
-          console.log('- API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`);
-          
-          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
+          const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName]`, {
             headers: {
               Authorization: `Basic ${credentials}`
             }
@@ -182,22 +55,10 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           if (response.ok) {
             const data = await response.json();
-            console.log('- API Response:', data);
-            
             if (data && data.organisationUnits && data.organisationUnits.length > 0) {
-              const orgUnitName = data.organisationUnits[0].displayName;
-              const orgUnitId = data.organisationUnits[0].id;
-              
-              console.log('✅ ORGANIZATION UNIT DATA:');
-              console.log('- Name:', orgUnitName);
-              console.log('- ID:', orgUnitId);
-              
-              setOrgUnitName(orgUnitName);
+              setOrgUnitName(data.organisationUnits[0].displayName);
               // Also store in localStorage for future use
-              localStorage.setItem('userOrgUnitName', orgUnitName);
-              localStorage.setItem('userOrgUnitId', orgUnitId);
-            } else {
-              console.log('❌ No organization units found in response');
+              localStorage.setItem('userOrgUnitName', data.organisationUnits[0].displayName);
             }
           } else {
             console.error('Failed to fetch organization unit data');
@@ -250,241 +111,112 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
       <div className="branding d-flex align-items-center">
         <div className="container position-relative d-flex align-items-center justify-content-between">
           <div className="logo d-flex flex-column align-items-center">
-            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '90px', height: '90px' }} />
+            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '180px', height: 'auto' }} />
           </div>
 
           <nav id="navmenu" className="navmenu">
             <ul>
-              {isLoggedIn ? (
-                <>
-                  <li>
-                    <a
-                      href="#overview"
-                      className={`${activeDashboardSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        if (facilityOwnershipComplete) {
-                          setActiveDashboardSection('overview');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      Overview
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#registration"
-                      className={activeDashboardSection === 'registration' ? 'active' : ''}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        setActiveDashboardSection('registration');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    >
-                      Complete Application
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#inspections"
-                      className={`${activeDashboardSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        if (facilityOwnershipComplete) {
-                          setActiveDashboardSection('inspections');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      View Inspections
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#services"
-                      className={`${activeDashboardSection === 'services' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        if (facilityOwnershipComplete) {
-                          setActiveDashboardSection('services');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      Services
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#reports"
-                      className={`${activeDashboardSection === 'reports' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        if (facilityOwnershipComplete) {
-                          setActiveDashboardSection('reports');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      Reports
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#tasks"
-                      className={`${activeDashboardSection === 'tasks' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                      onClick={e => { 
-                        e.preventDefault(); 
-                        if (facilityOwnershipComplete) {
-                          setActiveDashboardSection('tasks');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      Tasks
-                    </a>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li>
-                    <a 
-                      href="#home"
-                      className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
-                      onClick={(e) => {
-                        if (isLoggedIn && isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('home');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      Home
-                    </a>
-                  </li>
-                  <li>
-                    <a 
-                      href="#about"
-                      className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                      onClick={(e) => {
-                        if (!isLoggedIn && !isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('about');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      About Us
-                    </a>
-                  </li>
-                  <li>
-                    <a 
-                      href="#check-validity"
-                      className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                      onClick={(e) => {
-                        if (isLoggedIn && isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('check-validity');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      Check Validity
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                        href="#services"
-                        className={`${activeDashboardSection === 'services' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                        onClick={(e) => {
-                          if (!isLoggedIn && !isSituationalAnalysisGreen()) {
-                            setActiveDashboardSection('services');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          } else {
-                            e.preventDefault();
-                          }
-                        }}
-                    >
-                      Services
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                        href="#report-incident"
-                        className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                        onClick={(e) => {
-                          if (isLoggedIn && isSituationalAnalysisGreen()) {
-                            setActiveDashboardSection('report-incident');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          } else {
-                            e.preventDefault();
-                          }
-                        }}
-                    >
-                      Report Incident
-                    </a>
-                  </li>
-                  <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
-                    <a 
-                      href="#"
-                      onClick={(e) => {
-                        if (!isLoggedIn || !isSituationalAnalysisGreen()) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      <span>Documents Repository</span> 
-                      <i className="bi bi-chevron-down toggle-dropdown"></i>
-                    </a>
+              {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
+              <li>
+                <a 
+                  href="#home"
+                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
+                  onClick={(e) => {
+                    if (isLoggedIn && isSituationalAnalysisGreen()) {
+                      setActiveDashboardSection('home');
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  Home
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#about"
+                  className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                  onClick={(e) => {
+                    if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                      setActiveDashboardSection('about');
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#check-validity"
+                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                  onClick={(e) => {
+                    if (isLoggedIn && isSituationalAnalysisGreen()) {
+                      setActiveDashboardSection('check-validity');
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  Check Validity
+                </a>
+              </li>
+              <li>
+                <a
+                    href="#report-incident"
+                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                    onClick={(e) => {
+                      if (isLoggedIn && isSituationalAnalysisGreen()) {
+                        setActiveDashboardSection('report-incident');
+                      } else {
+                        e.preventDefault();
+                      }
+                    }}
+                >
+                  Report Incident
+                </a>
+              </li>
+              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
+                <a 
+                  href="#"
+                  onClick={(e) => {
+                    if (!isLoggedIn || !isSituationalAnalysisGreen()) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <span>Documents Repository</span> 
+                  <i className="bi bi-chevron-down toggle-dropdown"></i>
+                </a>
+                <ul>
+                  <li><a href="#">Dropdown 1</a></li>
+                  <li className="dropdown">
+                    <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
                     <ul>
-                      <li>
-                        <a 
-                          href="#" 
-                          onClick={(e) => handleDocumentDownload(
-                            e, 
-                            'nO1LbjtYHO7', 
-                            'GUIDELINES_FOR_PRIVATE_PRACTICE_LICENSING_IN_BOTSWANA.pdf'
-                          )}
-                          style={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            cursor: isDownloading ? 'wait' : 'pointer'
-                          }}
-                        >
-                          {isDownloading ? (
-                            <>
-                              <i className="bi bi-arrow-clockwise me-2" style={{ animation: 'spin 1s linear infinite' }}></i>
-                              <span>Downloading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-file-pdf me-2"></i>
-                              <span>GUIDELINES FOR PRIVATE PRACTICE LICENSING IN BOTSWANA</span>
-                            </>
-                          )}
-                        </a>
-                      </li>
-                      <li className="dropdown">
-                        <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
-                        <ul>
-                          <li><a href="#">Deep Dropdown 1</a></li>
-                          <li><a href="#">Deep Dropdown 2</a></li>
-                          <li><a href="#">Deep Dropdown 3</a></li>
-                          <li><a href="#">Deep Dropdown 4</a></li>
-                          <li><a href="#">Deep Dropdown 5</a></li>
-                        </ul>
-                      </li>
-                      <li><a href="#">Dropdown 2</a></li>
-                      <li><a href="#">Dropdown 3</a></li>
-                      <li><a href="#">Dropdown 4</a></li>
+                      <li><a href="#">Deep Dropdown 1</a></li>
+                      <li><a href="#">Deep Dropdown 2</a></li>
+                      <li><a href="#">Deep Dropdown 3</a></li>
+                      <li><a href="#">Deep Dropdown 4</a></li>
+                      <li><a href="#">Deep Dropdown 5</a></li>
                     </ul>
                   </li>
-                </>
-              )}
+                  <li><a href="#">Dropdown 2</a></li>
+                  <li><a href="#">Dropdown 3</a></li>
+                  <li><a href="#">Dropdown 4</a></li>
+                </ul>
+              </li>
+              {/*<li>*/}
+              {/*  {isLoggedIn ? (*/}
+              {/*    <button className="login-button" onClick={onLogout}>*/}
+              {/*      Logout*/}
+              {/*    </button>*/}
+              {/*  ) : (*/}
+              {/*    <button className="login-button" onClick={onLoginClick}>*/}
+              {/*      Login*/}
+              {/*    </button>*/}
+              {/*  )}*/}
+              {/*</li>*/}
             </ul>
             <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
           </nav>
@@ -499,51 +231,11 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </button>
             )}
             {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Register</a>
+                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Apply</a>
             )}
           </div>
         </div>
       </div>
-      
-      {/* Download error notification */}
-      {downloadError && (
-        <div 
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            padding: '10px 15px',
-            borderRadius: '4px',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-            zIndex: 1050,
-            display: 'flex',
-            alignItems: 'center',
-            maxWidth: '400px'
-          }}
-        >
-          <i className="bi bi-exclamation-triangle-fill me-2"></i>
-          <div>
-            <strong>Download Error:</strong> {downloadError}
-            <button 
-              onClick={() => setDownloadError(null)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#721c24',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                position: 'absolute',
-                top: '5px',
-                right: '10px'
-              }}
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

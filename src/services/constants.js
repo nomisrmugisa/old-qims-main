@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
     AUTH_TOKEN: 'authToken',
     REFRESH_TOKEN: 'refreshToken',
     USER_DATA: 'userData',
+    USER_KEY: 'userKey',
 };
 
 export const API_STATUS = {

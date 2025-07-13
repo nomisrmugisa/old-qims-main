@@ -21,6 +21,7 @@ import {
   Paper
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import {eventBus, useEvent, EVENTS } from '../events';
 import { API_URL } from '../config'; // Import API_URL
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -54,15 +55,18 @@ function RegistrationForm() {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentMessage, setEmailSentMessage] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
   // Add a new state to control feedback dialog
   const [feedbackDialog, setFeedbackDialog] = useState({ open: false, message: '', severity: 'success' });
-  // Add emailError state
-  const [emailError, setEmailError] = useState(false);
 
   const credentials = 'YWRtaW46NUFtNTM4MDgwNTNA';
 
   // Define a default password for new users
   const DEFAULT_PASSWORD = "selfRegistration@123$";
+
+  useEvent(EVENTS.REGISTRATION_FORM_SHOW, () => {
+      handleClickOpen();
+  });
 
   useEffect(() => {
     // Credentials are now hardcoded as requested, no need to retrieve from localStorage
@@ -71,7 +75,7 @@ function RegistrationForm() {
     //   setCredentials(storedCredentials);
     // }
 
-    const fetchOrganisationalUnits = async () => {
+    /*const fetchOrganisationalUnits = async () => {
 
       try {
         const response = await fetch(
@@ -85,21 +89,21 @@ function RegistrationForm() {
         if (!response.ok) {
           throw new Error("Failed to fetch organisational units");
         }
-        await response.json();
-        // setOrganisationalUnits(data.organisationUnits);
-        // setFilteredOrgUnits(data.organisationUnits);
+        const data = await response.json();
+        setOrganisationalUnits(data.organisationUnits);
+        setFilteredOrgUnits(data.organisationUnits);
       } catch (error) {
         console.error("Error fetching organisational units:", error);
       } finally {
-        // setIsLoadingOrgUnits(false);
+        setIsLoadingOrgUnits(false);
       }
     };
 
-    fetchOrganisationalUnits();
+    fetchOrganisationalUnits();*/
   }, [credentials]);
 
   const [formData, setFormData] = useState({
-    BHPCRegistrationNumber: "",
+    BHPCRegistrationNumber: "AUTO-GENERATED", // Auto-filled since hidden from user
     cellNumber: "",
     userName: "",
     dhisRegistrationCode: "",
@@ -140,16 +144,6 @@ function RegistrationForm() {
     setRegistrationSubmittedMessage(false);
   };
 
-
-
-  // Generate random username function
-  const generateRandomUsername = () => {
-    const prefix = 'user';
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 8);
-    return `${prefix}_${timestamp}_${random}`;
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -165,6 +159,7 @@ function RegistrationForm() {
         userName: randomUsername // Set username to random generated value
       }));
       // Clear any username errors since username is automatically generated
+      setUsernameError('');
     }
   };
 
@@ -179,21 +174,11 @@ function RegistrationForm() {
 
   const handleSubmit = async () => {
     setLoading(true);
-
+      eventBus.emit(EVENTS.LOADING_SHOW, { source: "registration_form"});
     try {
-      // Generate random username if not already set
-      let finalUsername = formData.userName;
-      if (!finalUsername || finalUsername === formData.email) {
-        finalUsername = generateRandomUsername();
-        setFormData(prev => ({
-          ...prev,
-          userName: finalUsername
-        }));
-      }
-
       // 1. Create User Profile (switched to be first)
       const userPayload = {
-        username: finalUsername,
+        username: formData.email,
         surname: "Place-Holder",
         firstName: "Place-Holder",
         password: "selfRegistration@123$",
@@ -244,7 +229,7 @@ function RegistrationForm() {
 
           // For any other errors, throw the original error
           throw new Error(`Failed to create user profile: ${errorText}`);
-        } catch {
+        } catch (parseError) {
           // If JSON parsing fails, throw the original error text
           throw new Error(`Failed to create user profile: ${errorText}`);
         }
@@ -269,7 +254,7 @@ function RegistrationForm() {
             dataValues: [
               { dataElement: "SReqZgQk0RY", value: formData.cellNumber },
               { dataElement: "SVzSsDiZMN5", value: formData.BHPCRegistrationNumber },
-              { dataElement: "g3J1CH26hSA", value: finalUsername },
+              { dataElement: "g3J1CH26hSA", value: formData.userName },
               { dataElement: "EAi89g7IBjp", value: formData.dhisRegistrationCode },
               { dataElement: "NVlLoMZbXIW", value: formData.email }
             ]
@@ -300,17 +285,16 @@ function RegistrationForm() {
 
       // 3. Send Welcome Email (remains third)
       try {
-        const emailResponse = await fetch('https://qimsdev.5am.co.bw/email2/api/send-email', {
+        const emailResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/send-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-                  body: JSON.stringify({
-          email: formData.email,
-          username: finalUsername,
-          password: DEFAULT_PASSWORD,
-          generatedUsername: finalUsername // Include the generated username in email
-        })
+          body: JSON.stringify({
+            email: formData.email,
+            username: formData.userName,
+            password: DEFAULT_PASSWORD
+          })
         });
 
         if (!emailResponse.ok) {
@@ -327,12 +311,16 @@ function RegistrationForm() {
       }
 
       // Show final success message and close dialog after delay
-      setFeedbackDialog({ open: true, message: 'APPLICATION COMPLETED SUCCESSFULLY!\nCheck your email for login credentials!', severity: 'success' });
-      // Remove setSuccessOpen(true) and setTimeout for handleClose
+      setSuccessOpen(true);
+      setTimeout(() => {
+        handleClose();
+      }, 4000);
     } catch (err) {
       console.error("Submission error:", err);
       // For errors not handled specifically above
-      setFeedbackDialog({ open: true, message: `There was an error submitting your request: ${err.message}`, severity: 'error' });
+      if (!errorDialogOpen) {
+        alert(`There was an error submitting your request: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -340,9 +328,12 @@ function RegistrationForm() {
 
   const isFormValid = () => {
     return (
+      formData.cellNumber &&
       formData.email &&
+      formData.BHPCRegistrationNumber &&
+      formData.cellNumber.trim() !== '' &&
       formData.email.trim() !== '' &&
-      !emailError
+      formData.BHPCRegistrationNumber.trim() !== ''
     );
   };
 
@@ -374,63 +365,137 @@ function RegistrationForm() {
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ px: 4, py: 5, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f6f8fa' }}>
-          <Paper elevation={3} sx={{ p: 4, borderRadius: 3, minWidth: 340, maxWidth: 400, width: '100%', boxShadow: '0 4px 24px rgba(25, 119, 204, 0.08)' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <TextField
-                fullWidth
-                label="Email Address"
-                name="email"
-                value={formData.email}
-                onChange={e => {
-                  handleChange(e);
-                  setEmailError(!/^\S+@\S+\.\S+$/.test(e.target.value));
-                }}
-                variant="outlined"
-                margin="normal"
-                required
-                error={emailError}
-                helperText={emailError ? 'Please enter a valid email address.' : ''}
-                InputLabelProps={{
-                  sx: {
-                    "& .MuiFormLabel-asterisk": {
-                      color: "red",
-                    },
+        <DialogContent dividers sx={{ px: 4 }}>
+          {/* User Profile Section */}
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
+            User Profile
+          </Typography>
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              label="Preferred User Name"
+              name="userName"
+              value={formData.userName}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              required
+              error={!!usernameError}
+              helperText={usernameError || "Username must be 4-255 characters, can include letters, numbers, ., _, -, @, and must not contain spaces."}
+              InputLabelProps={{
+                sx: {
+                  "& .MuiFormLabel-asterisk": {
+                    color: "red",
                   },
-                }}
-                disabled={loading}
-                sx={{ backgroundColor: '#fff', borderRadius: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-              />
-              <Button
-                onClick={handleSubmit}
-                variant="contained"
-                sx={{
-                  background: 'linear-gradient(90deg, #1977cc 0%, #21a1e1 100%)',
-                  color: '#fff',
-                  borderRadius: 2,
-                  px: 4,
-                  py: 1.5,
-                  fontWeight: 600,
-                  fontSize: '1.1rem',
-                  boxShadow: '0 2px 8px rgba(25,119,204,0.10)',
-                  textTransform: 'none',
-                  letterSpacing: 0.5,
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #155fa0 0%, #1977cc 100%)',
+                },
+              }}
+              disabled={loading}
+              sx={{ display: 'none' }}
+            />
+
+            <TextField
+              fullWidth
+              label="Phone Number"
+              name="cellNumber"
+              value={formData.cellNumber}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              required
+              InputLabelProps={{
+                sx: {
+                  "& .MuiFormLabel-asterisk": {
+                    color: "red",
                   },
-                }}
-                disabled={loading || !isFormValid()}
-                fullWidth
-              >
-                Register
-              </Button>
-            </Box>
-          </Paper>
+                },
+              }}
+              disabled={loading}
+            />
+
+            <TextField
+              fullWidth
+              label="Email Address"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              required
+              InputLabelProps={{
+                sx: {
+                  "& .MuiFormLabel-asterisk": {
+                    color: "red",
+                  },
+                },
+              }}
+              disabled={loading}
+            />
+
+            {/* B.H.P.C License Number - Hidden from user but still functional */}
+            <TextField
+              fullWidth
+              label="B.H.P.C License Number"
+              name="BHPCRegistrationNumber"
+              value={formData.BHPCRegistrationNumber}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              required
+              InputLabelProps={{
+                sx: {
+                  "& .MuiFormLabel-asterisk": {
+                    color: "red",
+                  },
+                },
+              }}
+              helperText="Enter your Botswana Health Professions Council (BHPC) registration/license number."
+              disabled={loading}
+            />
+
+            {/* DHIS2 Registration Code - Hidden from user but still generated */}
+            <TextField
+              fullWidth
+              label="DHIS2-Registration CODE"
+              name="dhisRegistrationCode"
+              value={formData.dhisRegistrationCode}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              required
+              sx={{ display: 'none' }}
+              InputLabelProps={{
+                sx: {
+                  "& .MuiFormLabel-asterisk": {
+                    color: "red",
+                  },
+                },
+              }}
+              disabled={loading}
+            />
+
+            {/* File upload section removed */}
+          </Box>
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
           <Button onClick={handleClose} color="inherit">
             Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            sx={{
+              backgroundColor: "#3f51b5",
+              color: "#fff",
+              borderRadius: 2,
+              px: 4,
+              "&:hover": {
+                backgroundColor: "#303f9f",
+              },
+            }}
+            disabled={loading || !isFormValid()}
+          >
+            Apply
           </Button>
         </DialogActions>
       </Dialog>
@@ -601,21 +666,6 @@ function RegistrationForm() {
       <Backdrop open={loading} sx={{ zIndex: 9999, color: "#fff" }}>
         <CircularProgress color="inherit" />
       </Backdrop>
-
-      {/* Feedback dialog */}
-      <Dialog open={feedbackDialog.open} onClose={() => setFeedbackDialog({ ...feedbackDialog, open: false })} maxWidth="xs" fullWidth>
-        <DialogTitle>{feedbackDialog.severity === 'success' ? 'Success' : 'Error'}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-line', textAlign: 'center', fontSize: '1.2rem', fontWeight: 500 }}>
-            {feedbackDialog.message}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setFeedbackDialog({ ...feedbackDialog, open: false }); handleClose(); }} color="primary" autoFocus>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }
