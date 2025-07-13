@@ -9,7 +9,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
     const navigate = useNavigate();
-
+  
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
     return situationalAnalysisComplete;
@@ -111,101 +111,101 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
       <div className="branding d-flex align-items-center">
         <div className="container position-relative d-flex align-items-center justify-content-between">
           <div className="logo d-flex flex-column align-items-center">
-            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '180px', height: 'auto' }} />
+            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
           </div>
 
           <nav id="navmenu" className="navmenu">
             <ul>
               {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
-              <li>
-                <a 
-                  href="#home"
-                  className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
-                  onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('home');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  Home
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#about"
-                  className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                  onClick={(e) => {
-                    if (!isLoggedIn && !isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('about');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#check-validity"
-                  className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                  onClick={(e) => {
-                    if (isLoggedIn && isSituationalAnalysisGreen()) {
-                      setActiveDashboardSection('check-validity');
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  Check Validity
-                </a>
-              </li>
-              <li>
-                <a
-                    href="#report-incident"
-                    className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                    onClick={(e) => {
-                      if (isLoggedIn && isSituationalAnalysisGreen()) {
-                        setActiveDashboardSection('report-incident');
-                      } else {
-                        e.preventDefault();
-                      }
-                    }}
-                >
-                  Report Incident
-                </a>
-              </li>
-              <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
-                <a 
-                  href="#"
-                  onClick={(e) => {
-                    if (!isLoggedIn || !isSituationalAnalysisGreen()) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <span>Documents Repository</span> 
-                  <i className="bi bi-chevron-down toggle-dropdown"></i>
-                </a>
-                <ul>
-                  <li><a href="#">Dropdown 1</a></li>
-                  <li className="dropdown">
-                    <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
+                  <li>
+                    <a 
+                      href="#home"
+                      className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
+                      onClick={(e) => {
+                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('home');
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      Home
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#about"
+                      className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                      onClick={(e) => {
+                        if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('about');
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      About Us
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#check-validity"
+                      className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                      onClick={(e) => {
+                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                          setActiveDashboardSection('check-validity');
+                        } else {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      Check Validity
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                        href="#report-incident"
+                        className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
+                        onClick={(e) => {
+                          if (isLoggedIn && isSituationalAnalysisGreen()) {
+                            setActiveDashboardSection('report-incident');
+                          } else {
+                            e.preventDefault();
+                          }
+                        }}
+                    >
+                      Report Incident
+                    </a>
+                  </li>
+                  <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
+                    <a 
+                      href="#"
+                      onClick={(e) => {
+                        if (!isLoggedIn || !isSituationalAnalysisGreen()) {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      <span>Documents Repository</span> 
+                      <i className="bi bi-chevron-down toggle-dropdown"></i>
+                    </a>
                     <ul>
-                      <li><a href="#">Deep Dropdown 1</a></li>
-                      <li><a href="#">Deep Dropdown 2</a></li>
-                      <li><a href="#">Deep Dropdown 3</a></li>
-                      <li><a href="#">Deep Dropdown 4</a></li>
-                      <li><a href="#">Deep Dropdown 5</a></li>
+                  <li><a href="#">Dropdown 1</a></li>
+                      <li className="dropdown">
+                        <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                          <li><a href="#">Deep Dropdown 1</a></li>
+                          <li><a href="#">Deep Dropdown 2</a></li>
+                          <li><a href="#">Deep Dropdown 3</a></li>
+                          <li><a href="#">Deep Dropdown 4</a></li>
+                          <li><a href="#">Deep Dropdown 5</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="#">Dropdown 2</a></li>
+                      <li><a href="#">Dropdown 3</a></li>
+                      <li><a href="#">Dropdown 4</a></li>
                     </ul>
                   </li>
-                  <li><a href="#">Dropdown 2</a></li>
-                  <li><a href="#">Dropdown 3</a></li>
-                  <li><a href="#">Dropdown 4</a></li>
-                </ul>
-              </li>
               {/*<li>*/}
               {/*  {isLoggedIn ? (*/}
               {/*    <button className="login-button" onClick={onLogout}>*/}

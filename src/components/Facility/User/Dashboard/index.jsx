@@ -30,6 +30,23 @@ import PasswordChanger from '../../../User/PasswordChanger';
 import StorageService from '../../../../services/storage.service';
 import UserService from '../../../../services/user.service';
 
+/** Add this to the top or in a relevant CSS file:
+.overview-card {
+  transition: box-shadow 0.2s, background 0.2s, transform 0.2s;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0.5rem;
+}
+.overview-card:hover {
+  background: #f0f6ff;
+  box-shadow: 0 4px 16px rgba(25,119,204,0.12);
+  transform: translateY(-2px) scale(0.97);
+}
+*/
+
 const FacilityUserDashboard = () => {
     const [facilities, setFacilities] = useState([]);
     const [activeTab, setActiveTab] = useState('overview');
@@ -120,7 +137,7 @@ const FacilityUserDashboard = () => {
                         <Card.Body>
                             <Row className="g-4">
                                 <Col md={6}>
-                                    <Card className="h-100 shadow-sm">
+                                    <Card className="overview-card">
                                         <Card.Body className="text-center py-5">
                                             <Building size={48} className="text-primary mb-3" />
                                             <Card.Title>Register New Facility</Card.Title>
@@ -133,7 +150,7 @@ const FacilityUserDashboard = () => {
                                 </Col>
 
                                 <Col md={6}>
-                                    <Card className="h-100 shadow-sm">
+                                    <Card className="overview-card">
                                         <Card.Body className="text-center py-5">
                                             <ClipboardCheck size={48} className="text-success mb-3" />
                                             <Card.Title>Enrol with a Facility</Card.Title>
@@ -151,7 +168,7 @@ const FacilityUserDashboard = () => {
                                 </Col>
 
                                 <Col md={6}>
-                                    <Card className="h-100 shadow-sm">
+                                    <Card className="overview-card">
                                         <Card.Body className="text-center py-5">
                                             <ClipboardCheck size={48} className="text-success mb-3" />
                                             <Card.Title>Renew Facility License</Card.Title>

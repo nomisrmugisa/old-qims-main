@@ -1551,11 +1551,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="complete-application-details">
-              <h2>Complete Application Details</h2>
+              {/* <h2>Admin User & Facility Details</h2> */}
               <TrackerEventDetails 
                 onFormStatusChange={handleFormStatusChange}
                 onUpdateSuccess={handleApplicationUpdateSuccess}
-                // onFacilityNameChange={(name) => setFacilityName(name)}
               />
             </div>
           </div>
@@ -1690,7 +1689,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     Before you can add facility ownership information, you need to complete the facility registration process.
                   </p>
                   <ol style={{ color: '#721c24', paddingLeft: '20px' }}>
-                    <li>Click on the <strong>"Complete Application"</strong> button in the left sidebar</li>
+                    <li>Click on the <strong>"Admin User & Facility Details"</strong> button in the left sidebar</li>
                     <li>Fill out all required fields in the application form</li>
                     <li>Submit the application form</li>
                     <li>Return to this tab after completing those steps</li>
@@ -1707,7 +1706,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       marginTop: '10px'
                     }}
                   >
-                    Go to Complete Application
+                    Go to Admin User & Facility Details
                   </button>
                 </div>
               ) : showReviewDialog && events.length === 0 ? (
@@ -2379,7 +2378,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         
         <StepContainer>
           {[
-            { number: 1, title: 'Complete Application', key: 'completeApplication' },
+            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
             { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' }
           ].map((step, index) => {
             // Determine if the tab should be disabled

@@ -8,7 +8,7 @@ import Loading from './components/Loading';
 import BackToTop from './components/BackToTop';
 import './App.css';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import {eventBus, useEvent, EVENTS } from './events';
+import {eventBus, EVENTS} from './events';
 import './App.css'
 import NavigationWrapper from './components/NavigationWrapper';
 
@@ -34,7 +34,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Start with loading state
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [activeDashboardSection, setActiveDashboardSection] = useState('registration');
+  const [activeDashboardSection, setActiveDashboardSection] = useState('overview');
   const navigate = useNavigate();
 
     /*----------------------------
@@ -50,6 +50,19 @@ function App() {
             return newVal;
         });
     }, []);
+
+    // Safety timeout to prevent infinite loading
+    useEffect(() => {
+        if (isLoading) {
+            const timeout = setTimeout(() => {
+                console.warn('Loading timeout - forcing loading state to false');
+                setIsLoading(false);
+                setLoadingProcesses(0);
+            }, 30000); // 30 second timeout
+
+            return () => clearTimeout(timeout);
+        }
+    }, [isLoading]);
 
     const handleShow = useCallback((source) => {
         window.console.log("handleShow");

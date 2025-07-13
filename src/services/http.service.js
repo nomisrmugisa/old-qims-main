@@ -15,6 +15,11 @@ const httpService = axios.create({
     },
 });
 
+// Validate environment variables
+if (!import.meta.env.VITE_DHIS2_URL) {
+    console.error('VITE_DHIS2_URL environment variable is not set. API calls may fail.');
+}
+
 // Set initial auth token if exists
 const token = StorageService.get(STORAGE_KEYS.AUTH_TOKEN);
 if (token) {

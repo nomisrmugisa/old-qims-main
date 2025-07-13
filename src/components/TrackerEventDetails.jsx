@@ -1080,8 +1080,14 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
-          <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
-            Complete Application: Preliminary Details
+          <Typography
+            variant="h6"
+            gutterBottom
+            color="primary"
+            align="left"
+            sx={{ fontWeight: 'bold', mb: 2, textAlign: 'left' }}
+          >
+            Licensed Users Details
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
@@ -1095,9 +1101,11 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 className="grey-disabled"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+          </Grid>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
-                label="Employee User Name"
+                label="Preferred User Name"
                 value={getDataValue('g3J1CH26hSA')}
                 fullWidth
                 size="small"
@@ -1106,7 +1114,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 className="grey-disabled"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="B.H.P.C Registration Number"
                 value={getDataValue('SVzSsDiZMN5')}
@@ -1117,7 +1125,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 className="grey-disabled"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="Phone Number"
                 value={getDataValue('SReqZgQk0RY')}
@@ -1128,18 +1136,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 className="grey-disabled"
               />
             </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <Card variant="outlined">
-        <CardContent sx={{ py: 2 }}>
-          <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
-            Other Details
-          </Typography>
-
-          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="Private Practice Number"
                 value={formValues['aMFg2iq9VIg'] || ''}
@@ -1159,46 +1156,66 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Name of the License Holder"
-                value={formValues['HMk4LZ9ESOq'] || ''}
-                onChange={(e) => handleChange(e, 'HMk4LZ9ESOq')}
-                fullWidth
-                size="small"
-                margin="dense"
-                disabled={!isEditing || updating || hasExistingData}
-                required
-                error={!formValues['HMk4LZ9ESOq'] && !loading}
-                helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
-                className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
-                  }
-                }}
-              />
+            {/* After 'Private Practice Number', start a new <Grid container> row for 'Name of the License Holder' and 'Surname of License Holder' */}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={6}>
+                <TextField
+                  label="Name of the License Holder"
+                  value={formValues['HMk4LZ9ESOq'] || ''}
+                  onChange={(e) => handleChange(e, 'HMk4LZ9ESOq')}
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  disabled={!isEditing || updating || hasExistingData}
+                  required
+                  error={!formValues['HMk4LZ9ESOq'] && !loading}
+                  helperText={!formValues['HMk4LZ9ESOq'] && !loading ? "This field is required" : ""}
+                  className={!formValues['HMk4LZ9ESOq'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={6}>
+                <TextField
+                  label="Surname of License Holder"
+                  value={formValues['ykwhsQQPVH0'] || ''}
+                  onChange={(e) => handleChange(e, 'ykwhsQQPVH0')}
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  disabled={!isEditing || updating || hasExistingData}
+                  required
+                  error={!formValues['ykwhsQQPVH0'] && !loading}
+                  helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
+                  className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                    }
+                  }}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Surname of License Holder"
-                value={formValues['ykwhsQQPVH0'] || ''}
-                onChange={(e) => handleChange(e, 'ykwhsQQPVH0')}
-                fullWidth
-                size="small"
-                margin="dense"
-                disabled={!isEditing || updating || hasExistingData}
-                required
-                error={!formValues['ykwhsQQPVH0'] && !loading}
-                helperText={!formValues['ykwhsQQPVH0'] && !loading ? "This field is required" : ""}
-                className={!formValues['ykwhsQQPVH0'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card variant="outlined">
+        <CardContent sx={{ py: 2 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            color="primary"
+            align="left"
+            sx={{ fontWeight: 'bold', mb: 2, textAlign: 'left' }}
+          >
+            Select Location Facility is in Botswana
+          </Typography>
+
+          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 label="Name of Facility to be Registered"
@@ -1228,13 +1245,17 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
               width: '100%'
             }}
           >
+            {/* Replace the Typography for 'Location in Botswana (Ward) *' with a label prop on the TextField (or mimic the style of other field labels) */}
+            {/* In the renderInput of the Autocomplete, set label="Location in Botswana (Ward) *" on the TextField, and remove the Typography above. */}
             <Typography
               variant="subtitle2"
+              align="left"
               sx={{
                 mb: { xs: 0.25, sm: 0.5 },
                 fontWeight: 'bold',
                 color: 'text.primary',
-                fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+                fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
+                textAlign: 'left'
               }}
             >
               Location in Botswana (Ward) <span style={{ color: 'red' }}>*</span>

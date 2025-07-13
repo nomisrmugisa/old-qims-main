@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import RegistrationDetails from './RegistrationDetails';
 import {Button, Card, Col, Row} from "react-bootstrap";
-import {Building, ClipboardCheck, PlusCircle} from "react-bootstrap-icons";
+import {Building, ClipboardCheck, PlusCircle, House, FileEarmarkText, ListCheck, Gear, Person} from "react-bootstrap-icons";
+import UserTable from './User/Management/Table';
+import useUserManagement from './hooks/useUserManagement';
+import UserRoleManagement from './User/Management/UserRoleManagement';
+import UserGroupManagement from './User/Management/UserGroupManagement';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
@@ -11,6 +15,20 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
+    const [activeUserTab, setActiveUserTab] = useState('users');
+    
+    // User management state
+    const {
+        users,
+        loading: usersLoading,
+        error: usersError,
+        pagination,
+        handlePageChange,
+        handleSearch,
+        handleCreateUser,
+        handleUpdateUser,
+        handleDeleteUser
+    } = useUserManagement();
 
     const fetchTrackedEntityInstance = async () => {
         const credentials = localStorage.getItem('userCredentials');
@@ -296,7 +314,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             case 'overview':
                 return (
                     <div className="dashboard-section">
-                        <h2>Welcome to Your Dashboard</h2>
+                        <h2>Facility Dashboard</h2>
                         <Card className="mb-4">
                             <Card.Body>
                                 <Row className="g-4">
@@ -308,7 +326,9 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                 <Card.Text className="text-muted mb-4">
                                                     Start the registration process for a new healthcare facility
                                                 </Card.Text>
-                                                <Button variant="primary">Begin Registration</Button>
+                                                <Button variant="primary" onClick={() => setActiveSection('registration')}>
+                                                    Begin Registration
+                                                </Button>
                                             </Card.Body>
                                         </Card>
                                     </Col>
@@ -392,6 +412,67 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         </div>
                     </div>
                 );
+            case 'users':
+                return (
+                    <div className="dashboard-section">
+                        <div className="mb-4 d-flex gap-2 border-bottom pb-2">
+                            <Button
+                                variant={activeUserTab === 'users' ? 'primary' : 'light'}
+                                className={activeUserTab === 'users' ? '' : 'text-primary'}
+                                onClick={() => setActiveUserTab('users')}
+                            >
+                                Users
+                            </Button>
+                            <Button
+                                variant={activeUserTab === 'roles' ? 'primary' : 'light'}
+                                className={activeUserTab === 'roles' ? '' : 'text-primary'}
+                                onClick={() => setActiveUserTab('roles')}
+                            >
+                                User role
+                            </Button>
+                            <Button
+                                variant={activeUserTab === 'groups' ? 'primary' : 'light'}
+                                className={activeUserTab === 'groups' ? '' : 'text-primary'}
+                                onClick={() => setActiveUserTab('groups')}
+                            >
+                                User group
+                            </Button>
+                        </div>
+                        {activeUserTab === 'users' && (
+                            <>
+                                <h2>Facility User Management</h2>
+                                {usersError && (
+                                    <div className="alert alert-danger mb-4">
+                                        {usersError}
+                                    </div>
+                                )}
+                                <UserTable
+                                    users={users}
+                                    loading={usersLoading}
+                                    totalPages={pagination.totalPages}
+                                    currentPage={pagination.currentPage}
+                                    onPageChange={handlePageChange}
+                                    onSearch={handleSearch}
+                                    onDelete={handleDeleteUser}
+                                    onUpdate={handleUpdateUser}
+                                    onCreate={handleCreateUser}
+                                />
+                            </>
+                        )}
+                        {activeUserTab === 'roles' && (
+                            <>
+                                <h2>User Role Management</h2>
+                                <UserRoleManagement />
+                            </>
+                        )}
+                        {activeUserTab === 'groups' && (
+                            <>
+                                <h2>User Group Management</h2>
+                                <UserGroupManagement />
+                            </>
+                        )}
+                    </div>
+                );
             case 'tasks':
                 return (
                     <div className="dashboard-section">
@@ -436,7 +517,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                     <td>{event.status || 'N/A'}</td>
                                                     <td>{getValue('inspector') || 'N/A'}</td>
                                                     <td>{getValue('findings') || 'N/A'}</td>
-                                                </tr>
+                                        </tr>
                                             );
                                         })}
                                     </tbody>
@@ -460,37 +541,45 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         Navigation
                     </div>
                     <button
-                        onClick={() => /*facilityOwnershipComplete && */setActiveSection('overview')}
-                        className={`${activeSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                        // disabled={!facilityOwnershipComplete}
+                        onClick={() => setActiveSection('overview')}
+                        className={activeSection === 'overview' ? 'active' : ''}
                     >
+                        <House size={18} />
                         Overview
                     </button>
                     <button
-                        onClick={() => facilityOwnershipComplete && setActiveSection('registration')}
+                        onClick={() => setActiveSection('registration')}
                         className={activeSection === 'registration' ? 'active' : ''}
                     >
+                        <Building size={18} />
                         Registration & Permission to Establish
                     </button>
                     <button
-                        onClick={() => facilityOwnershipComplete && setActiveSection('inspections')}
-                        className={`${activeSection === 'inspections' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                        disabled={!facilityOwnershipComplete}
+                        onClick={() => setActiveSection('inspections')}
+                        className={activeSection === 'inspections' ? 'active' : ''}
                     >
+                        <ClipboardCheck size={18} />
                         View Inspection Results
                     </button>
                     <button
-                        onClick={() => facilityOwnershipComplete && setActiveSection('reports')}
-                        className={`${activeSection === 'reports' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                        disabled={!facilityOwnershipComplete}
+                        onClick={() => setActiveSection('reports')}
+                        className={activeSection === 'reports' ? 'active' : ''}
                     >
+                        <FileEarmarkText size={18} />
                         Reports
                     </button>
                     <button
-                        onClick={() => facilityOwnershipComplete && setActiveSection('tasks')}
-                        className={`${activeSection === 'tasks' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                        disabled={!facilityOwnershipComplete}
+                        onClick={() => setActiveSection('users')}
+                        className={activeSection === 'users' ? 'active' : ''}
                     >
+                        <Person size={18} />
+                        Users
+                    </button>
+                    <button
+                        onClick={() => setActiveSection('tasks')}
+                        className={activeSection === 'tasks' ? 'active' : ''}
+                    >
+                        <ListCheck size={18} />
                         Tasks
                     </button>
                 </div>

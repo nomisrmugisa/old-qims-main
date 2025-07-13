@@ -5,7 +5,7 @@ import httpService from './http.service';
 import StorageService from './storage.service';
 import { setAuthToken } from './http.service';
 import { STORAGE_KEYS } from './constants';
-import {eventBus, EVENTS } from '../events';
+import {eventBus, EVENTS} from '../events';
 
 const AuthService = {
     login: async (credentials) => {
@@ -24,10 +24,7 @@ const AuthService = {
 
             return user;*/
             return response;
-        } catch (error) {
-            throw error;
-        }
-        finally {
+        } finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "login"});
         }
     },
@@ -46,10 +43,7 @@ const AuthService = {
             const response = await httpService.post('/auth/forgot-password', credentials);
             window.console.log(response);
             return response;
-        } catch (error) {
-            throw error;
-        }
-        finally {
+        } finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "login"});
         }
     },
@@ -59,10 +53,7 @@ const AuthService = {
             const response = await httpService.post('/auth/reset-password', credentials);
             window.console.log(response);
             return response;
-        } catch (error) {
-            throw error;
-        }
-        finally {
+        } finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "resetPassword"});
         }
     },
@@ -72,10 +63,7 @@ const AuthService = {
             const response = await httpService.post('/auth/registration', credentials);
             window.console.log(response);
             return response;
-        } catch (error) {
-            throw error;
-        }
-        finally {
+        } finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "registerEmail"});
         }
     },
@@ -85,25 +73,29 @@ const AuthService = {
             const response = await httpService.post('/auth/forgot-password', credentials);
             window.console.log(response);
             return response;
-        } catch (error) {
-            throw error;
-        }
-        finally {
+        } finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "registerComplete"});
         }
     },
 
-    me: async(credentials, headers={}) => {
+    me: async(credentials) => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "me"});
         const authorization_creds = btoa(`${credentials.username}:${credentials.password}`);
 
         window.console.log(credentials);
         try {
-            const response = await httpService.get('/me', {
+            // Add timeout to prevent infinite loading
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timeout')), 10000)
+            );
+
+            const responsePromise = httpService.get('/me', {
                 headers: {
                     'Authorization': `Basic ${authorization_creds}`
                 }
             });
+
+            const response = await Promise.race([responsePromise, timeoutPromise]);
 
             setAuthToken(authorization_creds, 'Basic');
             window.console.log(response);
@@ -119,6 +111,9 @@ const AuthService = {
 
             return response;
         } catch (error) {
+            window.console.error('Auth error:', error);
+            // Ensure loading is hidden even on error
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "me"});
             throw error;
         }
         finally {

@@ -1,7 +1,7 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField, InputAdornment, IconButton } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
@@ -47,11 +47,17 @@ const Login = () => {
 
         setIsSubmitting(true);
         try {
+            // Add timeout to prevent infinite loading
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 15000)
+            );
 
-            const response = await AuthService.me({
+            const loginPromise = AuthService.me({
                 username: formData.email,
                 password: formData.password
             });
+
+            const response = await Promise.race([loginPromise, timeoutPromise]);
 
             window.console.log("RESPONSE---");
             window.console.log(response);
@@ -93,9 +99,11 @@ const Login = () => {
                 throw new Error(data.message || 'Login failed');
             }*/
         } catch (error) {
+            window.console.error('Login error:', error);
+            const errorMessage = error.message || 'Login failed. Please check your credentials and try again.';
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
-                message: error.message,
+                message: errorMessage,
                 type: 'error'
             });
         } finally {

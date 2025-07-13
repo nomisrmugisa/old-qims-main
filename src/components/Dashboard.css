@@ -49,56 +49,70 @@
 }
 
 .dashboard-sidebar {
-    width: 250px;
-    background-color: #e8e8e8;
-    padding: 20px;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+    width: 280px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 24px 0;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
     height: 100%;
-    border-right: 1px solid #d0d0d0;
+    border-right: 1px solid #e9ecef;
     position: relative;
     z-index: 10;
+    overflow-y: auto;
 }
 
 .dashboard-sidebar button {
-    width: 100%;
-    padding: 8px 10px;
-    margin: 10px 0;
-    border: 1px solid #c0c0c0;
-    background-color: #dddddd;
+    width: calc(100% - 48px);
+    margin: 0 24px 8px 24px;
+    padding: 16px 20px;
+    border: none;
+    background-color: transparent;
     text-align: left;
-    font-size: 13px; /* reduced from default for compactness */
-    color: #222;
+    font-size: 14px;
+    color: #6c757d;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 12px;
+    transition: all 0.2s ease;
     height: auto;
     white-space: normal;
-    line-height: 1.2;
+    line-height: 1.4;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .dashboard-sidebar button:hover {
-    background-color: #cccccc;
-    border-color: #aaaaaa;
-    transform: translateY(-1px);
+    background-color: #f8f9fa;
+    color: #495057;
+    transform: translateX(4px);
 }
 
 .dashboard-sidebar button.active {
-    background-color: #1977cc;
+    background: linear-gradient(135deg, #1977cc 0%, #1565b0 100%);
     color: white;
-    border-color: #1565b0;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 119, 204, 0.3);
+    transform: translateX(4px);
+    position: relative;
+}
+
+.dashboard-sidebar button.active::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: linear-gradient(135deg, #1977cc 0%, #1565b0 100%);
+    border-radius: 0 2px 2px 0;
 }
 
 .dashboard-sidebar button.disabled-button,
 .dashboard-sidebar button.disabled-button:hover {
-    background-color: #e0e0e0;
-    color: #999999;
-    border-color: #c0c0c0;
+    background-color: #f8f9fa;
+    color: #adb5bd;
     cursor: not-allowed;
-    opacity: 0.7;
+    opacity: 0.6;
     transform: none;
     pointer-events: none;
 }
@@ -129,20 +143,41 @@
 /* Add a divider between sidebar sections if needed */
 .dashboard-sidebar .section-divider {
     height: 1px;
-    background-color: #c0c0c0;
-    margin: 15px 0;
-    width: 100%;
+    background-color: #e9ecef;
+    margin: 16px 24px;
+    width: calc(100% - 48px);
+    opacity: 0.6;
+}
+
+/* Modern scrollbar for sidebar */
+.dashboard-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
 }
 
 /* Sidebar header styling */
 .dashboard-sidebar-header {
     text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #1977cc;
+    margin-bottom: 32px;
+    padding: 0 24px 20px 24px;
+    border-bottom: 1px solid #e9ecef;
     font-weight: 600;
-    color: #333333;
-    font-size: 18px;
+    color: #212529;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .dashboard-section {
@@ -327,4 +362,65 @@
 
 .btn-cancel:hover {
     background-color: #c82333;
+}
+
+.overview-card {
+  transition: box-shadow 0.2s, background 0.2s, transform 0.2s;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0.5rem;
+}
+.overview-card:hover {
+  background: #f0f6ff;
+  box-shadow: 0 4px 16px rgba(25,119,204,0.12);
+  transform: translateY(-2px) scale(0.97);
+}
+
+/* User Management Styles */
+.user-management-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.user-management-container .table {
+  margin-bottom: 0;
+}
+
+.user-management-container .table th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 600;
+  color: #495057;
+  padding: 16px 12px;
+}
+
+.user-management-container .table td {
+  padding: 16px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.user-management-container .table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  background-color: #f8f9fa;
 } 

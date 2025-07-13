@@ -21,7 +21,7 @@ import {
   Paper
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import {eventBus, useEvent, EVENTS } from '../events';
+import {eventBus, useEvent, EVENTS} from '../events';
 import { API_URL } from '../config'; // Import API_URL
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -46,6 +46,11 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
+function generateRandomUsername() {
+  // Generates a random username, e.g., user12345
+  return 'user' + Math.floor(10000 + Math.random() * 90000);
+}
+
 function RegistrationForm() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,9 +60,7 @@ function RegistrationForm() {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentMessage, setEmailSentMessage] = useState(false);
-  const [usernameError, setUsernameError] = useState('');
-  // Add a new state to control feedback dialog
-  const [feedbackDialog, setFeedbackDialog] = useState({ open: false, message: '', severity: 'success' });
+  const [emailError, setEmailError] = useState(false);
 
   const credentials = 'YWRtaW46NUFtNTM4MDgwNTNA';
 
@@ -159,7 +162,6 @@ function RegistrationForm() {
         userName: randomUsername // Set username to random generated value
       }));
       // Clear any username errors since username is automatically generated
-      setUsernameError('');
     }
   };
 
@@ -229,7 +231,7 @@ function RegistrationForm() {
 
           // For any other errors, throw the original error
           throw new Error(`Failed to create user profile: ${errorText}`);
-        } catch (parseError) {
+        } catch {
           // If JSON parsing fails, throw the original error text
           throw new Error(`Failed to create user profile: ${errorText}`);
         }
@@ -328,12 +330,8 @@ function RegistrationForm() {
 
   const isFormValid = () => {
     return (
-      formData.cellNumber &&
       formData.email &&
-      formData.BHPCRegistrationNumber &&
-      formData.cellNumber.trim() !== '' &&
-      formData.email.trim() !== '' &&
-      formData.BHPCRegistrationNumber.trim() !== ''
+      formData.email.trim() !== ''
     );
   };
 
@@ -365,116 +363,84 @@ function RegistrationForm() {
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ px: 4 }}>
-          {/* User Profile Section */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
-            User Profile
-          </Typography>
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              label="Preferred User Name"
-              name="userName"
-              value={formData.userName}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              error={!!usernameError}
-              helperText={usernameError || "Username must be 4-255 characters, can include letters, numbers, ., _, -, @, and must not contain spaces."}
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
+        <DialogContent dividers sx={{ px: 4, py: 5, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f6f8fa' }}>
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 3, minWidth: 340, maxWidth: 400, width: '100%', boxShadow: '0 4px 24px rgba(25, 119, 204, 0.08)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                name="email"
+                value={formData.email}
+                onChange={e => {
+                  handleChange(e);
+                  setEmailError(!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(e.target.value));
+                }}
+                variant="outlined"
+                margin="normal"
+                required
+                error={emailError}
+                helperText={emailError ? 'Please enter a valid email address.' : ''}
+                InputLabelProps={{
+                  sx: {
+                    "& .MuiFormLabel-asterisk": {
+                      color: "red",
+                    },
                   },
-                },
-              }}
-              disabled={loading}
-              sx={{ display: 'none' }}
-            />
-
-            <TextField
-              fullWidth
-              label="Phone Number"
-              name="cellNumber"
-              value={formData.cellNumber}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              disabled={loading}
-            />
-
-            <TextField
-              fullWidth
-              label="Email Address"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              disabled={loading}
-            />
-
-            {/* B.H.P.C License Number - Hidden from user but still functional */}
-            <TextField
-              fullWidth
-              label="B.H.P.C License Number"
-              name="BHPCRegistrationNumber"
-              value={formData.BHPCRegistrationNumber}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              helperText="Enter your Botswana Health Professions Council (BHPC) registration/license number."
-              disabled={loading}
-            />
-
-            {/* DHIS2 Registration Code - Hidden from user but still generated */}
-            <TextField
-              fullWidth
-              label="DHIS2-Registration CODE"
-              name="dhisRegistrationCode"
-              value={formData.dhisRegistrationCode}
-              onChange={handleChange}
-              variant="outlined"
-              margin="dense"
-              required
-              sx={{ display: 'none' }}
-              InputLabelProps={{
-                sx: {
-                  "& .MuiFormLabel-asterisk": {
-                    color: "red",
-                  },
-                },
-              }}
-              disabled={loading}
-            />
-
-            {/* File upload section removed */}
-          </Box>
+                }}
+                disabled={loading}
+                sx={{ backgroundColor: '#fff', borderRadius: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+              />
+              {/* Hide all other fields from the user */}
+              <TextField
+                fullWidth
+                label="Phone Number"
+                name="cellNumber"
+                value={formData.cellNumber}
+                onChange={handleChange}
+                variant="outlined"
+                margin="dense"
+                required={false}
+                sx={{ display: 'none' }}
+                disabled={loading}
+              />
+              <TextField
+                fullWidth
+                label="B.H.P.C License Number"
+                name="BHPCRegistrationNumber"
+                value={formData.BHPCRegistrationNumber}
+                onChange={handleChange}
+                variant="outlined"
+                margin="dense"
+                required={false}
+                sx={{ display: 'none' }}
+                disabled={loading}
+              />
+              <TextField
+                fullWidth
+                label="User Name"
+                name="userName"
+                value={formData.userName}
+                onChange={handleChange}
+                variant="outlined"
+                margin="dense"
+                required={false}
+                sx={{ display: 'none' }}
+                disabled={loading}
+              />
+              <TextField
+                fullWidth
+                label="DHIS2 Registration Code"
+                name="dhisRegistrationCode"
+                value={formData.dhisRegistrationCode}
+                onChange={handleChange}
+                variant="outlined"
+                margin="dense"
+                required={false}
+                sx={{ display: 'none' }}
+                disabled={loading}
+              />
+            </Box>
+          </Paper>
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
@@ -495,7 +461,7 @@ function RegistrationForm() {
             }}
             disabled={loading || !isFormValid()}
           >
-            Apply
+            Register
           </Button>
         </DialogActions>
       </Dialog>
