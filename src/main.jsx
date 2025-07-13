@@ -5,13 +5,13 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom';
 
 // Monkey-patch fetch to prepend /qims to all /api calls
-const originalFetch = window.fetch;
+/*const originalFetch = window.fetch;
 window.fetch = function(resource, options) {
   if (typeof resource === 'string' && resource.startsWith('/api')) {
     resource = '/qims' + resource;
   }
   return originalFetch(resource, options);
-};
+};*/
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

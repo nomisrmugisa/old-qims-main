@@ -1,7 +1,6 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-// src/views/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField, InputAdornment, IconButton } from '@mui/material';
@@ -11,7 +10,7 @@ import { eventBus, EVENTS } from '../../events';
 import loginIllustration from '../../assets/logo.png'; // Add your image
 
 import './index.css';
-import { AuthService, MFLApiService } from '../../services';
+import { AuthService, MFLApiService, StorageService } from '../../services';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -32,10 +31,6 @@ const Login = () => {
         }
     };
 
-    const getFacilityList = () => {
-        MFLApiService.allFacilities();
-    };
-
     const validateForm = () => {
         const newErrors = {};
 
@@ -53,9 +48,16 @@ const Login = () => {
         setIsSubmitting(true);
         try {
 
-            const response = await AuthService.registerEmail({
-                email: formData.email
+            const response = await AuthService.me({
+                username: formData.email,
+                password: formData.password
             });
+
+            window.console.log("RESPONSE---");
+            window.console.log(response);
+            await StorageService.setUserData(response);
+            window.console.log("***---");
+
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Login Successful',
                 message: 'Welcome back!',
@@ -64,11 +66,7 @@ const Login = () => {
                     willClose: () => navigate('/dashboard')
                 }
             });
-            window.console.log("RESPONSE---");
-            window.console.log(response);
-            window.console.log(response.code);
-            window.console.log(response.data);
-            window.console.log("***---");
+
 
             /*const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -188,7 +186,7 @@ const Login = () => {
                                     />
                                 </Form.Group>
                                 <div className="d-flex justify-content-end mb-3">
-                                    <Link to="/main/forgot-password" className="text-decoration-none">
+                                    <Link to="/forgot-password" className="text-decoration-none">
                                         Forgot password?
                                     </Link>
                                 </div>
@@ -202,12 +200,6 @@ const Login = () => {
                                 </Button>
                             </Form>
 
-                            <div className="text-center mt-4">
-                                <Button onClick={getFacilityList}>Facility List</Button>
-                                <p className="text-muted">
-                                    Don't have an account? <Link to="/main/register" className="text-decoration-none">Sign up</Link>
-                                </p>
-                            </div>
                         </Card.Body>
                     </Card>
                 </Col>

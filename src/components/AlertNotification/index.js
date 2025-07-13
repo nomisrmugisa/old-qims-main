@@ -13,6 +13,7 @@ const AlertNotification = () => {
                 text: payload.message,
                 icon: payload.type || 'info',
                 confirmButtonText: 'OK',
+                confirmButtonColor: "#1977cc",
                 ...payload.options
             });
         };

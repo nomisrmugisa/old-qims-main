@@ -3,6 +3,7 @@
  */
 import httpService from './http.service';
 import StorageService from './storage.service';
+import { setAuthToken } from './http.service';
 import { STORAGE_KEYS } from './constants';
 import {eventBus, EVENTS } from '../events';
 
@@ -68,7 +69,7 @@ const AuthService = {
     registerEmail: async (credentials) => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "registerEmail"});
         try {
-            const response = await httpService.post('/auth/forgot-password', credentials);
+            const response = await httpService.post('/auth/registration', credentials);
             window.console.log(response);
             return response;
         } catch (error) {
@@ -94,13 +95,19 @@ const AuthService = {
 
     me: async(credentials, headers={}) => {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "auth_service", method: "me"});
+        const authorization_creds = btoa(`${credentials.username}:${credentials.password}`);
+
+        window.console.log(credentials);
         try {
-            const response = await httpService.post('/api/me', credentials, {
-                headers
+            const response = await httpService.get('/me', {
+                headers: {
+                    'Authorization': `Basic ${authorization_creds}`
+                }
             });
 
-
-            const { token, refreshToken, user } = response;
+            setAuthToken(authorization_creds, 'Basic');
+            window.console.log(response);
+            /*const { token, refreshToken, user } = response;
 
             // Store tokens and user data
             StorageService.set(STORAGE_KEYS.AUTH_TOKEN, token);
@@ -108,9 +115,9 @@ const AuthService = {
             StorageService.set(STORAGE_KEYS.USER_DATA, user);
 
             // Set auth header
-            httpService.setAuthToken(token);
+            httpService.setAuthToken(token);*/
 
-            return user;
+            return response;
         } catch (error) {
             throw error;
         }

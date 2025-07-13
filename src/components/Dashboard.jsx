@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import RegistrationDetails from './RegistrationDetails';
+import {Button, Card, Col, Row} from "react-bootstrap";
+import {Building, ClipboardCheck, PlusCircle} from "react-bootstrap-icons";
 
 const Dashboard = ({ activeSection, setActiveSection }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
@@ -253,24 +255,74 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                 return (
                     <div className="dashboard-section">
                         <h2>Welcome to Your Dashboard</h2>
-                        <div className="stats-grid">
-                            <div className="stat-card">
-                                <h3>Active Inspections</h3>
-                                <p className="stat-number">3</p>
-                            </div>
-                            <div className="stat-card">
-                                <h3>Pending Tasks</h3>
-                                <p className="stat-number">5</p>
-                            </div>
-                            <div className="stat-card">
-                                <h3>Completed Reports</h3>
-                                <p className="stat-number">12</p>
-                            </div>
-                            <div className="stat-card">
-                                <h3>Upcoming Deadlines</h3>
-                                <p className="stat-number">2</p>
-                            </div>
-                        </div>
+                        <Card className="mb-4">
+                            <Card.Body>
+                                <Row className="g-4">
+                                    <Col md={6}>
+                                        <Card className="h-100 shadow-sm">
+                                            <Card.Body className="text-center py-5">
+                                                <Building size={48} className="text-primary mb-3" />
+                                                <Card.Title>Register New Facility</Card.Title>
+                                                <Card.Text className="text-muted mb-4">
+                                                    Start the registration process for a new healthcare facility
+                                                </Card.Text>
+                                                <Button variant="primary">Begin Registration</Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+
+                                    <Col md={6}>
+                                        <Card className="h-100 shadow-sm">
+                                            <Card.Body className="text-center py-5">
+                                                <ClipboardCheck size={48} className="text-success mb-3" />
+                                                <Card.Title>Enrol with a Facility</Card.Title>
+                                                <Card.Text className="text-muted mb-4">
+                                                    Enrol with an existing facility
+                                                </Card.Text>
+                                                <Button
+                                                    variant="outline-primary"
+                                                    onClick={() => setActiveTab('enrolment')}
+                                                >
+                                                    <PlusCircle className="me-1" /> Enroll in New Facility
+                                                </Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+
+                                    <Col md={6}>
+                                        <Card className="h-100 shadow-sm">
+                                            <Card.Body className="text-center py-5">
+                                                <ClipboardCheck size={48} className="text-success mb-3" />
+                                                <Card.Title>Renew Facility License</Card.Title>
+                                                <Card.Text className="text-muted mb-4">
+                                                    Renew the license for an existing healthcare facility
+                                                </Card.Text>
+                                                <Button variant="success">Start Renewal</Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+
+                                </Row>
+                            </Card.Body>
+                        </Card>
+                        {/*<div className="stats-grid">*/}
+                        {/*    <div className="stat-card">*/}
+                        {/*        <h3>Active Inspections</h3>*/}
+                        {/*        <p className="stat-number">3</p>*/}
+                        {/*    </div>*/}
+                        {/*    <div className="stat-card">*/}
+                        {/*        <h3>Pending Tasks</h3>*/}
+                        {/*        <p className="stat-number">5</p>*/}
+                        {/*    </div>*/}
+                        {/*    <div className="stat-card">*/}
+                        {/*        <h3>Completed Reports</h3>*/}
+                        {/*        <p className="stat-number">12</p>*/}
+                        {/*    </div>*/}
+                        {/*    <div className="stat-card">*/}
+                        {/*        <h3>Upcoming Deadlines</h3>*/}
+                        {/*        <p className="stat-number">2</p>*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
                     </div>
                 );
             case 'registration':
@@ -391,9 +443,9 @@ const Dashboard = ({ activeSection, setActiveSection }) => {
                         Navigation
                     </div>
                     <button
-                        onClick={() => facilityOwnershipComplete && setActiveSection('overview')}
+                        onClick={() => /*facilityOwnershipComplete && */setActiveSection('overview')}
                         className={`${activeSection === 'overview' ? 'active' : ''} ${!facilityOwnershipComplete ? 'disabled-link' : ''}`}
-                        disabled={!facilityOwnershipComplete}
+                        // disabled={!facilityOwnershipComplete}
                     >
                         Overview
                     </button>
