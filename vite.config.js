@@ -13,6 +13,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
         secure: false,
       },
+      '/email2': {
+        target: 'https://qimsdev.5am.co.bw',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/email2/, '/email2'),
+      },
     }
   },
   preview: {

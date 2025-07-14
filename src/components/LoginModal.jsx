@@ -1,27 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './LoginModal.css';
-import {eventBus, EVENTS } from '../events';
+import {eventBus, EVENTS} from '../events';
+import { Eye, EyeSlash, CheckCircle, XCircle } from 'react-bootstrap-icons';
+import { Link } from 'react-router-dom';
 
 const LoginModal = ({ show, onClose, onLogin }) => {
     const modalRef = useRef();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [rememberMe, setRememberMe] = useState(true);
-    const [useTwoFactor, setUseTwoFactor] = useState(false);
-    const [twoFactorCode, setTwoFactorCode] = useState('');
-    const [twoFactorToken, setTwoFactorToken] = useState('');
-    const [codeId, setCodeId] = useState('');
-    const [twoFactorError, setTwoFactorError] = useState('');
-    const [isTwoFactorInitialized, setIsTwoFactorInitialized] = useState(false);
 
-    const isValidTwoFactorCode = (code) => {
-        return /^\d{6}$/.test(code);
-    };
+    // const isValidTwoFactorCode = (code) => {
+    //     return /^\d{6}$/.test(code);
+    // };
 
     const openRegistrationForm = () => {
         onClose();
         eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
+    };
+
+    const clearErrorMessage = () => {
+        setErrorMessage('');
+    };
+
+    // Email validation function
+    const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
     useEffect(() => {
@@ -40,226 +47,95 @@ const LoginModal = ({ show, onClose, onLogin }) => {
         };
     }, [show, onClose]);
 
-    // Handle when user checks/unchecks the 2FA checkbox
-    // Replace your useEffect with this simplified version
-    useEffect(() => {
-        if (useTwoFactor && username && password) {
-            const initialize2FA = async () => {
-                try {
-                    setTwoFactorError('Initializing 2FA...');
-
-                    // Step 1: Acquire Token
-                    const username = 'nomisrmugisa@gmail.com';
-                    const password = 'Nomisr123$';
-                    const credentials = btoa(`${username}:${password}`);
-                    const tokenResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/Token/`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Basic ${credentials}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJXbzJIajRrbERZTXlyOEZrR0NPcXcwOGtRZ2ZpZk9DVUE1RHo3cUlFLU5JIn0.eyJleHAiOjE3NDk5NzIzNTAsImlhdCI6MTc0OTg4NTk1MCwianRpIjoiNGEyNjYzYWEtOWMwYi00MWU1LTgzOTQtMTZmMDA3OTM0NGRjIiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmUucGx5ZG90LmNvbS9hdXRoL3JlYWxtcy9hdXRob3JpemUiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYzYwZGI0NjQtZDg2Zi00ZWZlLWE4YTctNjQ4MzdmYWQ3ZDgxIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZmx5dGUiLCJzZXNzaW9uX3N0YXRlIjoiMjViOTUyZDYtMWI0OC00ZjJhLThjOWItZTUzMTY0YTFmMDU5IiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLWZseXRlIGNvbW11bmljYXRpb25zIiwib2ZmbGluZV9hY2Nlc3MiLCJhZG1pbiIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiZmx5dGUiOnsicm9sZXMiOlsiYWRtaW4iXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsInNpZCI6IjI1Yjk1MmQ2LTFiNDgtNGYyYS04YzliLWU1MzE2NGExZjA1OSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX3JlYWxtX3JvbGUiOlsiZGVmYXVsdC1yb2xlcy1mbHl0ZSBjb21tdW5pY2F0aW9ucyIsIm9mZmxpbmVfYWNjZXNzIiwiYWRtaW4iLCJ1bWFfYXV0aG9yaXphdGlvbiJdLCJuYW1lIjoiV2lsc29uIFdoaXBwZXQiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ3aGlwcGV0QHBseWRvdC5jb20iLCJnaXZlbl9uYW1lIjoiV2lsc29uIiwiZmFtaWx5X25hbWUiOiJXaGlwcGV0IiwiZW1haWwiOiJ3aGlwcGV0QHBseWRvdC5jb20ifQ.CgqG8ijEgr1Yvlvro5Q37doWX4JkZ4my1ndAexB4xBSuxBmj860JxOdgxrztMV1GZNXjjqcKraC4497zS7LvmlnYvze0KCZTOJ_87buuOySsSWwk5Is27zH3Iv9riCazhuwAP_AY18divJRfY0DYBVdtMimXNze09nmSLv3r9lyOwxx0pOS6O1HGEJ7umUOB7HofAjN0GUHfUm1J-zAtzIklFIKXNFmPmxt3VQOq5q6dmxlSTnjigfA4Tcka_vSpjxd5kFIqrEfSyD0quNZRTZPbOfHV5mjS7MwbJ1KP4cR7eBnDOJ6YNt1Ru6X-RsUOdo6vluga7II73--F0Bi1iw", // your token here
-                            expiration: "86400"
-                        }),
-                        credentials: 'include'
-                    });
-
-                    if (!tokenResponse.ok) {
-                        throw new Error(`Token request failed with status ${tokenResponse.status}`);
-                    }
-
-                    const tokenData = await tokenResponse.json();
-                    const extractedToken = tokenData.token;
-                    setTwoFactorToken(extractedToken);
-
-                    // Step 2: Initialize 2FA - send OTP
-                    const initResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/init/`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${extractedToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            authorityEmail: username,
-                            recipient: "256778512260",
-                            sender: "Plydot"
-                        })
-                    });
-
-                    if (!initResponse.ok) {
-                        throw new Error(`Init request failed with status ${initResponse.status}`);
-                    }
-
-                    const initData = await initResponse.json();
-                    setCodeId(initData.codeId);
-                    setIsTwoFactorInitialized(true);
-                    setTwoFactorError('OTP sent to your phone. Please enter the code.');
-                } catch (error) {
-                    console.error('2FA initialization error:', error);
-                    setTwoFactorError(`2FA setup failed: ${error.message}`);
-                    // Keep the checkbox checked so user can try again
-                }
-            };
-
-            initialize2FA();
-        }
-    }, [useTwoFactor]); // Only depend on useTwoFactor
-
-    const initializeTwoFactor = async () => {
-        try {
-            setTwoFactorError('Initializing 2FA...');
-
-            // Step 1: Acquire Token
-            const credentials = btoa(`${username}:${password}`);
-            const tokenResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/Token/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Basic ${credentials}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJXbzJIajRrbERZTXlyOEZrR0NPcXcwOGtRZ2ZpZk9DVUE1RHo3cUlFLU5JIn0.eyJleHAiOjE3NDk5NzIzNTAsImlhdCI6MTc0OTg4NTk1MCwianRpIjoiNGEyNjYzYWEtOWMwYi00MWU1LTgzOTQtMTZmMDA3OTM0NGRjIiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmUucGx5ZG90LmNvbS9hdXRoL3JlYWxtcy9hdXRob3JpemUiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYzYwZGI0NjQtZDg2Zi00ZWZlLWE4YTctNjQ4MzdmYWQ3ZDgxIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZmx5dGUiLCJzZXNzaW9uX3N0YXRlIjoiMjViOTUyZDYtMWI0OC00ZjJhLThjOWItZTUzMTY0YTFmMDU5IiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLWZseXRlIGNvbW11bmljYXRpb25zIiwib2ZmbGluZV9hY2Nlc3MiLCJhZG1pbiIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiZmx5dGUiOnsicm9sZXMiOlsiYWRtaW4iXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsInNpZCI6IjI1Yjk1MmQ2LTFiNDgtNGYyYS04YzliLWU1MzE2NGExZjA1OSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX3JlYWxtX3JvbGUiOlsiZGVmYXVsdC1yb2xlcy1mbHl0ZSBjb21tdW5pY2F0aW9ucyIsIm9mZmxpbmVfYWNjZXNzIiwiYWRtaW4iLCJ1bWFfYXV0aG9yaXphdGlvbiJdLCJuYW1lIjoiV2lsc29uIFdoaXBwZXQiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ3aGlwcGV0QHBseWRvdC5jb20iLCJnaXZlbl9uYW1lIjoiV2lsc29uIiwiZmFtaWx5X25hbWUiOiJXaGlwcGV0IiwiZW1haWwiOiJ3aGlwcGV0QHBseWRvdC5jb20ifQ.CgqG8ijEgr1Yvlvro5Q37doWX4JkZ4my1ndAexB4xBSuxBmj860JxOdgxrztMV1GZNXjjqcKraC4497zS7LvmlnYvze0KCZTOJ_87buuOySsSWwk5Is27zH3Iv9riCazhuwAP_AY18divJRfY0DYBVdtMimXNze09nmSLv3r9lyOwxx0pOS6O1HGEJ7umUOB7HofAjN0GUHfUm1J-zAtzIklFIKXNFmPmxt3VQOq5q6dmxlSTnjigfA4Tcka_vSpjxd5kFIqrEfSyD0quNZRTZPbOfHV5mjS7MwbJ1KP4cR7eBnDOJ6YNt1Ru6X-RsUOdo6vluga7II73--F0Bi1iw",
-                    expiration: "86400"
-                })
-            });
-
-            if (!tokenResponse.ok) {
-                throw new Error('Failed to acquire 2FA token');
-            }
-
-            const tokenData = await tokenResponse.json();
-            const extractedToken = tokenData.token;
-            setTwoFactorToken(extractedToken);
-
-            // Step 2: Initialize 2FA - send OTP
-            const initResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/init/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${extractedToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    authorityEmail: username,
-                    recipient: "256778512260", // This should ideally come from user profile or input
-                    sender: "Plydot"
-                })
-            });
-
-            if (!initResponse.ok) {
-                throw new Error('Failed to initialize 2FA');
-            }
-
-            const initData = await initResponse.json();
-            if (initData.status === 'otp_sent') {
-                setCodeId(initData.codeId);
-                setIsTwoFactorInitialized(true);
-                setTwoFactorError('OTP sent to your phone. Please enter the code.');
-            } else {
-                throw new Error('Failed to send OTP');
-            }
-        } catch (error) {
-            console.error('2FA initialization error:', error);
-            setTwoFactorError(`2FA setup failed: ${error.message}`);
-            setUseTwoFactor(false);
-        }
-    };
-
-    const verifyTwoFactorCode = async () => {
-        try {
-            if (!twoFactorCode || !codeId) {
-                setTwoFactorError('Please enter the 2FA code');
-                return false;
-            }
-
-            // Step 3: Verify OTP code
-            const username = 'nomisrmugisa@gmail.com';
-            const verifyResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/SMS2FA/verify/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${twoFactorToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    authorityEmail: username,
-                    code: twoFactorCode,
-                    codeId: codeId
-                })
-            });
-
-            // if (!verifyResponse.ok) {
-            //     throw new Error('Verification failed');
-            // }
-
-            // const verificationResult = await verifyResponse.text();
-            if (verifyResponse.ok) {
-                setTwoFactorError('');
-                return true;
-            } else {
-                throw new Error('Invalid verification code');
-            }
-        } catch (error) {
-            console.error('2FA verification error:', error);
-            setTwoFactorError(`2FA verification failed: ${error.message}`);
-            return false;
-        }
-    };
+    // All 2FA-related code, variables, and useEffects have been removed.
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage(''); // Clear previous errors
         eventBus.emit(EVENTS.LOADING_SHOW, { source: "login_form"});
         window.console.log("Login FormSubmitted");
-        // TEMPORARILY DISABLED 2FA FOR DEVELOPMENT
-        // if (useTwoFactor) {
-        //     if (!twoFactorCode.trim()) {
-        //         setTwoFactorError('2FA code is required');
-        //         return;
-        //     }
+        
+        // Validate form inputs
+        if (!username.trim()) {
+            setErrorMessage('Please enter your email address.');
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "login_form"});
+            return;
+        }
+        
+        if (!isValidEmail(username.trim())) {
+            setErrorMessage('Please enter a valid email address.');
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "login_form"});
+            return;
+        }
+        
+        if (!password.trim()) {
+            setErrorMessage('Please enter your password.');
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: "login_form"});
+            return;
+        }
 
-        //     const isVerified = await verifyTwoFactorCode();
-        //     if (!isVerified) {
-        //         return;
-        //     }
-        // }
+
 
         try {
             const credentials = btoa(`${username}:${password}`);
 
+            // Add timeout to prevent infinite loading
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Login request timed out. Please check your internet connection and try again.')), 15000)
+            );
+
             // First API call to authenticate
-            const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
+            const authPromise = fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me`, {
                 headers: {
                     Authorization: `Basic ${credentials}`,
                     // TEMPORARILY DISABLED 2FA FOR DEVELOPMENT
                     // ...(useTwoFactor && twoFactorCode && { 'X-2FA-Code': twoFactorCode }),
                 },
             });
+
+            const response = await Promise.race([authPromise, timeoutPromise]);
             window.console.log(response);
 
             if (!response.ok) {
                 // Handle authentication errors based on status code
+                let errorMessage = '';
+                // let shouldRetry = false;
+                
                 switch (response.status) {
+                    case 400:
+                        errorMessage = 'Invalid request. Please check your email address and password format.';
+                        break;
                     case 401:
-                        setErrorMessage('Invalid credentials. Please check your email and password.');
+                        errorMessage = 'Invalid email address or password. Please check your credentials and try again.';
                         break;
                     case 403:
-                        setErrorMessage('Account locked. Please contact support.');
+                        errorMessage = 'Access denied. Your account may be locked or you don\'t have permission to access this system. Please contact your administrator.';
+                        break;
+                    case 404:
+                        errorMessage = 'Login service not found. Please contact support if this problem persists.';
                         break;
                     case 410:
-                        setErrorMessage('Account expired. Please renew your account.');
+                        errorMessage = 'Your account has expired. Please contact your administrator to renew your account.';
                         break;
                     case 423:
-                        setErrorMessage('Two factor authentication required.');
+                        errorMessage = 'Two-factor authentication is required for your account. Please enable 2FA and try again.';
                         break;
                     case 429:
-                        setErrorMessage('Too many login attempts. Please try again later.');
+                        errorMessage = 'Too many login attempts. Please wait a few minutes before trying again.';
                         break;
                     case 500:
-                        setErrorMessage('Server error. Please try again later.');
+                        errorMessage = 'Server error. Our team has been notified. Please try again in a few minutes.';
+                        break;
+                    case 502:
+                    case 503:
+                    case 504:
+                        errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
                         break;
                     default:
-                        setErrorMessage(`Authentication failed: ${response.statusText}`);
+                        errorMessage = `Login failed (${response.status}). Please try again or contact support if the problem persists.`;
                 }
+                
+                setErrorMessage(errorMessage);
                 eventBus.emit(EVENTS.LOADING_HIDE, { source: 'login_modal' });
                 onLogin(false); // Indicate login failure to App.jsx
                 return; // Stop further execution
@@ -294,17 +170,33 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     onLogin(true); // Login successful
                     onClose(); // Close modal on successful login
                 } else {
-                    setErrorMessage('No organization units found for this user.');
+                    setErrorMessage('No organization units found for this user. Please contact your administrator to assign you to an organization.');
                     onLogin(false); // Login failed
                 }
             } else {
-                setErrorMessage(`Failed to fetch organization units: ${orgUnitsResponse.statusText}`);
+                setErrorMessage(`Failed to fetch organization units: ${orgUnitsResponse.statusText}. Please try again or contact support.`);
                 onLogin(false); // Login failed
             }
             eventBus.emit(EVENTS.LOADING_HIDE, { source: 'login_modal' });
         } catch (error) {
             console.error("Login error:", error);
-            setErrorMessage('Network error or unexpected issue. Please try again.');
+            
+            let errorMessage = '';
+            
+            // Handle specific error types
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (error.message.includes('timeout')) {
+                errorMessage = 'Request timed out. Please check your internet connection and try again.';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+            } else if (error.message.includes('CORS')) {
+                errorMessage = 'Cross-origin request blocked. Please contact support if this problem persists.';
+            } else {
+                errorMessage = 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+            }
+            
+            setErrorMessage(errorMessage);
             onLogin(false); // Login failed due to network or other error
         }
         finally {
@@ -321,32 +213,41 @@ const LoginModal = ({ show, onClose, onLogin }) => {
             <div className="login-modal-content" ref={modalRef}>
                 <div className="login-modal-header">
                     <h5 className="login-modal-title">Login</h5>
-                    <div style={{ color: 'green', fontSize: '12px', fontWeight: 'bold' }}>DEV MODE: 2FA DISABLED</div>
                     <button type="button" className="login-modal-close" onClick={onClose}>
                         &times;
                     </button>
                 </div>
                 <div className="login-modal-body">
-                    {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
+                    {errorMessage && (
+                        <div className="alert alert-danger">
+                            {errorMessage}
+                            <button type="button" className="btn-close float-end" onClick={clearErrorMessage} aria-label="Close"></button>
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit}>
-                        {/* Username input */}
+                        {/* Email input */}
                         <div className="login-form-outline mb-4">
                             <input
-                                type="text"
+                                type="email"
                                 id="form2Example1"
                                 className="login-form-control"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter your username"
+                                placeholder="Enter your email address"
                                 required
                             />
-                            <label className="login-form-label" htmlFor="form2Example1">Username</label>
+                            <label className="login-form-label" htmlFor="form2Example1">Email address</label>
+                            {username && (
+                                <span className={`email-validation-icon ${isValidEmail(username) ? 'valid' : 'invalid'}`}>
+                                    {isValidEmail(username) ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                </span>
+                            )}
                         </div>
 
                         {/* Password input */}
                         <div className="login-form-outline mb-4">
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 id="form2Example2"
                                 className="login-form-control"
                                 value={password}
@@ -355,60 +256,17 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                                 required
                             />
                             <label className="login-form-label" htmlFor="form2Example2">Password</label>
+                            <button
+                                type="button"
+                                className="login-password-toggle-btn"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                            </button>
                         </div>
 
-                        {/* 2FA Checkbox - appears above the input field */}
-                        <div className="mb-3">
-                            <div className="form-check">
-                                <input
-                                    className="form-check-input"
-                                    type="checkbox"
-                                    id="useTwoFactor"
-                                    checked={useTwoFactor}
-                                    onChange={(e) => {
-                                        const shouldUse2FA = e.target.checked;
-                                        setUseTwoFactor(shouldUse2FA);
-                                        if (!shouldUse2FA) {
-                                            setIsTwoFactorInitialized(false);
-                                            setTwoFactorError('');
-                                        }
-                                    }}
-                                    disabled={!username || !password}
-                                />
-                                <label className="form-check-label" htmlFor="useTwoFactor">
-                                    Login using two factor authentication
-                                    {useTwoFactor && !isTwoFactorInitialized && (
-                                        <span className="ms-2 spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    )}
-                                </label>
-                            </div>
-                        </div>
 
-                        {/* 2FA Code input - conditionally rendered */}
-                        {useTwoFactor && (
-                            <>
-                                <div className="login-form-outline mb-2">
-                                    <input
-                                        type="text"
-                                        id="twoFactorCode"
-                                        className={`login-form-control ${twoFactorError ? 'is-invalid' : ''}`}
-                                        value={twoFactorCode}
-                                        onChange={(e) => setTwoFactorCode(e.target.value)}
-                                        placeholder="Enter 6-digit code"
-                                        required
-                                        disabled={!isTwoFactorInitialized}
-                                    />
-                                    <label className="login-form-label" htmlFor="twoFactorCode">
-                                        Two factor authentication code
-                                    </label>
-                                </div>
-                                {twoFactorError && (
-                                    <div className={`mb-3 small ${twoFactorError.includes('OTP sent') ? 'text-info' : 'text-danger'}`}>
-                                        {twoFactorError}
-                                    </div>
-                                )}
-                            </>
-                        )}
 
                         {/* Remember me and Forgot password row */}
                         <div className="row mb-4">
@@ -447,7 +305,7 @@ const LoginModal = ({ show, onClose, onLogin }) => {
 
                         {/* Register buttons */}
                         <div className="text-center">
-                            <p>Not a member? <a href="javascript:void(0);" onClick={openRegistrationForm}>Register</a></p>
+                            <p>Not a member? <a href="#" onClick={openRegistrationForm}>Register</a></p>
                         </div>
                     </form>
                 </div>

@@ -145,34 +145,22 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           if (eventData) {
             setEventData(eventData);
 
-            // Initialize form values
+            // Only prefill Users Email Address
             const initialFormValues = {};
-            if (eventData.dataValues) {
-              eventData.dataValues.forEach(dv => {
-                initialFormValues[dv.dataElement] = dv.value;
-              });
+            if (userData.email) {
+              initialFormValues['NVlLoMZbXIW'] = userData.email;
             }
             setFormValues(initialFormValues);
 
             // If there's a location value, set the selected org unit
-            const locationValue = initialFormValues['VJzk8OdFJKA'];
-            if (locationValue) {
-              setSelectedOrgUnit({ displayName: locationValue });
-            }
+            setSelectedOrgUnit(null);
 
             // Check if all required fields are filled
             checkFormCompletion(initialFormValues);
 
-            // Check if form has existing data
-            const hasData = requiredOtherDetailsFields.some(field =>
-              initialFormValues[field] && initialFormValues[field].trim() !== ''
-            );
-            setHasExistingData(hasData);
-
-            // If form has existing data, disable editing and hide update button
-            if (hasData) {
-              setIsEditing(false);
-            }
+            // No prefilled data, so editing is always enabled
+            setHasExistingData(false);
+            setIsEditing(true);
 
             setLoading(false);
             return;
@@ -731,15 +719,37 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   const sendFacilityUpdateEmail = async () => {
     try {
-      const response = await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
+      // 1. Get the user's email from the form
+      const formEmail = formValues['NVlLoMZbXIW'];
+      let emails = [];
+      if (formEmail) {
+        emails.push(formEmail);
+      }
+
+      // 2. Fetch additional emails from the API
+      const credentials = localStorage.getItem('userCredentials');
+      const usersResponse = await fetch('/api/users?fields=email,userGroups[id]&filter=userGroups.id:eq:cxNjCzLB6tI&paging=false', {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        if (usersData.users && Array.isArray(usersData.users)) {
+          const apiEmails = usersData.users
+            .map(u => u.email)
+            .filter(email => email && !emails.includes(email));
+          emails = emails.concat(apiEmails);
+        }
+      }
+
+      // 3. Send the combined emails array to the endpoint
+      const response = await fetch('/email2/api/facility-reg-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: "qimsmohbots@gmail.com",
-
-        })
+        body: JSON.stringify({ emails }),
       });
 
       if (!response.ok) {
@@ -756,6 +766,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   const handleSubmit = async () => {
     try {
+      setShowProgress(true);
+      setProgress(0);
       console.log('🚀 === STARTING APPLICATION UPDATE PROCESS ===');
       console.log('Step 1: Initializing update process...');
       setLoading(true);
@@ -851,6 +863,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       // setSuccessMessages(prev => [...prev, 'Request updated successfully in DHIS2']);
       setSuccessMessages(prev => [...prev, '1 / 5']);
       setOpenSnackbar(true);
+      setProgress(10); // After tracker update
 
       console.log('Step 5: Creating organization unit...');
       // Creating org unit
@@ -861,12 +874,15 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       // setSuccessMessages(prev => [...prev, 'Facility added to registry successfully']);
       setSuccessMessages(prev => [...prev, '2 / 5']);
       setOpenSnackbar(true);
+      setProgress(25); // After org unit creation
 
       console.log('Step 6: Adding organization unit to program...');
       // Step 2b: Add org unit to program
       // setCurrentStep(`Facility updated...`);
       await addOrgUnitToProgram(orgUnitId);
       console.log('✅ Step 6 COMPLETED: Organization unit added to program');
+      setOpenSnackbar(true);
+      setProgress(40); // After add org unit to program
 
       console.log('Step 7: Creating/updating tracked entity instance...');
       // New Step: Create or Update TEI
@@ -877,6 +893,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       // setSuccessMessages(prev => [...prev, 'Facility dependecies updated successfully']);
       setSuccessMessages(prev => [...prev, '3 / 5']);
       setOpenSnackbar(true);
+      setProgress(55); // After TEI update
 
       // Update the payload with the new TEI if it was created
       if (!formValues['PdtizqOqE6Q'] && updatedTei) {
@@ -895,13 +912,16 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         'wlWC4vYeTzt', 'cghjivP9xA2'
       ]; // 'Y4W5qIKlOsh',
 
+      const enrollmentIdsByProgram = {};
       for (const programId of programs) {
-        await createEnrollment(orgUnitId, programId, updatedTei);
+        const enrollmentId = await createEnrollment(orgUnitId, programId, updatedTei);
+        enrollmentIdsByProgram[programId] = enrollmentId;
       }
       console.log('✅ Step 8 COMPLETED: Program enrollments created for all programs');
       // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
       setSuccessMessages(prev => [...prev, '4 / 5']);
       setOpenSnackbar(true);
+      setProgress(70); // After enrollments
 
       console.log('Step 9: Enabling users and assigning to location...');
       // NEW STEP: Enable users associated with the org unit
@@ -931,9 +951,54 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setSuccessMessages(prev => [...prev, '5 / 5']);
 
         setOpenSnackbar(true);
+        setProgress(85); // After user org unit updates
 
-        console.log('Step 10: Sending email notification...');
-        // Step 10: Email sending is deactivated, but we simulate success for downstream logic
+        // Step: Create new tracker event before sending facility update email
+        // Generate DHIS2 UID for event
+        function generateDhis2Uid() {
+          const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let uid = '';
+          uid += alphabet[Math.floor(Math.random() * 52)];
+          for (let i = 0; i < 10; i++) {
+            uid += alphabet[Math.floor(Math.random() * alphabet.length)];
+          }
+          return uid;
+        }
+        const newEventId = generateDhis2Uid();
+        const nowIso = new Date().toISOString();
+        // Use enrollment and orgUnit from previous steps
+        const enrollmentId = enrollmentIdsByProgram['EE8yeLVo6cN']; // use the correct enrollment for the event
+        const orgUnitIdForEvent = orgUnitId; // from orgUnit creation step
+        console.log('Posting event for program:', 'EE8yeLVo6cN', 'with enrollment ID:', enrollmentId);
+        // Build dataValues from form
+        const dataValues = Object.keys(formValues).map(key => ({ dataElement: key, value: formValues[key] }));
+        const newEventPayload = {
+          events: [
+            {
+              event: newEventId,
+              program: 'EE8yeLVo6cN',
+              programStage: 'WjheMIcXSkU',
+              enrollment: enrollmentId,
+              orgUnit: orgUnitIdForEvent,
+              occurredAt: nowIso,
+              dataValues
+            }
+          ]
+        };
+        const trackerResponse = await fetch('/api/40/tracker?async=false', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${credentials}`
+          },
+          body: JSON.stringify(newEventPayload)
+        });
+        if (!trackerResponse.ok) {
+          throw new Error('Failed to create new tracker event');
+        }
+        setProgress(90);
+
+        // Now send the facility update email
         setCurrentStep('Sending notification...');
         // Simulate email success without making the API call
         const emailSuccess = true;
@@ -941,6 +1006,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           console.log('✅ Step 10 COMPLETED: (Email sending deactivated, simulated success)');
           setSuccessMessages(prev => [...prev, 'Email notification (deactivated)']);
           setOpenSnackbar(true);
+          setProgress(95); // After email send
 
           console.log('Step 11: Reloading data and switching to Facility Ownership tab...');
           // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
@@ -1038,6 +1104,21 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     );
   }
 
+  // Add blinking CSS to the document head if not already present
+  if (typeof document !== 'undefined' && !document.getElementById('blink-message-style')) {
+    const style = document.createElement('style');
+    style.id = 'blink-message-style';
+    style.textContent = `
+      .blink-message {
+        animation: blink 2s steps(2, start) infinite;
+      }
+      @keyframes blink {
+        to { visibility: hidden; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2, px: { xs: 1, sm: 2 } }}>
       {/* Success message */}
@@ -1075,6 +1156,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       >
         <MuiBox sx={{ width: 300, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <LinearProgress variant="determinate" value={progress} sx={{ width: '100%', height: 8 }} />
+          <Typography align="center" sx={{ mt: 2 }}>{progress}% Complete</Typography>
         </MuiBox>
       </Modal>
 
@@ -1090,15 +1172,25 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             Licensed Users Details
           </Typography>
           <Grid container spacing={2}>
+            {/* Submission Date field removed as per request */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField
-                label="Submission Date"
-                value={formatDate(eventData?.eventDate)}
+                label="Users Email Address"
+                value={formValues['NVlLoMZbXIW'] || ''}
                 fullWidth
                 size="small"
                 margin="dense"
                 InputProps={{ readOnly: true }}
                 className="grey-disabled"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    backgroundColor: '#f5f5f5',
+                    color: '#888',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#888',
+                  },
+                }}
               />
             </Grid>
           </Grid>
@@ -1106,34 +1198,34 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="Preferred User Name"
-                value={getDataValue('g3J1CH26hSA')}
+                value={formValues['g3J1CH26hSA'] || ''}
+                onChange={(e) => handleChange(e, 'g3J1CH26hSA')}
                 fullWidth
                 size="small"
                 margin="dense"
-                InputProps={{ readOnly: true }}
-                className="grey-disabled"
+                // Editable
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="B.H.P.C Registration Number"
-                value={getDataValue('SVzSsDiZMN5')}
+                value={formValues['SVzSsDiZMN5'] || ''}
+                onChange={(e) => handleChange(e, 'SVzSsDiZMN5')}
                 fullWidth
                 size="small"
                 margin="dense"
-                InputProps={{ readOnly: true }}
-                className="grey-disabled"
+                // Editable
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 label="Phone Number"
-                value={getDataValue('SReqZgQk0RY')}
+                value={formValues['SReqZgQk0RY'] || ''}
+                onChange={(e) => handleChange(e, 'SReqZgQk0RY')}
                 fullWidth
                 size="small"
                 margin="dense"
-                InputProps={{ readOnly: true }}
-                className="grey-disabled"
+                // Editable
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
@@ -1394,7 +1486,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                   color="primary"
                   onClick={async () => {
                     setShowProgress(true);
-                    setProgress(10);
+                    setProgress(0);
                     await handleSubmit();
                     setProgress(60);
                     await sendFacilityUpdateEmail();
