@@ -9,7 +9,9 @@ import {
     Button,
     Spinner,
     Alert,
-    ProgressBar
+    ProgressBar,
+    Row,
+    Col
 } from 'react-bootstrap';
 import { Key, CheckCircle, ShieldLock } from 'react-bootstrap-icons';
 import usePasswordChange from '../../../components/hooks/usePasswordChange';
@@ -116,136 +118,140 @@ const PasswordChanger = () => {
     };
 
     return (
-        <Card className="shadow-sm">
-            <Card.Header className="bg-light">
-                <h3 className="mb-0 d-flex align-items-center">
-                    <Key className="me-2" /> Change Password
-                </h3>
-            </Card.Header>
+        <Row className="w-100" style={{ maxWidth: '500px' }}>
+            <Col>
+                <Card className="shadow-sm">
+                    <Card.Header className="bg-light">
+                        <h3 className="mb-0 d-flex align-items-center">
+                            <Key className="me-2" /> Change Password
+                        </h3>
+                    </Card.Header>
 
-            <Card.Body>
-                {error && (
-                    <Alert variant="danger" onClose={() => {}} dismissible>
-                        {error}
-                    </Alert>
-                )}
-
-                {success && (
-                    <Alert variant="success" onClose={() => {}} dismissible>
-                        <CheckCircle className="me-2" /> {success}
-                    </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                    <Form.Group className="mb-4">
-                        <Form.Label>Current Password <span className="text-danger">*</span></Form.Label>
-                        <Form.Control
-                            type="password"
-                            name="currentPassword"
-                            value={formData.currentPassword}
-                            onChange={handleChange}
-                            isInvalid={!!errors.currentPassword}
-                            placeholder="Enter your current password"
-                        />
-                        <Form.Control.Feedback type="invalid">
-                            {errors.currentPassword}
-                        </Form.Control.Feedback>
-                    </Form.Group>
-
-                    <div className="mb-4">
-                        <Form.Label>New Password <span className="text-danger">*</span></Form.Label>
-                        <Form.Control
-                            type="password"
-                            name="newPassword"
-                            value={formData.newPassword}
-                            onChange={handleChange}
-                            isInvalid={!!errors.newPassword}
-                            placeholder="Create a new password"
-                        />
-                        <Form.Control.Feedback type="invalid">
-                            {errors.newPassword}
-                        </Form.Control.Feedback>
-
-                        {formData.newPassword && (
-                            <div className="mt-2">
-                                <div className="d-flex justify-content-between mb-1">
-                                    <small>Password Strength:</small>
-                                    <small>{getPasswordStrengthLabel()}</small>
-                                </div>
-                                <ProgressBar
-                                    now={passwordStrength}
-                                    variant={getPasswordStrengthVariant()}
-                                    style={{ height: '6px' }}
-                                />
-                                <div className="mt-2">
-                                    <small className="text-muted d-block">
-                                        <ShieldLock className="me-1" /> Password must contain:
-                                    </small>
-                                    <div className="d-flex flex-wrap gap-3 mt-1">
-                                        <small className={formData.newPassword.length >= 8 ? 'text-success' : 'text-muted'}>
-                                            • At least 8 characters
-                                        </small>
-                                        <small className={/[A-Z]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
-                                            • Uppercase letter
-                                        </small>
-                                        <small className={/[0-9]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
-                                            • Number
-                                        </small>
-                                        <small className={/[^A-Za-z0-9]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
-                                            • Special character
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
+                    <Card.Body>
+                        {error && (
+                            <Alert variant="danger" onClose={() => {}} dismissible>
+                                {error}
+                            </Alert>
                         )}
-                    </div>
 
-                    <Form.Group className="mb-4">
-                        <Form.Label>Confirm New Password <span className="text-danger">*</span></Form.Label>
-                        <Form.Control
-                            type="password"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            isInvalid={!!errors.confirmPassword}
-                            placeholder="Confirm your new password"
-                        />
-                        <Form.Control.Feedback type="invalid">
-                            {errors.confirmPassword}
-                        </Form.Control.Feedback>
-                    </Form.Group>
+                        {success && (
+                            <Alert variant="success" onClose={() => {}} dismissible>
+                                <CheckCircle className="me-2" /> {success}
+                            </Alert>
+                        )}
 
-                    <div className="d-flex justify-content-end">
-                        <Button
-                            variant="primary"
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                <Spinner
-                                    as="span"
-                                    animation="border"
-                                    size="sm"
-                                    role="status"
-                                    aria-hidden="true"
-                                    className="me-2"
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Group className="mb-4">
+                                <Form.Label>Current Password <span className="text-danger">*</span></Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="currentPassword"
+                                    value={formData.currentPassword}
+                                    onChange={handleChange}
+                                    isInvalid={!!errors.currentPassword}
+                                    placeholder="Enter your current password"
                                 />
-                                Updating...
-                                </>
-                            ) : 'Change Password'}
-                        </Button>
-                    </div>
-                </Form>
-            </Card.Body>
+                                <Form.Control.Feedback type="invalid">
+                                    {errors.currentPassword}
+                                </Form.Control.Feedback>
+                            </Form.Group>
 
-            <Card.Footer className="bg-light">
-                <div className="text-center small text-muted">
-                    <ShieldLock className="me-1" />
-                    For security reasons, password changes require re-authentication on all devices
-                </div>
-            </Card.Footer>
-        </Card>
+                            <div className="mb-4">
+                                <Form.Label>New Password <span className="text-danger">*</span></Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="newPassword"
+                                    value={formData.newPassword}
+                                    onChange={handleChange}
+                                    isInvalid={!!errors.newPassword}
+                                    placeholder="Create a new password"
+                                />
+                                <Form.Control.Feedback type="invalid">
+                                    {errors.newPassword}
+                                </Form.Control.Feedback>
+
+                                {formData.newPassword && (
+                                    <div className="mt-2">
+                                        <div className="d-flex justify-content-between mb-1">
+                                            <small>Password Strength:</small>
+                                            <small>{getPasswordStrengthLabel()}</small>
+                                        </div>
+                                        <ProgressBar
+                                            now={passwordStrength}
+                                            variant={getPasswordStrengthVariant()}
+                                            style={{ height: '6px' }}
+                                        />
+                                        <div className="mt-2">
+                                            <small className="text-muted d-block">
+                                                <ShieldLock className="me-1" /> Password must contain:
+                                            </small>
+                                            <div className="d-flex flex-wrap gap-3 mt-1">
+                                                <small className={formData.newPassword.length >= 8 ? 'text-success' : 'text-muted'}>
+                                                    • At least 8 characters
+                                                </small>
+                                                <small className={/[A-Z]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
+                                                    • Uppercase letter
+                                                </small>
+                                                <small className={/[0-9]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
+                                                    • Number
+                                                </small>
+                                                <small className={/[^A-Za-z0-9]/.test(formData.newPassword) ? 'text-success' : 'text-muted'}>
+                                                    • Special character
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Form.Group className="mb-4">
+                                <Form.Label>Confirm New Password <span className="text-danger">*</span></Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    isInvalid={!!errors.confirmPassword}
+                                    placeholder="Confirm your new password"
+                                />
+                                <Form.Control.Feedback type="invalid">
+                                    {errors.confirmPassword}
+                                </Form.Control.Feedback>
+                            </Form.Group>
+
+                            <div className="d-flex justify-content-end">
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <>
+                                        <Spinner
+                                            as="span"
+                                            animation="border"
+                                            size="sm"
+                                            role="status"
+                                            aria-hidden="true"
+                                            className="me-2"
+                                        />
+                                        Updating...
+                                        </>
+                                    ) : 'Change Password'}
+                                </Button>
+                            </div>
+                        </Form>
+                    </Card.Body>
+
+                    <Card.Footer className="bg-light">
+                        <div className="text-center small text-muted">
+                            <ShieldLock className="me-1" />
+                            For security reasons, password changes require re-authentication on all devices
+                        </div>
+                    </Card.Footer>
+                </Card>
+            </Col>
+        </Row>
     );
 };
 

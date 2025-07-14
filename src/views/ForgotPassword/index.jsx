@@ -1,7 +1,6 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-// views/ForgotPassword.jsx
 import React, { useState } from 'react';
 import { Container, Card, Form, Button, Row, Col } from 'react-bootstrap';
 import { TextField } from '@mui/material';
@@ -32,7 +31,7 @@ const ForgotPassword = () => {
         try {
             // Replace with your actual API call
             const response = await AuthService.forgotPassword({
-                email: email
+                emailOrUsername: email
             });
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Success',
@@ -42,16 +41,22 @@ const ForgotPassword = () => {
             setEmail('');
             window.console.log("RESPONSE---");
             window.console.log(response);
-            window.console.log(response.code);
-            window.console.log(response.data);
             window.console.log("***---");
 
         } catch (error) {
-            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                title: 'Error',
-                message: error.message,
-                type: 'error'
-            });
+            if (error?.response?.status === 401) {
+                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                    title: 'Authentication Failed',
+                    message: 'Your session has expired. Please log in again.',
+                    type: 'error'
+                });
+            } else {
+                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                    title: 'Error',
+                    message: error.message || 'Failed to send reset instructions',
+                    type: 'error'
+                });
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -59,7 +64,7 @@ const ForgotPassword = () => {
 
     return (
         <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-            <Row className="w-100" style={{ maxWidth: '400px' }}>
+            <Row className="w-100" style={{ maxWidth: '500px' }}>
                 <Col>
                     <Card>
                         <Card.Body>
@@ -82,7 +87,7 @@ const ForgotPassword = () => {
                                     className="w-100 cta-btn"
                                     disabled={isSubmitting}
                                 >
-                                    {isSubmitting ? 'Sending...' : 'Send Reset One Time Password'}
+                                    {isSubmitting ? 'Sending...' : 'Send One Time Password'}
                                 </Button>
                             </Form>
                             <div className="text-center mt-3">

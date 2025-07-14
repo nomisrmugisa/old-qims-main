@@ -4,11 +4,13 @@ import './Header.css';
 import logo from '../assets/logo.png';
 import {eventBus, EVENTS } from '../events';
 import { useNavigate } from 'react-router-dom';
+import {AuthService, StorageService} from '../services';
 
 const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, setActiveDashboardSection }) => {
   const [orgUnitName, setOrgUnitName] = useState('');
   const [situationalAnalysisComplete, setSituationalAnalysisComplete] = useState(false);
     const navigate = useNavigate();
+    const [authUser, setAuthUser] = useState(null);
   
   // Function to check if Situational Analysis is green (completed)
   const isSituationalAnalysisGreen = () => {
@@ -40,7 +42,26 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     // Get organization unit name when component mounts or isLoggedIn changes
     if (isLoggedIn) {
       const fetchOrgUnitName = async () => {
-        try {
+          try {
+              const data = await AuthService.fetchOrganisationUnit();
+              window.console.log(data);
+              if (data && data.organisationUnits && data.organisationUnits.length > 0) {
+                  setOrgUnitName(data.organisationUnits[0].displayName);
+                  await StorageService.set('userOrgUnitName', data.organisationUnits[0].displayName);
+              }
+          }
+          catch(error) {
+              const storedOrgUnitName = await StorageService.get('userOrgUnitName');
+              if (storedOrgUnitName) {
+                  setOrgUnitName(storedOrgUnitName);
+              }
+          }
+          finally {
+
+          }
+
+
+        /*try {
           const credentials = localStorage.getItem('userCredentials');
           if (!credentials) {
             console.error('No credentials found in localStorage');
@@ -75,12 +96,23 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
           if (storedOrgUnitName) {
             setOrgUnitName(storedOrgUnitName);
           }
-        }
+        }*/
       };
 
       fetchOrgUnitName();
     }
   }, [isLoggedIn]);
+
+    useEffect(() => {
+
+        const getUserData = async() => {
+            const userData = await StorageService.getUserData();
+            window.console.log(userData);
+            setAuthUser(userData);
+        };
+
+        getUserData();
+    }, []);
 
   return (
     <header id="header" className="header sticky-top">
@@ -231,7 +263,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </button>
             )}
             {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Apply</a>
+                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Join</a>
             )}
           </div>
         </div>
