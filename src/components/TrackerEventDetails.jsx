@@ -912,8 +912,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         'wlWC4vYeTzt', 'cghjivP9xA2'
       ]; // 'Y4W5qIKlOsh',
 
+      const enrollmentIdsByProgram = {};
       for (const programId of programs) {
-        await createEnrollment(orgUnitId, programId, updatedTei);
+        const enrollmentId = await createEnrollment(orgUnitId, programId, updatedTei);
+        enrollmentIdsByProgram[programId] = enrollmentId;
       }
       console.log('✅ Step 8 COMPLETED: Program enrollments created for all programs');
       // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
@@ -965,8 +967,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         const newEventId = generateDhis2Uid();
         const nowIso = new Date().toISOString();
         // Use enrollment and orgUnit from previous steps
-        const enrollmentId = updatedTei; // from createEnrollment step
+        const enrollmentId = enrollmentIdsByProgram['EE8yeLVo6cN']; // use the correct enrollment for the event
         const orgUnitIdForEvent = orgUnitId; // from orgUnit creation step
+        console.log('Posting event for program:', 'EE8yeLVo6cN', 'with enrollment ID:', enrollmentId);
         // Build dataValues from form
         const dataValues = Object.keys(formValues).map(key => ({ dataElement: key, value: formValues[key] }));
         const newEventPayload = {
