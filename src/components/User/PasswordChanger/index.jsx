@@ -11,7 +11,7 @@ import {
     Alert,
     ProgressBar
 } from 'react-bootstrap';
-import { Key, CheckCircle, ShieldLock } from 'react-bootstrap-icons';
+import { Key, CheckCircle, ShieldLock, Eye, EyeSlash } from 'react-bootstrap-icons';
 import usePasswordChange from '../../../components/hooks/usePasswordChange';
 
 const PasswordChanger = () => {
@@ -20,6 +20,11 @@ const PasswordChanger = () => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
+    });
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false
     });
     const [errors, setErrors] = useState({});
     const [passwordStrength, setPasswordStrength] = useState(0);
@@ -140,7 +145,7 @@ const PasswordChanger = () => {
                     <Form.Group className="mb-4">
                         <Form.Label>Current Password <span className="text-danger">*</span></Form.Label>
                         <Form.Control
-                            type="password"
+                            type={showPasswords.current ? "text" : "password"}
                             name="currentPassword"
                             value={formData.currentPassword}
                             onChange={handleChange}
@@ -150,12 +155,22 @@ const PasswordChanger = () => {
                         <Form.Control.Feedback type="invalid">
                             {errors.currentPassword}
                         </Form.Control.Feedback>
+                        <div className="mt-2">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                                className="me-2"
+                            >
+                                {showPasswords.current ? <EyeSlash /> : <Eye />}
+                            </Button>
+                        </div>
                     </Form.Group>
 
                     <div className="mb-4">
                         <Form.Label>New Password <span className="text-danger">*</span></Form.Label>
                         <Form.Control
-                            type="password"
+                            type={showPasswords.new ? "text" : "password"}
                             name="newPassword"
                             value={formData.newPassword}
                             onChange={handleChange}
@@ -165,6 +180,16 @@ const PasswordChanger = () => {
                         <Form.Control.Feedback type="invalid">
                             {errors.newPassword}
                         </Form.Control.Feedback>
+                        <div className="mt-2">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                                className="me-2"
+                            >
+                                {showPasswords.new ? <EyeSlash /> : <Eye />}
+                            </Button>
+                        </div>
 
                         {formData.newPassword && (
                             <div className="mt-2">
@@ -203,7 +228,7 @@ const PasswordChanger = () => {
                     <Form.Group className="mb-4">
                         <Form.Label>Confirm New Password <span className="text-danger">*</span></Form.Label>
                         <Form.Control
-                            type="password"
+                            type={showPasswords.confirm ? "text" : "password"}
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
@@ -213,6 +238,16 @@ const PasswordChanger = () => {
                         <Form.Control.Feedback type="invalid">
                             {errors.confirmPassword}
                         </Form.Control.Feedback>
+                        <div className="mt-2">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                                className="me-2"
+                            >
+                                {showPasswords.confirm ? <EyeSlash /> : <Eye />}
+                            </Button>
+                        </div>
                     </Form.Group>
 
                     <div className="d-flex justify-content-end">

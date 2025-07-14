@@ -119,7 +119,7 @@ function App() {
 
   const triggerLoginClick = () => {
       setShowLoginModal(true);
-      navigate('/login');
+      // navigate('/login'); // Temporarily disabled to prevent routing
   };
 
   const handleLogout = () => {
@@ -155,7 +155,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/register" element={<Registration />} />
-              <Route path="/login" element={<Login />} />
+              {/* <Route path="/login" element={<Login />} /> */}
               <Route path="/facilities" element={<FacilitiesPage />} />
               <Route path="/facility/:facilityId" element={<FacilityDetailPage />} />
               <Route path="/conflict-resolution" element={<ConflictResolutionPage />} />

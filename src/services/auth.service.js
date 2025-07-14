@@ -86,7 +86,7 @@ const AuthService = {
         try {
             // Add timeout to prevent infinite loading
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Request timeout')), 10000)
+                setTimeout(() => reject(new Error('Request timeout - Please check your internet connection and try again.')), 10000)
             );
 
             const responsePromise = httpService.get('/me', {
@@ -112,9 +112,73 @@ const AuthService = {
             return response;
         } catch (error) {
             window.console.error('Auth error:', error);
+            
+            // Enhance error with more context
+            let enhancedError = error;
+            
+            if (error.response) {
+                // Server responded with error status
+                const status = error.response.status;
+                let message = error.response.data?.message || error.message;
+                
+                switch (status) {
+                    case 401:
+                        message = 'Invalid username or password. Please check your credentials and try again.';
+                        break;
+                    case 403:
+                        message = 'Access denied. Your account may be locked or you don\'t have permission to access this system.';
+                        break;
+                    case 404:
+                        message = 'User service not found. Please contact support if this problem persists.';
+                        break;
+                    case 410:
+                        message = 'Your account has expired. Please contact your administrator to renew your account.';
+                        break;
+                    case 423:
+                        message = 'Two-factor authentication is required for your account. Please enable 2FA and try again.';
+                        break;
+                    case 429:
+                        message = 'Too many login attempts. Please wait a few minutes before trying again.';
+                        break;
+                    case 500:
+                        message = 'Server error. Our team has been notified. Please try again in a few minutes.';
+                        break;
+                    case 502:
+                    case 503:
+                    case 504:
+                        message = 'Service temporarily unavailable. Please try again in a few minutes.';
+                        break;
+                }
+                
+                enhancedError.message = message;
+                enhancedError.userFriendly = true;
+            } else if (error.request) {
+                // Network error
+                if (error.message.includes('timeout')) {
+                    enhancedError.message = 'Request timed out. Please check your internet connection and try again.';
+                } else if (error.message.includes('Network Error')) {
+                    enhancedError.message = 'Network error. Please check your internet connection and try again.';
+                } else {
+                    enhancedError.message = 'Unable to connect to the server. Please check your internet connection and try again.';
+                }
+                enhancedError.userFriendly = true;
+            } else {
+                // Other errors
+                if (error.message.includes('timeout')) {
+                    enhancedError.message = 'Request timed out. Please check your internet connection and try again.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    enhancedError.message = 'Unable to connect to the server. Please check your internet connection and try again.';
+                } else if (error.message.includes('CORS')) {
+                    enhancedError.message = 'Cross-origin request blocked. Please contact support if this problem persists.';
+                } else {
+                    enhancedError.message = error.message || 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+                }
+                enhancedError.userFriendly = true;
+            }
+            
             // Ensure loading is hidden even on error
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "me"});
-            throw error;
+            throw enhancedError;
         }
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "me"});

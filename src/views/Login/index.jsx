@@ -49,7 +49,7 @@ const Login = () => {
         try {
             // Add timeout to prevent infinite loading
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 15000)
+                setTimeout(() => reject(new Error('Login request timed out. Please check your internet connection and try again.')), 15000)
             );
 
             const loginPromise = AuthService.me({
@@ -73,36 +73,73 @@ const Login = () => {
                 }
             });
 
-
-            /*const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Store tokens and user data (implementation depends on your auth system)
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('userData', JSON.stringify(data.user));
-
-                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                    title: 'Login Successful',
-                    message: 'Welcome back!',
-                    type: 'success',
-                    options: {
-                        willClose: () => navigate('/dashboard')
-                    }
-                });
-            } else {
-                throw new Error(data.message || 'Login failed');
-            }*/
         } catch (error) {
             window.console.error('Login error:', error);
-            const errorMessage = error.message || 'Login failed. Please check your credentials and try again.';
+            
+            let errorMessage = '';
+            let errorTitle = 'Login Failed';
+            
+            // Handle specific error types
+            if (error.response) {
+                // Server responded with error status
+                const status = error.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = 'Invalid request. Please check your email and password format.';
+                        break;
+                    case 401:
+                        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+                        break;
+                    case 403:
+                        errorMessage = 'Access denied. Your account may be locked or you don\'t have permission to access this system.';
+                        break;
+                    case 404:
+                        errorMessage = 'Login service not found. Please contact support if this problem persists.';
+                        break;
+                    case 410:
+                        errorMessage = 'Your account has expired. Please contact your administrator to renew your account.';
+                        break;
+                    case 423:
+                        errorMessage = 'Two-factor authentication is required for your account. Please enable 2FA and try again.';
+                        break;
+                    case 429:
+                        errorMessage = 'Too many login attempts. Please wait a few minutes before trying again.';
+                        break;
+                    case 500:
+                        errorMessage = 'Server error. Our team has been notified. Please try again in a few minutes.';
+                        break;
+                    case 502:
+                    case 503:
+                    case 504:
+                        errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+                        break;
+                    default:
+                        errorMessage = `Login failed (${status}). Please try again or contact support if the problem persists.`;
+                }
+            } else if (error.request) {
+                // Network error
+                if (error.message.includes('timeout')) {
+                    errorMessage = 'Request timed out. Please check your internet connection and try again.';
+                } else if (error.message.includes('Network Error')) {
+                    errorMessage = 'Network error. Please check your internet connection and try again.';
+                } else {
+                    errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+                }
+            } else {
+                // Other errors
+                if (error.message.includes('timeout')) {
+                    errorMessage = 'Request timed out. Please check your internet connection and try again.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'Cross-origin request blocked. Please contact support if this problem persists.';
+                } else {
+                    errorMessage = error.message || 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+                }
+            }
+            
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                title: 'Error',
+                title: errorTitle,
                 message: errorMessage,
                 type: 'error'
             });

@@ -287,14 +287,14 @@ function RegistrationForm() {
 
       // 3. Send Welcome Email (remains third)
       try {
-        const emailResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/send-email`, {
+        const emailResponse = await fetch('/email2/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: formData.email,
-            username: formData.userName,
+            emails: [formData.email],
+            username: formData.email,
             password: DEFAULT_PASSWORD
           })
         });
