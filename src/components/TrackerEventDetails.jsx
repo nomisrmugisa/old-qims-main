@@ -951,8 +951,51 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setOpenSnackbar(true);
         setProgress(85); // After user org unit updates
 
-        console.log('Step 10: Sending email notification...');
-        // Step 10: Email sending is deactivated, but we simulate success for downstream logic
+        // Step: Create new tracker event before sending facility update email
+        // Generate DHIS2 UID for event
+        function generateDhis2Uid() {
+          const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let uid = '';
+          uid += alphabet[Math.floor(Math.random() * 52)];
+          for (let i = 0; i < 10; i++) {
+            uid += alphabet[Math.floor(Math.random() * alphabet.length)];
+          }
+          return uid;
+        }
+        const newEventId = generateDhis2Uid();
+        const nowIso = new Date().toISOString();
+        // Use enrollment and orgUnit from previous steps
+        const enrollmentId = updatedTei; // from createEnrollment step
+        const orgUnitIdForEvent = orgUnitId; // from orgUnit creation step
+        // Build dataValues from form
+        const dataValues = Object.keys(formValues).map(key => ({ dataElement: key, value: formValues[key] }));
+        const newEventPayload = {
+          events: [
+            {
+              event: newEventId,
+              program: 'EE8yeLVo6cN',
+              programStage: 'WjheMIcXSkU',
+              enrollment: enrollmentId,
+              orgUnit: orgUnitIdForEvent,
+              occurredAt: nowIso,
+              dataValues
+            }
+          ]
+        };
+        const trackerResponse = await fetch('/api/40/tracker?async=false', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${credentials}`
+          },
+          body: JSON.stringify(newEventPayload)
+        });
+        if (!trackerResponse.ok) {
+          throw new Error('Failed to create new tracker event');
+        }
+        setProgress(90);
+
+        // Now send the facility update email
         setCurrentStep('Sending notification...');
         // Simulate email success without making the API call
         const emailSuccess = true;
