@@ -131,6 +131,11 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         const userData = await meResponse.json();
         console.log('User data:', userData);
 
+        // Store user email in localStorage for later use
+        if (userData.email) {
+          localStorage.setItem('userEmail', userData.email);
+        }
+
         // Get the DHIS2 Registration Code from twitter field
         const registrationCode = userData.twitter;
         setRegistrationCode(registrationCode); // Store in state for later use
@@ -163,24 +168,6 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
           if (eventData) {
             setEventData(eventData);
-
-            // Only prefill Users Email Address
-            const initialFormValues = {};
-            if (userData.email) {
-              initialFormValues['NVlLoMZbXIW'] = userData.email;
-            }
-            setFormValues(initialFormValues);
-
-            // If there's a location value, set the selected org unit
-            setSelectedOrgUnit(null);
-
-            // Check if all required fields are filled
-            checkFormCompletion();
-
-            // No prefilled data, so editing is always enabled
-            setHasExistingData(false);
-            setIsEditing(true);
-
             setLoading(false);
             return;
           }
@@ -213,6 +200,16 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       eventData.dataValues.forEach(dv => {
         initialFormValues[dv.dataElement] = dv.value;
       });
+      
+      // If user email is not in event data, add it from user data
+      if (!initialFormValues['NVlLoMZbXIW'] && registrationCode) {
+        // Get user email from localStorage or fetch it
+        const userEmail = localStorage.getItem('userEmail');
+        if (userEmail) {
+          initialFormValues['NVlLoMZbXIW'] = userEmail;
+        }
+      }
+      
       setFormValues(initialFormValues);
       setHasExistingData(true);
       setIsEditing(false);
@@ -222,7 +219,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         onEventDataFetched(eventData);
       }
     }
-  }, [eventData, onEventDataFetched]);
+  }, [eventData, onEventDataFetched, registrationCode]);
 
   useEffect(() => {
     const fetchOrgUnitName = async () => {
@@ -641,12 +638,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
   const addOrgUnitToProgram = async (orgUnitId) => {
     try {
-      console.log('📋 Step 6a: Preparing to add organization unit to programs...');
+      // console.log('📋 Step 6a: Preparing to add organization unit to programs...');
+      // const programs = [
+      //   'EE8yeLVo6cN', 'Xje2ga2tJcA', 'QSQWCmnsQtG',
+      //   'adbaKjLFtYH', 'fWc9nCmUjez', 'Y4W5qIKlOsh',
+      //   'wlWC4vYeTzt', 'cghjivP9xA2'
+      // ];
+
       const programs = [
-        'EE8yeLVo6cN', 'Xje2ga2tJcA', 'QSQWCmnsQtG',
-        'adbaKjLFtYH', 'fWc9nCmUjez', 'Y4W5qIKlOsh',
-        'wlWC4vYeTzt', 'cghjivP9xA2'
-      ];
+        'EE8yeLVo6cN']
 
       console.log(`🎯 Adding org unit ${orgUnitId} to ${programs.length} programs:`, programs);
 
@@ -981,7 +981,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       let eventPayload;
       if (eventData) {
         eventPayload = {
-          event: registrationCode || eventData.event,
+          event: registrationCode,
           status: "COMPLETED",
           program: eventData.program,
           programStage: eventData.programStage,
@@ -1139,11 +1139,11 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       // Step 2c: Create enrollments for all programs
       setCurrentStep('Saving...');
       // setCurrentStep('Creating program enrollments...');
-      const programs = [
-        'EE8yeLVo6cN', 'Xje2ga2tJcA', 'QSQWCmnsQtG',
-        'adbaKjLFtYH', 'fWc9nCmUjez',
-        'wlWC4vYeTzt', 'cghjivP9xA2'
-      ]; // 'Y4W5qIKlOsh',
+      const programs = ['EE8yeLVo6cN']
+      //   , 'Xje2ga2tJcA', 'QSQWCmnsQtG',
+      //   'adbaKjLFtYH', 'fWc9nCmUjez',
+      //   'wlWC4vYeTzt', 'cghjivP9xA2'
+      // ]; // 'Y4W5qIKlOsh',
 
       console.log('🎯 Programs to enroll in:', programs);
       console.log('🏢 Organization Unit ID:', orgUnitId);
@@ -1489,6 +1489,127 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
+          {/* Debug Information Section */}
+          <Box sx={{ 
+            mb: 3, 
+            p: 2, 
+            backgroundColor: '#f8f9fa', 
+            border: '1px solid #dee2e6', 
+            borderRadius: 1,
+            borderLeft: '4px solid #007bff'
+          }}>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
+              🔍 Debug Information
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Registration Code (Twitter):
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  fontFamily: 'monospace', 
+                  backgroundColor: '#e9ecef', 
+                  p: 1, 
+                  borderRadius: 0.5,
+                  wordBreak: 'break-all'
+                }}>
+                  {registrationCode || 'Not found'}
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Event Data Status:
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  fontFamily: 'monospace', 
+                  backgroundColor: eventData ? '#d4edda' : '#f8d7da', 
+                  color: eventData ? '#155724' : '#721c24',
+                  p: 1, 
+                  borderRadius: 0.5
+                }}>
+                  {eventData ? '✅ Event data found' : '❌ No event data'}
+                </Typography>
+              </Grid>
+              
+              {eventData && (
+                <>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      Event ID:
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: 'monospace', 
+                      backgroundColor: '#e9ecef', 
+                      p: 1, 
+                      borderRadius: 0.5,
+                      wordBreak: 'break-all'
+                    }}>
+                      {eventData.event || 'Not available'}
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      Tracked Entity Instance:
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: 'monospace', 
+                      backgroundColor: '#e9ecef', 
+                      p: 1, 
+                      borderRadius: 0.5,
+                      wordBreak: 'break-all'
+                    }}>
+                      {eventData.trackedEntityInstance || 'Not available'}
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      Data Values Count:
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: 'monospace', 
+                      backgroundColor: '#e9ecef', 
+                      p: 1, 
+                      borderRadius: 0.5
+                    }}>
+                      {eventData.dataValues ? `${eventData.dataValues.length} data values found` : 'No data values'}
+                    </Typography>
+                  </Grid>
+                  
+                  {eventData.dataValues && eventData.dataValues.length > 0 && (
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        Data Values Preview:
+                      </Typography>
+                      <Box sx={{ 
+                        maxHeight: '200px', 
+                        overflow: 'auto', 
+                        backgroundColor: '#e9ecef', 
+                        p: 1, 
+                        borderRadius: 0.5,
+                        border: '1px solid #dee2e6'
+                      }}>
+                        <pre style={{ 
+                          margin: 0, 
+                          fontSize: '0.75rem', 
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all'
+                        }}>
+                          {JSON.stringify(eventData.dataValues.slice(0, 5), null, 2)}
+                          {eventData.dataValues.length > 5 && '\n... (showing first 5 values)'}
+                        </pre>
+                      </Box>
+                    </Grid>
+                  )}
+                </>
+              )}
+            </Grid>
+          </Box>
+
           <Typography
             variant="h6"
             gutterBottom
