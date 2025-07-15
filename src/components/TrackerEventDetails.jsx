@@ -20,6 +20,7 @@ import {
   Box as MuiBox
 } from '@mui/material';
 import debounce from 'lodash/debounce';
+import {StorageService} from '../services';
 
 // Define required fields for "Other Details" section
 const requiredOtherDetailsFields = [
@@ -54,7 +55,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [currentStep, setCurrentStep] = useState('');
 
   const [locationName, setLocationName] = useState('');
-  const credentials = localStorage.getItem('userCredentials');
+  const credentials = StorageService.get('userCredentials');
 
   // Add state for progress
   const [progress, setProgress] = useState(0);
@@ -89,7 +90,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // const credentials = localStorage.getItem('userCredentials');
+        // const credentials = StorageService.get('userCredentials');
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
         if (!credentials || !userOrgUnitId) {
@@ -201,7 +202,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
 
       try {
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = StorageService.get('userCredentials');
         if (!credentials) {
           console.error('No credentials found for fetching org unit name');
           return;
@@ -289,7 +290,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const fetchOrganisationalUnits = async () => {
     setIsLoadingOrgUnits(true);
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = StorageService.get('userCredentials');
       if (!credentials) {
         console.error("No credentials found");
         setIsLoadingOrgUnits(false);
@@ -727,7 +728,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
 
       // 2. Fetch additional emails from the API
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = StorageService.get('userCredentials');
       const usersResponse = await fetch('/api/users?fields=email,userGroups[id]&filter=userGroups.id:eq:cxNjCzLB6tI&paging=false', {
         headers: {
           Authorization: `Basic ${credentials}`,

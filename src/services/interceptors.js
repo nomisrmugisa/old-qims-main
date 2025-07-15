@@ -119,6 +119,12 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
                     },
                 };
             }
+            else if(error.request && error.request.responseText) {
+                window.console.log(error.request.responseText);
+                const {message} = JSON.parse(error.request.responseText);
+                if(message)
+                    error.message = message;
+            }
 
             return Promise.reject(error);
         }

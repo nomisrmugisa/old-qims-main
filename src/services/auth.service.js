@@ -268,7 +268,33 @@ const AuthService = {
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
-    }
+    },
+    changePassword: async(data) => {
+        const method = "changePassword";
+        const token = await getAuthToken('Basic');
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        window.console.log(data);
+        try {
+
+            const response = await httpService.put('/me/changePassword', data, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+
+            window.console.log(response);
+            return response;
+        } catch (error) {
+            window.console.error(`${method} error:`, error);
+
+            // Ensure loading is hidden even on error - NOT NEEDED WHEN USING FINALLY
+            //eventBus.emit(EVENTS.LOADING_HIDE, { source: "auth_service", method: "me"});
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
 };
 
 export default AuthService;

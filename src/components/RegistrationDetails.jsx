@@ -12,6 +12,7 @@ import AddEquipmentDialog from './AddEquipmentDialog';
 import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 import CustomDateRangePicker from './CustomDateRangePicker';
+import {StorageService} from '../services';
 // import { useTheme } from '@mui/material/styles';
 
 // Inside your component:
@@ -536,7 +537,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       // Directly fetch organization unit from API instead of localStorage
       const fetchOrgUnitAndTrackedEntity = async () => {
         try {
-          const credentials = localStorage.getItem('userCredentials');
+          const credentials = await StorageService.get('userCredentials');
           if (!credentials) {
             console.error('❌ No credentials found in localStorage');
             return;
@@ -672,7 +673,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
     
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
 
     console.log("🔐 Auth & Config Check:");
     console.log("- Has credentials:", Boolean(credentials));
@@ -842,7 +843,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
@@ -960,7 +961,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
@@ -1036,7 +1037,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("🔄 === STARTING INSPECTION DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
-    console.log("- userCredentials exists:", !!localStorage.getItem('userCredentials'));
+    console.log("- userCredentials exists:", !!StorageService.get('userCredentials'));
     console.log("- userOrgUnitId:", localStorage.getItem('userOrgUnitId'));
     
     if (!trackedEntityInstanceId) {
@@ -1045,7 +1046,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
@@ -1166,7 +1167,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
@@ -1447,7 +1448,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
@@ -1525,7 +1526,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = await StorageService.get('userCredentials');
         const response = await fetch(
           `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
           {

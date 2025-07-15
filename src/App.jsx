@@ -29,6 +29,7 @@ import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
+import PasswordChangePage from './views/ChangePassword';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -102,7 +103,7 @@ function App() {
             window.console.log("credentials: ", credentials);
             window.console.log("remember: ", rememberMe);
             setIsLoggedIn(true);
-            navigate('/dashboards/facility-ownership');
+            //navigate('/dashboards/facility-ownership');
         }
         else
             setIsLoading(false); // Finish initial loading regardless of login state
@@ -179,6 +180,7 @@ function App() {
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
               <Route path="/dashboard" element={<FacilityUserDashboardPage />} />
               <Route path="/facility-user-management" element={<FacilityUserManagementPage />} />
+              <Route path="/password-change" element={<PasswordChangePage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

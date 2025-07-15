@@ -57,7 +57,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
               }
           }
           finally {
-
+              eventBus.emit(EVENTS.LOADING_HIDE, { source: "Header", method: "fetchOrgUnitName"});
           }
 
 

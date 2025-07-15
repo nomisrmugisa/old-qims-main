@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './EditEmployeeRegistrationDialog.css';
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => {
   const [formData, setFormData] = useState({
@@ -53,7 +54,7 @@ const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => 
 
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required. Please log in again.");
@@ -88,7 +89,7 @@ const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => 
     const dataElementId = fieldToDataElementMap[fieldName];
     if (!dataElementId || !event) return;
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setFieldStates(prev => ({
         ...prev,
@@ -229,7 +230,7 @@ const EditEmployeeRegistrationDialog = ({ open, onClose, onSuccess, event }) => 
     setErrorMessage("");
 
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");
       }
