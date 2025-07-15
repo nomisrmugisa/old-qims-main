@@ -30,7 +30,7 @@ const requiredOtherDetailsFields = [
   'VJzk8OdFJKA'  // Location in Botswana
 ];
 
-const TrackerEventDetails = ({ onFormStatusChange }) => {
+const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [eventData, setEventData] = useState(null);
@@ -92,7 +92,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     setLoading(false);
     setHasExistingData(false);
     setIsEditing(true);
-    checkFormCompletion(initialFormValues);
+    checkFormCompletion();
   };
 
   // Notify parent when facility name changes
@@ -175,7 +175,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             setSelectedOrgUnit(null);
 
             // Check if all required fields are filled
-            checkFormCompletion(initialFormValues);
+            checkFormCompletion();
 
             // No prefilled data, so editing is always enabled
             setHasExistingData(false);
@@ -216,8 +216,13 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       setFormValues(initialFormValues);
       setHasExistingData(true);
       setIsEditing(false);
+      
+      // Notify parent component about the fetched event data
+      if (onEventDataFetched) {
+        onEventDataFetched(eventData);
+      }
     }
-  }, [eventData]);
+  }, [eventData, onEventDataFetched]);
 
   useEffect(() => {
     const fetchOrgUnitName = async () => {
@@ -279,11 +284,52 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     return () => clearTimeout(timer);
   }, [formValues['VJzk8OdFJKA']]);
 
-  // Check if all required fields are filled
-  const checkFormCompletion = (values) => {
-    const isComplete = requiredOtherDetailsFields.every(field => {
-      return values[field] && values[field].trim() !== '';
+  // Helper function to check if a specific field is missing
+  const isFieldMissing = (fieldId) => {
+    const validation = validateAllRequiredFields();
+    return validation.missingFields.includes(fieldId);
+  };
+
+  // Enhanced validation function to check if all required fields are filled
+  const validateAllRequiredFields = () => {
+    const missingFields = [];
+    
+    // Check each required field
+    requiredOtherDetailsFields.forEach(fieldId => {
+      const value = formValues[fieldId];
+      if (!value || value.trim() === '') {
+        missingFields.push(fieldId);
+      }
     });
+    
+    // Additional validation for specific fields
+    if (formValues['PdtizqOqE6Q'] && formValues['PdtizqOqE6Q'].trim().length < 3) {
+      missingFields.push('PdtizqOqE6Q'); // Facility name too short
+    }
+    
+    if (formValues['aMFg2iq9VIg'] && formValues['aMFg2iq9VIg'].trim().length < 5) {
+      missingFields.push('aMFg2iq9VIg'); // Private Practice Number too short
+    }
+    
+    return {
+      isValid: missingFields.length === 0,
+      missingFields,
+      missingFieldNames: missingFields.map(fieldId => {
+        const fieldNames = {
+          'aMFg2iq9VIg': 'Private Practice Number',
+          'HMk4LZ9ESOq': 'Name of the License Holder',
+          'ykwhsQQPVH0': 'Surname of License Holder',
+          'PdtizqOqE6Q': 'Name of Facility to be Registered',
+          'VJzk8OdFJKA': 'Location in Botswana (Ward)'
+        };
+        return fieldNames[fieldId] || fieldId;
+      })
+    };
+  };
+
+  const checkFormCompletion = () => {
+    const validation = validateAllRequiredFields();
+    const isComplete = validation.isValid;
 
     setIsFormComplete(isComplete);
 
@@ -294,6 +340,13 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
     // Also store in localStorage for access by other components
     localStorage.setItem('completeApplicationFormStatus', JSON.stringify(isComplete));
+    
+    // Log validation details for debugging
+    if (!isComplete) {
+      console.log('Form validation failed. Missing fields:', validation.missingFieldNames);
+    } else {
+      console.log('Form validation passed. All required fields are filled.');
+    }
   };
 
   // Fetch organisational units when entering edit mode
@@ -314,7 +367,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
   // Check form completion whenever form values change
   useEffect(() => {
-    checkFormCompletion(formValues);
+    checkFormCompletion();
   }, [formValues]);
 
   const fetchOrganisationalUnits = async () => {
@@ -434,7 +487,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       setFilteredOrgUnits(organisationalUnits);
 
       // Check form completion with original values
-      checkFormCompletion(originalValues);
+      checkFormCompletion();
     }
     setIsEditing(!isEditing);
   };
@@ -501,15 +554,18 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       console.log(`📍 Parent Organization Unit ID: ${parentOrgUnitId}`);
       console.log(`🏢 Facility Name: ${formValues['PdtizqOqE6Q']}`);
       console.log(`🆔 Generated Org Unit ID: ${orgUnitId}`);
+      console.log(`📧 User Email: ${formValues['NVlLoMZbXIW']}`);
 
       const orgUnitPayload = {
         name: formValues['PdtizqOqE6Q'],
         id: orgUnitId,
         shortName: shortName,
-        openingDate: new Date().toISOString(),
+        openingDate: new Date().toISOString().split('T')[0],
         parent: {
           id: parentOrgUnitId
-        }
+        },
+        // Add the standard DHIS2 email field
+        email: formValues['NVlLoMZbXIW'] || ''
       };
 
       console.log('📦 Organization Unit Payload:', orgUnitPayload);
@@ -547,6 +603,34 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         throw new Error('Failed to create organization unit');
       }
       console.log('✅ Organization unit creation successful');
+
+      // Step 5d: Update organization unit with email if not set during creation
+      if (formValues['NVlLoMZbXIW']) {
+        console.log('📧 Step 5d: Setting email on organization unit...');
+        
+        const updatePayload = {
+          id: orgUnitId,
+          name: formValues['PdtizqOqE6Q'],
+          shortName: shortName,
+          openingDate: new Date().toISOString().split('T')[0],
+          email: formValues['NVlLoMZbXIW']
+        };
+
+        const updateResponse = await fetch(`/api/29/organisationUnits/${orgUnitId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${credentials}`
+          },
+          body: JSON.stringify(updatePayload)
+        });
+
+        if (!updateResponse.ok) {
+          console.warn('⚠️ Failed to update organization unit with email:', updateResponse.status);
+        } else {
+          console.log('✅ Organization unit email set successfully');
+        }
+      }
 
       return orgUnitId;
     } catch (error) {
@@ -591,7 +675,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
 
       console.log('📊 Step 6c: Checking results...');
       console.log('Program addition results:', results);
-      
+
       // Check if all operations were successful
       const allSuccess = results.every(result => result === true);
       if (!allSuccess) {
@@ -683,12 +767,12 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       
       const enrollmentPayload = {
         enrollment: enrollmentId,
-        trackedEntityInstance: teiCalled,
-        program: programId,
-        status: "ACTIVE",
-        orgUnit: orgUnitId,
-        enrollmentDate: today,
-        incidentDate: today
+          trackedEntityInstance: teiCalled,
+          program: programId,
+          status: "ACTIVE",
+          orgUnit: orgUnitId,
+          enrollmentDate: today,
+          incidentDate: today
       };
 
       console.log('📦 Enrollment Payload:', enrollmentPayload);
@@ -720,10 +804,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       console.log('👤 Step 9a: Fetching current user information...');
       // Get current user information from /api/me
       const meResponse = await fetch('/api/me', {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${credentials}`
-        }
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${credentials}`
+          }
       });
 
       if (!meResponse.ok) {
@@ -983,28 +1067,29 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
       }
       const payload = { events: [eventPayload] };
 
-      console.log('Step 4: Sending update request to DHIS2...');
-      console.log('Using registration code as eventID:', registrationCode);
-      // Send the request
-      // setCurrentStep('Accepting request ...');
-      setCurrentStep('Saving...');
+      // Prepare the first event with programStage 'YzqtE5Uv8Qd' and only allowed fields
+      const firstEvent = { ...eventPayload };
+      firstEvent.programStage = 'YzqtE5Uv8Qd';
+      const allowedKeys = [
+        'occurredAt', 'status', 'notes', 'completedAt', 'program', 'programStage', 'orgUnit', 'dataValues'
+      ];
+      const strippedFirstEvent = Object.fromEntries(
+        Object.entries(firstEvent).filter(([key]) => allowedKeys.includes(key))
+      );
+
+      console.log('Step 4: Sending event to DHIS2...');
+      console.log('Event payload:', strippedFirstEvent);
       const API_URL = `/api/40/tracker?async=false`;
 
+      const firstEventPayload = { events: [strippedFirstEvent] };
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Basic ${credentials}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(firstEventPayload)
       });
-
-      // const contentType = response.headers.get('content-type');
-      // if (!response.ok || !contentType?.includes('application/json')) {
-      //     const raw = await response.text(); // Get raw response
-      //     console.error('Unexpected response:', raw);
-      //     throw new Error('Server did not return JSON. Check API URL and authentication.');
-      // }
 
       const result = await response.json();
       console.log('✅ Step 4 COMPLETED: DHIS2 update successful:', result);
@@ -1074,9 +1159,29 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         if (createdEnrollmentId) {
           enrollmentIdsByProgram[programId] = createdEnrollmentId;
           console.log(`✅ Enrollment stored for program ${programId}: ${createdEnrollmentId}`);
+          
+          // Special validation for the critical program EE8yeLVo6cN
+          if (programId === 'EE8yeLVo6cN') {
+            console.log(`🎯 CRITICAL: Successfully created enrollment for target program ${programId}`);
+            console.log(`🆔 Target program enrollment ID: ${createdEnrollmentId}`);
+          }
+        } else {
+          console.error(`❌ Failed to create enrollment for program ${programId}`);
+          if (programId === 'EE8yeLVo6cN') {
+            throw new Error(`CRITICAL: Failed to create enrollment for required program ${programId}`);
+          }
         }
       }
+      
+      // Final validation: Ensure EE8yeLVo6cN enrollment exists
+      if (!enrollmentIdsByProgram['EE8yeLVo6cN']) {
+        console.error('❌ CRITICAL ERROR: Missing enrollment for program EE8yeLVo6cN');
+        console.error('Created enrollments:', enrollmentIdsByProgram);
+        throw new Error('Failed to create required enrollment for program EE8yeLVo6cN');
+      }
+      
       console.log('✅ Step 8 COMPLETED: Program enrollments created for all programs');
+      console.log('📋 Final enrollment mapping:', enrollmentIdsByProgram);
       // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
       setSuccessMessages(prev => [...prev, '4 / 5']);
       setOpenSnackbar(true);
@@ -1101,32 +1206,32 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           setOpenSnackbar(true);
           setProgress(85);
         } else {
-          const orgUnitTypes = [
-            'organisationUnits',
-            'dataViewOrganisationUnits',
-            'teiSearchOrganisationUnits'
-          ];
+        const orgUnitTypes = [
+          'organisationUnits',
+          'dataViewOrganisationUnits',
+          'teiSearchOrganisationUnits'
+        ];
 
           console.log('🔄 Step 9b: Org unit types to update:', orgUnitTypes);
           console.log('🏢 Organization unit ID to assign:', orgUnitId);
 
-          // setCurrentStep(`Assigning User to New Facility...`);
-          setCurrentStep('Saving...');
-          for (const user of users) {
+        // setCurrentStep(`Assigning User to New Facility...`);
+        setCurrentStep('Saving...');
+        for (const user of users) {
             console.log(`👤 Processing user: ${user.username} (ID: ${user.id})`);
-            for (const orgUnitType of orgUnitTypes) {
+          for (const orgUnitType of orgUnitTypes) {
               console.log(`🔄 Updating ${orgUnitType} for user ${user.username}...`);
-              await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
-            }
-            // await enableUser(user.id);
-            // await addUsertoLocation(user.id);
-            console.log(`✅ Completed updates for user ${user.id}`);
+            await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
           }
-          console.log('✅ Step 9 COMPLETED: Users enabled and assigned to location');
-          // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
-          setSuccessMessages(prev => [...prev, '5 / 5']);
+          // await enableUser(user.id);
+          // await addUsertoLocation(user.id);
+            console.log(`✅ Completed updates for user ${user.id}`);
+        }
+        console.log('✅ Step 9 COMPLETED: Users enabled and assigned to location');
+        // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
+        setSuccessMessages(prev => [...prev, '5 / 5']);
 
-          setOpenSnackbar(true);
+        setOpenSnackbar(true);
           setProgress(85); // After user org unit updates
         }
 
@@ -1144,12 +1249,26 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         }
         const newEventId = generateDhis2Uid();
         const nowIso = new Date().toISOString();
+        
+        // CRITICAL: Ensure we have a valid enrollment for program EE8yeLVo6cN
+        const targetProgramId = 'EE8yeLVo6cN';
+        const enrollmentId = enrollmentIdsByProgram[targetProgramId];
+        
+        console.log('🎯 Target program ID:', targetProgramId);
+        console.log('📋 Available enrollments by program:', enrollmentIdsByProgram);
+        console.log('📋 Enrollment ID for target program:', enrollmentId);
+        
+        if (!enrollmentId) {
+          console.error(`❌ CRITICAL ERROR: No enrollment found for program ${targetProgramId}`);
+          console.error('Available enrollments:', Object.keys(enrollmentIdsByProgram));
+          throw new Error(`Missing enrollment for program ${targetProgramId}. Cannot create event without proper enrollment.`);
+        }
+        
         // Use enrollment and orgUnit from previous steps
-        const enrollmentId = enrollmentIdsByProgram['EE8yeLVo6cN']; // use the correct enrollment for the event
         const orgUnitIdForEvent = orgUnitId; // from orgUnit creation step
-        console.log('📝 Creating event for program: EE8yeLVo6cN');
+        console.log('📝 Creating event for program:', targetProgramId);
         console.log('🆔 New event ID:', newEventId);
-        console.log('📋 Enrollment ID:', enrollmentId);
+        console.log('✅ Verified enrollment ID:', enrollmentId);
         console.log('🏢 Organization unit ID:', orgUnitIdForEvent);
         console.log('📅 Event date:', nowIso);
         
@@ -1161,9 +1280,9 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           events: [
             {
               event: newEventId,
-              program: 'EE8yeLVo6cN',
+              program: targetProgramId, // Use the validated program ID
               programStage: 'WjheMIcXSkU',
-              enrollment: enrollmentId,
+              enrollment: enrollmentId,  // This is now guaranteed to match the program
               orgUnit: orgUnitIdForEvent,
               occurredAt: nowIso,
               dataValues
@@ -1171,6 +1290,21 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           ]
         };
         
+        // Before posting newEventPayload.events batch:
+        if (Array.isArray(newEventPayload.events) && newEventPayload.events.length > 1) {
+          newEventPayload.events[1].programStage = 'WjheMIcXSkU';
+          if ('enrollment' in newEventPayload.events[1]) {
+            delete newEventPayload.events[1].enrollment;
+          }
+          // Only keep allowed fields for the first event
+          const allowedKeys = [
+            'occurredAt', 'status', 'notes', 'completedAt', 'program', 'programStage', 'orgUnit', 'dataValues'
+          ];
+          newEventPayload.events[0] = Object.fromEntries(
+            Object.entries(newEventPayload.events[0]).filter(([key]) => allowedKeys.includes(key))
+          );
+        }
+
         console.log('📦 New event payload:', newEventPayload);
         console.log('📤 Step 10b: Sending new tracker event to DHIS2...');
         
@@ -1249,12 +1383,10 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
         setOpenSnackbar(true);
       }
 
-      // Call the onSave callback with the updated data
-      onSave({
-        ...formData,
-        checklist,
-        comments
-      });
+      // Call the onUpdateSuccess callback with the updated event data
+      if (onUpdateSuccess) {
+        onUpdateSuccess(eventData || { event: registrationCode });
+      }
 
       setCurrentStep('Request accepted successfully!');
       console.log('🎉 === APPLICATION UPDATE PROCESS COMPLETED ===');
@@ -1673,7 +1805,29 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
             </Box>
           </Box>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2, flexDirection: 'column' }}>
+            {/* Validation message */}
+            {!isFormComplete && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: '#fff3cd', 
+                border: '1px solid #ffeaa7', 
+                borderRadius: 1,
+                mb: 2
+              }}>
+                <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 'medium', mb: 1 }}>
+                  ⚠️ Please complete all required fields before submitting:
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                  {validateAllRequiredFields().missingFieldNames.map((fieldName, index) => (
+                    <Typography key={index} variant="body2" color="warning.dark" component="li">
+                      • {fieldName}
+                    </Typography>
+                  ))}
+                </Box>
+              </Box>
+            )}
+            
             {/* {!isEditing ? (
               <Button
                 variant="outlined"
@@ -1691,6 +1845,13 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                   variant="contained"
                   color="primary"
                   onClick={async () => {
+                    // Double-check validation before proceeding
+                    const validation = validateAllRequiredFields();
+                    if (!validation.isValid) {
+                      console.error('Form validation failed. Cannot proceed with submission.');
+                      return;
+                    }
+                    
                     setShowProgress(true);
                     setProgress(0);
                     await handleSubmit();
@@ -1702,8 +1863,12 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
                       setProgress(0);
                     }, 800);
                   }}
-                  disabled={updating}
+                  disabled={updating || !isFormComplete}
                   size="small"
+                  sx={{
+                    opacity: isFormComplete ? 1 : 0.6,
+                    cursor: isFormComplete && !updating ? 'pointer' : 'not-allowed'
+                  }}
                 >
                   {updating ? 'Updating...' : 'Update Application Details'}
                 </Button>

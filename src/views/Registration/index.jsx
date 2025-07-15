@@ -11,24 +11,6 @@ import './index.css';
 import { AuthService, UserService } from '../../services';
 
 
-const listUserGroups = async () => {
-    try {
-        const data = await UserService.listGroups();
-        window.console.log("lookup result");
-        window.console.log(data);
-        /*if(data && data.length > 0 && data[0].newFacilityCode)
-         return data;
-         else
-         return [];*/
-        return data;
-    } catch (err) {
-        console.error('User Groups fetch error:', err);
-        throw ('Failed to load user groups. Please try again later.');
-    } finally {
-
-    }
-};
-
 const Registration = () => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
@@ -83,8 +65,7 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-
-            const response = await AuthService.registerEmail({
+            await AuthService.registerEmail({
                 email: formData.email,
                 username: formData.email,
                 password: formData.password,
@@ -97,30 +78,6 @@ const Registration = () => {
                 type: 'success'
             });
             setStep(2);
-            window.console.log("RESPONSE---");
-            window.console.log(response);
-            window.console.log(response.code);
-            window.console.log(response.data);
-            window.console.log("***---");
-
-            /*const response = await fetch('/api/auth/send-verification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                    title: 'OTP Sent',
-                    message: 'Verification code sent to your email',
-                    type: 'success'
-                });
-                setStep(2);
-            } else {
-                throw new Error(data.message || 'Failed to send OTP');
-            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
@@ -138,8 +95,7 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-
-            const response = await AuthService.registerComplete(formData);
+            await AuthService.registerComplete(formData);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Registration Complete',
                 message: 'Your account has been created successfully',
@@ -148,32 +104,6 @@ const Registration = () => {
                     willClose: () => window.location.href = '/login'
                 }
             });
-            window.console.log("RESPONSE---");
-            window.console.log(response);
-            window.console.log(response.code);
-            window.console.log(response.data);
-            window.console.log("***---");
-
-            /*const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                    title: 'Registration Complete',
-                    message: 'Your account has been created successfully',
-                    type: 'success',
-                    options: {
-                        willClose: () => window.location.href = '/dashboard'
-                    }
-                });
-            } else {
-                throw new Error(data.message || 'Registration failed');
-            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',

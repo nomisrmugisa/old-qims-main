@@ -30,28 +30,48 @@ const EditFacilityOwnershipDialog = ({
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
+    console.log("🔄 FACILITY OWNERSHIP: Starting to fetch program stage metadata...");
+    
     const credentials = localStorage.getItem('userCredentials');
     if (!credentials) {
-      setErrorMessage("Authentication required.");
+      console.error("❌ FACILITY OWNERSHIP: No credentials found in localStorage");
+      setErrorMessage("Authentication required. Please log in again.");
       setIsLoading(false);
       return;
     }
+    
+    console.log("✅ FACILITY OWNERSHIP: Credentials found, making API request...");
+    
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`,
-        {
-          headers: { Authorization: `Basic ${credentials}` },
-        }
-      );
+      const apiUrl = `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`;
+      console.log("🌐 FACILITY OWNERSHIP: API URL:", apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `Basic ${credentials}` },
+      });
+      
+      console.log("📡 FACILITY OWNERSHIP: Response status:", response.status);
+      console.log("📡 FACILITY OWNERSHIP: Response ok:", response.ok);
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch metadata: ${response.status}`);
+        const errorText = await response.text();
+        console.error("❌ FACILITY OWNERSHIP: API Error Response:", errorText);
+        throw new Error(`Failed to fetch metadata: ${response.status} - ${response.statusText}`);
       }
+      
       const metadata = await response.json();
+      console.log("✅ FACILITY OWNERSHIP: Metadata received:", metadata);
+      console.log("📋 FACILITY OWNERSHIP: Program stage sections:", metadata.programStageSections?.length || 0);
+      
       setProgramStageMetadata(metadata);
+      console.log("✅ FACILITY OWNERSHIP: Metadata set successfully");
+      
     } catch (error) {
-      setErrorMessage(error.message);
+      console.error("❌ FACILITY OWNERSHIP: Fetch error:", error);
+      setErrorMessage(`Failed to load form metadata: ${error.message}`);
     } finally {
       setIsLoading(false);
+      console.log("🏁 FACILITY OWNERSHIP: Metadata fetch completed");
     }
   }, []);
 
@@ -88,6 +108,8 @@ const EditFacilityOwnershipDialog = ({
 
   // Initialize form data from event and fetch metadata
   useEffect(() => {
+    console.log("🔄 FACILITY OWNERSHIP: useEffect triggered, open =", open);
+    
     async function repopulateLocalStorage() {
       // Example: Fetch user info and org unit as on page load
       try {
@@ -118,7 +140,11 @@ const EditFacilityOwnershipDialog = ({
 
     if (open) {
       document.body.style.overflow = 'hidden';
-      localStorage.clear();
+      
+      // Don't clear all localStorage - preserve credentials and important data
+      // localStorage.clear(); // This was clearing credentials needed for API calls!
+      console.log("🚀 FACILITY OWNERSHIP: Dialog opened, initializing...");
+      
       repopulateLocalStorage();
       fetchProgramStageMetadata();
       
@@ -621,7 +647,7 @@ const EditFacilityOwnershipDialog = ({
               type="file"
               style={{ display: 'none' }}
               onChange={e => handleFileUpload(de, e.target.files[0])}
-              required={de.compulsory}
+              required={true}
               disabled={fileUploadStatus[de.id]?.uploading}
             />
             <label 
@@ -829,7 +855,7 @@ const EditFacilityOwnershipDialog = ({
                   fontWeight: '500',
                   color: '#333'
                 }}>
-                  {de.displayFormName}{de.compulsory && <span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>}
+                  {de.displayFormName}<span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>
                 </label>
                 {isComplianceSection(section) ? (
                   // Render read-only fields for compliance section
@@ -934,7 +960,7 @@ const EditFacilityOwnershipDialog = ({
                       className="form-control"
                       value={formData[de.id] || ''}
                       onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
+                      required={true}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1003,7 +1029,7 @@ const EditFacilityOwnershipDialog = ({
                       className="form-control"
                       value={formData[de.id] || ''}
                       onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
+                      required={true}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1029,7 +1055,7 @@ const EditFacilityOwnershipDialog = ({
                       className="form-control"
                       value={formData[de.id] || ''}
                       onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
+                      required={true}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1047,7 +1073,7 @@ const EditFacilityOwnershipDialog = ({
                       className="form-control"
                       value={formData[de.id] || ''}
                       onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
+                      required={true}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1065,7 +1091,7 @@ const EditFacilityOwnershipDialog = ({
                       className="form-control"
                       value={formData[de.id] || ''}
                       onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
+                      required={true}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1153,16 +1179,16 @@ const EditFacilityOwnershipDialog = ({
     setSubmitError(null);
     try {
       // 1. Get facility name from sessionStorage
-      const facilityName = sessionStorage.getItem('currentFacilityName');
-      if (!facilityName) {
-        throw new Error('Facility name not found');
-      }
-
-      // 2. Get org unit ID
-      const orgUnitId = await fetchOrgUnitIdByName(facilityName);
-      if (!orgUnitId) {
-        throw new Error('Could not find organization unit for the facility');
-      }
+      const credentials = localStorage.getItem('userCredentials');
+      const meRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+        headers: { Authorization: `Basic ${credentials}` },
+      });
+      if (!meRes.ok) throw new Error('Failed to fetch user info from /api/me');
+      const meData = await meRes.json();
+      const orgUnit = (meData.organisationUnits && meData.organisationUnits[0]) || null;
+      if (!orgUnit) throw new Error('No organisation unit found for user');
+      const orgUnitId = orgUnit.id;
+      const facilityName = orgUnit.displayName;
       setFacilityOrgUnitId(orgUnitId);
 
 
@@ -1200,7 +1226,6 @@ const EditFacilityOwnershipDialog = ({
       }
       
       // 3.1 Add facility to Screening org unit group
-      const credentials = localStorage.getItem('userCredentials');
       const nextGroupId = 'nDAvPPtYHQP';
       const nextGroupName = 'Screening Review';
       
@@ -1258,21 +1283,50 @@ const EditFacilityOwnershipDialog = ({
 
       console.log(`Facility successfully added to ${nextGroupName} group`);
 
-      // 4. Send email to user
-      const emailResponse = await fetch('https://qimsdev.5am.co.bw/email2/api/facility-reg-update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'qimsmohbots@gmail.com',
-          subject: 'Application Received',
-          message: 'Your Application Has Been Received, we will contact you soon',
-        }),
-      });
-      
-      if (!emailResponse.ok) {
-        console.error('Failed to send email notification, but continuing with submission');
+      // 4. Send email to user and reviewers
+      try {
+        // 4.1 Get the current user's username from /api/me
+        const meEmailRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=username`, {
+          headers: { Authorization: `Basic ${credentials}` },
+        });
+        let userEmail = '';
+        if (meEmailRes.ok) {
+          const meEmailData = await meEmailRes.json();
+          userEmail = meEmailData.username || '';
+        }
+
+        // 4.2 Fetch reviewer/official emails from DHIS2 user group
+        const reviewersRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/users?fields=email,userGroups[id]&filter=userGroups.id:eq:cxNjCzLB6tI&paging=false`, {
+          headers: { Authorization: `Basic ${credentials}` },
+        });
+        let reviewerEmails = [];
+        if (reviewersRes.ok) {
+          const reviewersData = await reviewersRes.json();
+          if (reviewersData.users && Array.isArray(reviewersData.users)) {
+            reviewerEmails = reviewersData.users
+              .map(u => u.email)
+              .filter(email => email && email !== userEmail);
+          }
+        }
+
+        // 4.3 Combine all emails (no duplicates)
+        const emails = [userEmail, ...reviewerEmails].filter((v, i, a) => v && a.indexOf(v) === i);
+
+        // 4.4 Send POST to /email2/api/facility-reg-update
+        const emailResponse = await fetch('/email2/api/facility-reg-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ emails }),
+        });
+        if (!emailResponse.ok) {
+          console.error('Failed to send email notification, but continuing with submission');
+        } else {
+          console.log('Email notification sent to:', emails);
+        }
+      } catch (emailErr) {
+        console.error('Error sending email notification:', emailErr);
       }
 
       // 5. Show success feedback
