@@ -16,6 +16,7 @@ import {
   Container
 } from '@mui/material';
 import debounce from 'lodash/debounce';
+import {StorageService} from '../services';
 
 // Define required fields for "Other Details" section
 const requiredOtherDetailsFields = [
@@ -40,7 +41,7 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const [isFormComplete, setIsFormComplete] = useState(false);
 
   const [locationName, setLocationName] = useState('');
-  const credentials = localStorage.getItem('userCredentials');
+  const [credentials, setCredentials] = useState(null);
 
   // Function to set dummy data for development/testing
   const setDummyData = () => {
@@ -74,7 +75,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // const credentials = localStorage.getItem('userCredentials');
+        const creds = await StorageService.get('userCredentials');
+        setCredentials(creds);
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
         if (!credentials || !userOrgUnitId) {
@@ -229,6 +231,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   // Fetch organization unit name when location is available
   useEffect(() => {
     const fetchOrgUnitName = async () => {
+      const creds = await StorageService.get('userCredentials');
+      setCredentials(creds);
       if (!formValues['VJzk8OdFJKA'] || !credentials) {
         return;
       }
@@ -269,7 +273,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
   const fetchOrganisationalUnits = async () => {
     setIsLoadingOrgUnits(true);
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const creds = await StorageService.get('userCredentials');
+      setCredentials(creds);
       if (!credentials) {
         console.error("No credentials found");
         setIsLoadingOrgUnits(false);
@@ -405,7 +410,8 @@ const TrackerEventDetails = ({ onFormStatusChange }) => {
           
           // If locationName is empty but we have an ID, try to fetch the name directly
           if (!locationName && formValues['VJzk8OdFJKA']) {
-            const credentials = localStorage.getItem('userCredentials');
+            const creds = await StorageService.get('userCredentials');
+            setCredentials(creds);
             try {
               const response = await fetch(
                 `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`,

@@ -3,6 +3,7 @@ import './AddInspectionDialog.css'; // Reuse the existing inspection dialog styl
 import ModalPortal from './ModalPortal';
 import Loading from './Loading';
 import Dhis2Input from './Dhis2Input';
+import {StorageService} from '../services';
 
 const AddEquipmentDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId, existingEvent, isEditMode = false }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
@@ -15,7 +16,7 @@ const AddEquipmentDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId,
 
   // Fetch Program Stage Metadata for Equipment & Machinery
   const fetchProgramStageMetadata = useCallback(async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsLoading(false);
@@ -80,7 +81,7 @@ const AddEquipmentDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId,
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsSubmitting(false);

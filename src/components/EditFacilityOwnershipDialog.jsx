@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const EditFacilityOwnershipDialog = ({ 
   open, 
@@ -30,7 +31,7 @@ const EditFacilityOwnershipDialog = ({
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsLoading(false);
@@ -59,7 +60,7 @@ const EditFacilityOwnershipDialog = ({
   const checkIfInScreeningGroup = useCallback(async () => {
     if (!event || !event.orgUnit) return;
     
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       return;
     }
@@ -92,8 +93,8 @@ const EditFacilityOwnershipDialog = ({
       // Example: Fetch user info and org unit as on page load
       try {
         // Fetch user credentials (assume already in memory or session)
-        const userCredentials = sessionStorage.getItem('userCredentials') || localStorage.getItem('userCredentials');
-        if (userCredentials) localStorage.setItem('userCredentials', userCredentials);
+        const userCredentials = sessionStorage.getItem('userCredentials') || await StorageService.get('userCredentials');
+        if (userCredentials) await StorageService.set('userCredentials', userCredentials);
 
         // Fetch user org unit
         const credentials = userCredentials;
@@ -174,7 +175,7 @@ const EditFacilityOwnershipDialog = ({
             }
           });
         });
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = await StorageService.get('userCredentials');
         const newFileNames = {};
         for (const field of fileFields) {
           try {
@@ -211,7 +212,7 @@ const EditFacilityOwnershipDialog = ({
     if (!file) return;
     setFileUploadStatus(prev => ({ ...prev, [de.id]: { uploading: true, error: null } }));
     setSelectedFileNames(prev => ({ ...prev, [de.id]: file.name }));
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const fileData = new FormData();
     fileData.append('file', file);
     try {
@@ -254,7 +255,7 @@ const EditFacilityOwnershipDialog = ({
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsSubmitting(false);
@@ -430,7 +431,7 @@ const EditFacilityOwnershipDialog = ({
     console.log('Timestamp:', new Date().toISOString());
 
     // Check credentials
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       console.error('❌ NO CREDENTIALS FOUND IN LOCALSTORAGE');
       console.groupEnd();
@@ -1120,7 +1121,7 @@ const EditFacilityOwnershipDialog = ({
   // Function to fetch org unit ID by name
   const fetchOrgUnitIdByName = async (name) => {
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials || !name) return null;
       
       const encodedName = encodeURIComponent(name);
@@ -1200,7 +1201,7 @@ const EditFacilityOwnershipDialog = ({
       }
       
       // 3.1 Add facility to Screening org unit group
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       const nextGroupId = 'nDAvPPtYHQP';
       const nextGroupName = 'Screening Review';
       

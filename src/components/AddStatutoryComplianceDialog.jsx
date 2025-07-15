@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AddStatutoryComplianceDialog.css';
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId, existingEvent, isEditMode = false }) => {
   const [formData, setFormData] = useState({
@@ -63,7 +64,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
   
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required. Please log in again.");
@@ -95,7 +96,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
 
   // Get enrollment ID for the specific program from the tracked entity instance
   const getEnrollmentIdForProgram = async (teiId, programId = "EE8yeLVo6cN") => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required");
@@ -143,7 +144,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
   const uploadFileAndGetId = async (file) => {
     if (!file) return null;
     
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const fileData = new FormData();
     fileData.append("file", file);
     
@@ -176,7 +177,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
     setErrorMessage("");
     
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");

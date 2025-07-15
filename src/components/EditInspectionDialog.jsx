@@ -3,6 +3,7 @@ import './AddInspectionDialog.css'; // Reuse the same CSS for consistency
 import ModalPortal from './ModalPortal';
 import Loading from './Loading';
 import Dhis2Input from './Dhis2Input'; // Import the new component
+import {StorageService} from '../services';
 
 const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
@@ -15,7 +16,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
   // Fetch Program Stage Metadata
   const fetchProgramStageMetadata = useCallback(async () => {
     setIsLoading(true);
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsLoading(false);
@@ -72,7 +73,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
     setIsSubmitting(true);
     setErrorMessage("");
 
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsSubmitting(false);
