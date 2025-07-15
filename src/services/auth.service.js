@@ -26,6 +26,10 @@ const generateDhis2Uid = () => {
     return uid;
 };
 
+const generateAuthToken = (username, password) => {
+    return btoa(`${username}:${password}`);
+};
+
 const AuthService = {
     login: async (credentials) => {
         const method = "login";
@@ -150,7 +154,7 @@ const AuthService = {
     me: async(credentials) => {
         const method = "me";
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
-        const authorization_creds = btoa(`${credentials.username}:${credentials.password}`);
+        const authorization_creds = generateAuthToken(credentials.username, credentials.password);
 
         window.console.log(credentials);
         try {
@@ -159,7 +163,7 @@ const AuthService = {
                 setTimeout(() => reject(new Error('Request timeout')), 10000)
             );
 
-            const responsePromise = httpService.get('/me', {
+            const responsePromise = await httpService.get('/me', {
                 headers: {
                     'Authorization': `Basic ${authorization_creds}`
                 }
@@ -168,7 +172,7 @@ const AuthService = {
             const response = await Promise.race([responsePromise, timeoutPromise]);
 
             setAuthToken(authorization_creds, 'Basic');
-            StorageService.set("userCredentials", authorization_creds);
+            await StorageService.set("userCredentials", authorization_creds);
             window.console.log(response);
             /*const { token, refreshToken, user } = response;
 
@@ -213,6 +217,32 @@ const AuthService = {
         return response;
     },
 
+    me2Step: async(credentials) => {
+        const method = "me2StepEmailOtp";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        window.console.log(credentials);
+        try {
+            if(!credentials || !credentials.username || !credentials.password)
+                throw new Error('Access Denied');
+
+            const authorization_creds = generateAuthToken(credentials.username,credentials.password);
+            await StorageService.set(STORAGE_KEYS.KEY_2STEP, credentials);
+            const response = await httpService.get('/me', {
+                headers: {
+                    'Authorization': `Basic ${authorization_creds}`
+                }
+            });
+
+            return response;
+        } catch (error) {
+            window.console.error(`${method} error:`, error);
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
     getCurrentUser: () => {
         return StorageService.get(STORAGE_KEYS.USER_DATA);
     },
@@ -295,6 +325,23 @@ const AuthService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
+    verify2StepCredentials: async (username, password) => {
+        const credentials = await StorageService.get(STORAGE_KEYS.KEY_2STEP);
+        if(credentials.username !== username || credentials.password !== password)
+            return false;
+
+        return true;
+    },
+    clear2StepCredentials: async() => {
+        return await StorageService.remove(STORAGE_KEYS.KEY_2STEP);
+    },
+    success2StepAuth: async() => {
+        const credentials = await StorageService.get(STORAGE_KEYS.KEY_2STEP);
+        const authorization_creds = generateAuthToken(credentials.username, credentials.password);
+        setAuthToken(authorization_creds, 'Basic');
+        await StorageService.set("userCredentials", authorization_creds);
+        return await StorageService.remove(STORAGE_KEYS.KEY_2STEP);
+    }
 };
 
 export default AuthService;

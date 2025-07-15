@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
     REFRESH_TOKEN: 'refreshToken',
     USER_DATA: 'userData',
     USER_KEY: 'userKey',
+    KEY_2STEP: `${import.meta.env.VITE_KEY_2STEP_AUTH}`
 };
 
 export const API_STATUS = {

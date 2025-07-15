@@ -69,9 +69,15 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
             window.console.log("Error Log");
             window.console.log(error);
 
+            const creds = await StorageService.get('userCredentials');
+
+            let isAuthenticated = false;
+            if(creds)
+                isAuthenticated = true;
+
             if (error.response?.status === API_STATUS.UNAUTHORIZED &&
             !originalRequest._retry &&
-            !SKIP_REFRESH_ENDPOINTS.some(endpoint => originalRequest.url.includes(endpoint))) {
+            (isAuthenticated && !SKIP_REFRESH_ENDPOINTS.some(endpoint => originalRequest.url.includes(endpoint)))) {
                 if (isRefreshing) {
                     return new Promise((resolve, reject) => {
                         eventBus.emit(EVENTS.LOADING_HIDE, { source: "interceptor 1"});
