@@ -172,7 +172,10 @@ const AuthService = {
             const response = await Promise.race([responsePromise, timeoutPromise]);
 
             setAuthToken(authorization_creds, 'Basic');
-            await StorageService.set("userCredentials", authorization_creds);
+            // Set credentials using helper for consistency
+            await import('../utils/credentialHelper').then(module => 
+              module.setCredentials(authorization_creds)
+            );
             window.console.log(response);
             /*const { token, refreshToken, user } = response;
 
@@ -339,7 +342,10 @@ const AuthService = {
         const credentials = await StorageService.get(STORAGE_KEYS.KEY_2STEP);
         const authorization_creds = generateAuthToken(credentials.username, credentials.password);
         setAuthToken(authorization_creds, 'Basic');
-        await StorageService.set("userCredentials", authorization_creds);
+        // Set credentials using helper for consistency
+        await import('../utils/credentialHelper').then(module => 
+          module.setCredentials(authorization_creds)
+        );
         return await StorageService.remove(STORAGE_KEYS.KEY_2STEP);
     }
 };

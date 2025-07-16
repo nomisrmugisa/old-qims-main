@@ -115,6 +115,32 @@ const StorageService = {
             const item = localStorage.getItem(key);
             if (!item) return null;
 
+            // Special handling for userCredentials - they can be base64 strings
+            if (key === 'userCredentials') {
+                // First, try to parse as JSON (for encrypted data)
+                try {
+                    const parsed = JSON.parse(item);
+                    // Check if it's encrypted data structure
+                    if (parsed && typeof parsed === 'object' && parsed.iv && parsed.data) {
+                        try {
+                            const decrypted = await this._decrypt(parsed);
+                            return decrypted; // Credentials are always strings
+                        } catch (decryptError) {
+                            console.warn(`StorageService.get: Failed to decrypt userCredentials.`, decryptError);
+                            // If decryption fails, try to return the raw string
+                            return item;
+                        }
+                    } else {
+                        // Invalid JSON structure, return as raw string
+                        return item;
+                    }
+                } catch {
+                    // Not JSON, return as raw string (for base64 credentials)
+                    return item;
+                }
+            }
+
+            // For other keys, use the original logic
             // First, try to parse as JSON
             let parsed;
             try {
@@ -130,7 +156,13 @@ const StorageService = {
             if (parsed && typeof parsed === 'object' && parsed.iv && parsed.data) {
                 try {
                     const decrypted = await this._decrypt(parsed);
-                    return JSON.parse(decrypted);
+                    // Try to parse as JSON first, if it fails, return as string
+                    try {
+                        return JSON.parse(decrypted);
+                    } catch {
+                        // If it's not JSON, return as string (for credentials)
+                        return decrypted;
+                    }
                 } catch (decryptError) {
                     console.warn(`StorageService.get: Failed to decrypt data for key '${key}'. Data may be corrupted.`, decryptError);
                     // If decryption fails, try to return the raw parsed data
@@ -155,15 +187,27 @@ const StorageService = {
 
     async set(key, value) {
         try {
-            const stringValue = JSON.stringify(value);
-            const encrypted = await this._encrypt(stringValue);
-            localStorage.setItem(key, JSON.stringify(encrypted));
+            // Handle string values (like credentials) differently
+            if (typeof value === 'string') {
+                // For strings, store directly without JSON.stringify
+                const encrypted = await this._encrypt(value);
+                localStorage.setItem(key, JSON.stringify(encrypted));
+            } else {
+                // For objects/arrays, use JSON.stringify
+                const stringValue = JSON.stringify(value);
+                const encrypted = await this._encrypt(stringValue);
+                localStorage.setItem(key, JSON.stringify(encrypted));
+            }
         } catch (error) {
             console.error('StorageService.set error:', error);
 
             // Fallback to unencrypted storage
             try {
-                localStorage.setItem(key, JSON.stringify(value));
+                if (typeof value === 'string') {
+                    localStorage.setItem(key, value);
+                } else {
+                    localStorage.setItem(key, JSON.stringify(value));
+                }
             } catch (fallbackError) {
                 console.error('StorageService.set fallback error:', fallbackError);
             }
@@ -196,8 +240,38 @@ const StorageService = {
                 try {
                     const item = localStorage.getItem(key);
                     if (item) {
-                        // Try to parse as JSON
-                        JSON.parse(item);
+                        // Special handling for userCredentials - they can be base64 strings
+                        if (key === 'userCredentials') {
+                            // Check if it's a valid base64 string or valid JSON
+                            try {
+                                // Try to parse as JSON first (for encrypted data)
+                                JSON.parse(item);
+                                // If it's JSON, validate it has the expected structure
+                                const parsed = JSON.parse(item);
+                                if (parsed && typeof parsed === 'object' && parsed.iv && parsed.data) {
+                                    // Valid encrypted data structure
+                                    continue;
+                                } else {
+                                    // Invalid JSON structure
+                                    throw new Error('Invalid JSON structure');
+                                }
+                            } catch (jsonError) {
+                                // Not JSON, check if it's a valid base64 string
+                                try {
+                                    // Try to decode base64
+                                    atob(item);
+                                    // If successful, it's a valid base64 string
+                                    continue;
+                                } catch {
+                                    // Neither valid JSON nor valid base64
+                                    console.warn(`Found corrupted userCredentials data:`, jsonError);
+                                    corruptedKeys.push(key);
+                                }
+                            }
+                        } else {
+                            // For other keys, try to parse as JSON
+                            JSON.parse(item);
+                        }
                     }
                 } catch (error) {
                     console.warn(`Found corrupted data for key '${key}':`, error);

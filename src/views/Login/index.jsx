@@ -1,18 +1,15 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Link, useNavigate } from 'react-router-dom';
-import { eventBus, EVENTS } from '../../events';
+import React from 'react';
+import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import loginIllustration from '../../assets/logo.png'; // Add your image
 import LoginForm from '../../components/Forms/Email2FALogin';
 //import LoginForm from '../../components/Forms/Login';
+import { House } from 'react-bootstrap-icons';
 
 import './index.css';
-import { AuthService, MFLApiService, StorageService } from '../../services';
 
 const Login = () => {
 
@@ -45,6 +42,14 @@ const Login = () => {
                 <Col xs={12} lg={6} className="form-column d-flex align-items-center justify-content-center">
                     <Card className="login-card">
                         <Card.Body>
+                            {/* Home Button */}
+                            <div className="text-end mb-3">
+                                <Link to="/" className="btn btn-outline-primary btn-sm">
+                                    <House className="me-1" />
+                                    Home
+                                </Link>
+                            </div>
+                            
                             <div className="text-center mb-4">
                                 <h2>Welcome Back</h2>
                                 <p className="text-muted">Sign in to your account</p>

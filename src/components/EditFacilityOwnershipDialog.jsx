@@ -286,9 +286,10 @@ const EditFacilityOwnershipDialog = ({
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
-    const credentials = await StorageService.get('userCredentials');
+    const { getCredentials } = await import('../utils/credentialHelper');
+    const credentials = await getCredentials();
     if (!credentials) {
-      setErrorMessage("Authentication required.");
+      setErrorMessage("Authentication required. Please log in again.");
       setIsSubmitting(false);
       return;
     }
@@ -330,7 +331,7 @@ const EditFacilityOwnershipDialog = ({
         
         console.log("Sending PUT request to update event:", payload);
         
-        const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events/${event.event}`, {
+        const response = await fetch(`/api/events/${event.event}`, {
           method: "PUT",
           headers: {
             Authorization: `Basic ${credentials}`,
@@ -375,7 +376,7 @@ const EditFacilityOwnershipDialog = ({
           // Fetch trackedEntityInstanceId if not provided
           console.log("No trackedEntityInstanceId provided, fetching from API");
           
-          const teiResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`, {
+          const teiResponse = await fetch(`/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`, {
                 headers: { Authorization: `Basic ${credentials}` },
           });
           
@@ -410,7 +411,7 @@ const EditFacilityOwnershipDialog = ({
         
         console.log("Sending POST request to create event:", payload);
         
-        const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
+        const response = await fetch(`/api/events`, {
           method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -462,9 +463,10 @@ const EditFacilityOwnershipDialog = ({
     console.log('Timestamp:', new Date().toISOString());
 
     // Check credentials
-    const credentials = await StorageService.get('userCredentials');
+    const { getCredentials } = await import('../utils/credentialHelper');
+    const credentials = await getCredentials();
     if (!credentials) {
-      console.error('❌ NO CREDENTIALS FOUND IN LOCALSTORAGE');
+      console.error('❌ NO CREDENTIALS FOUND');
       console.groupEnd();
       throw new Error('No user credentials available');
     }
@@ -481,7 +483,7 @@ const EditFacilityOwnershipDialog = ({
       };
 
       console.log('🔍 Fetch Configuration:', {
-        url: `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`,
+        url: `/api/me?fields=organisationUnits[id,name]`,
         method: fetchConfig.method,
         headers: Object.keys(fetchConfig.headers)
       });
@@ -491,7 +493,7 @@ const EditFacilityOwnershipDialog = ({
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
       
       const response = await fetch(
-        `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,name]`, 
+        `/api/me?fields=organisationUnits[id,name]`, 
         {
           ...fetchConfig,
           signal: controller.signal
@@ -1185,8 +1187,15 @@ const EditFacilityOwnershipDialog = ({
     setSubmitError(null);
     try {
       // 1. Get facility name from sessionStorage
-      let credentials = localStorage.getItem('userCredentials');
-      const meRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+      const { getCredentials } = await import('../utils/credentialHelper');
+      let credentials = await getCredentials();
+      
+      if (!credentials) {
+        throw new Error('No credentials available. Please log in again.');
+      }
+      
+      console.log('🔐 Using credentials for /api/me call:', !!credentials);
+      const meRes = await fetch(`/api/me?fields=id,organisationUnits[id,displayName]`, {
         headers: { Authorization: `Basic ${credentials}` },
       });
       if (!meRes.ok) throw new Error('Failed to fetch user info from /api/me');
@@ -1233,15 +1242,9 @@ const EditFacilityOwnershipDialog = ({
       
       // 3.1 Add facility to Screening org unit group
 
-credentials = await StorageService.get('userCredentials');
-
+// Use the same credentials we got earlier
 if (!credentials) {
-  console.warn("⚠️ FACILITY OWNERSHIP: StorageService returned no credentials. Falling back to localStorage.");
-  credentials = localStorage.getItem('userCredentials');
-}
-
-if (!credentials) {
-  console.error("❌ FACILITY OWNERSHIP: No credentials found in either StorageService or localStorage");
+  console.error("❌ FACILITY OWNERSHIP: No credentials available");
   setErrorMessage("Authentication required. Please log in again.");
   setIsLoading(false);
   return;
@@ -1252,7 +1255,7 @@ if (!credentials) {
       
       // 3.2 First get the current group members
       const getResponse = await fetch(
-        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
+        `/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
         {
           headers: {
             'Authorization': `Basic ${credentials}`
@@ -1282,7 +1285,7 @@ if (!credentials) {
 
       // 3.4 Update the group with all facilities
       const groupResponse = await fetch(
-        `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/${nextGroupId}`,
+        `/api/organisationUnitGroups/${nextGroupId}`,
         {
           method: 'PUT',
           headers: {
@@ -1307,7 +1310,7 @@ if (!credentials) {
       // 4. Send email to user and reviewers
       try {
         // 4.1 Get the current user's username from /api/me
-        const meEmailRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=username`, {
+        const meEmailRes = await fetch(`/api/me?fields=username`, {
           headers: { Authorization: `Basic ${credentials}` },
         });
         let userEmail = '';
@@ -1317,7 +1320,7 @@ if (!credentials) {
         }
 
         // 4.2 Fetch reviewer/official emails from DHIS2 user group
-        const reviewersRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/users?fields=email,userGroups[id]&filter=userGroups.id:eq:cxNjCzLB6tI&paging=false`, {
+        const reviewersRes = await fetch(`/api/users?fields=email,userGroups[id]&filter=userGroups.id:eq:cxNjCzLB6tI&paging=false`, {
           headers: { Authorization: `Basic ${credentials}` },
         });
         let reviewerEmails = [];

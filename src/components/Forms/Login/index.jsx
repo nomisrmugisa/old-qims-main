@@ -66,7 +66,7 @@ const LoginForm = () => {
                 message: 'Welcome back!',
                 type: 'success',
                 options: {
-                    willClose: () => navigate('/dashboard')
+                    willClose: () => navigate('/dashboards/facility-ownership')
                 }
             });
 

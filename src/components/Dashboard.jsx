@@ -9,17 +9,20 @@ import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
 import {StorageService} from '../services';
 import { Link, useNavigate } from 'react-router-dom';
+import { Snackbar, Alert } from '@mui/material';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
     const [dashboardLoading, setDashboardLoading] = useState(true);
     const [showFacilityReviewDialog, setShowFacilityReviewDialog] = useState(false);
-    const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
+    const [_facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
     const [activeUserTab, setActiveUserTab] = useState('users');
 
     const navigate = useNavigate();
+    const [error, setError] = useState(null);
+    const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
     
     // User management state
     const {
@@ -76,13 +79,6 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             
             // Log the API call details
             console.log('📡 === API CALL DETAILS ===');
-            console.log('- HTTP Method: GET');
-            console.log('- Base URL:', baseUrl);
-            console.log('- Endpoint:', endpoint);
-            console.log('- Parameters:');
-            console.log('  • ou (Organization Unit):', userOrgUnitId);
-            console.log('  • ouMode:', 'SELECTED');
-            console.log('  • program:', 'EE8yeLVo6cN');
             console.log('  • fields:', 'trackedEntityInstance');
             console.log('  • paging:', 'false');
             console.log('- Full URL:', url);
@@ -101,12 +97,6 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                 },
             });
             const endTime = performance.now();
-            
-            // Log the response details
-            console.log('📥 === API RESPONSE DETAILS ===');
-            console.log('- Response received in:', Math.round(endTime - startTime), 'ms');
-            console.log('- Response status:', response.status, response.statusText);
-            console.log('- Response OK:', response.ok);
             console.log('- Response headers:');
             response.headers.forEach((value, name) => {
                 console.log(`  • ${name}: ${value}`);
@@ -136,9 +126,10 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
         } catch (error) {
             console.error("- Error fetching tracked entity instance:", error);
             console.error("- Error name:", error.name);
-            console.error("- Error message:", error.message);
-            console.error("- Error stack:", error.stack);
-            // setTrackedEntityInstanceId(null); // This line is removed
+            
+            // Handle specific error types
+            if (error.code === API_ERROR_CODES.UNAUTHORIZED) {
+                // Unauthorized errors are handled by the error handler utility
             // Only set showFacilityReviewDialog to true for actual errors, not for missing data
             if (error.message !== "No tracked entity instances found") {
             setShowFacilityReviewDialog(true);
@@ -284,6 +275,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             }
             setInspectionEvents(fetchedEvents);
         } catch (error) {
+        } catch {
             setInspectionEvents([]);
         } finally {
             setIsLoadingInspections(false);
@@ -598,6 +590,17 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     )}
                 </div>
             </div>
+            {/* Error Snackbar */}
+            <Snackbar
+                open={showErrorSnackbar}
+                autoHideDuration={6000}
+                onClose={() => setShowErrorSnackbar(false)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                    onClose={() => setShowErrorSnackbar(false)} 
+                    {error}
+                </Alert>
+            </Snackbar>
         </div>
     );
 };

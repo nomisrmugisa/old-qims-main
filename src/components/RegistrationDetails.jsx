@@ -13,6 +13,7 @@ import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import {StorageService} from '../services';
+import { getCredentials } from '../utils/credentialHelper';
 // import { useTheme } from '@mui/material/styles';
 
 // Inside your component:
@@ -139,14 +140,21 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     },
   }));
   
-  const StyledDivider = styled(Divider)(({ theme, disabled }) => ({
+  const StyledDivider = styled(Box)(({ theme, disabled }) => ({
     width: '60px', // Reduced width to save horizontal space
-    borderBottomWidth: 2,
-    borderColor: disabled ? theme.palette.grey[300] : theme.palette.divider,
     margin: '0 4px', // Reduced margin to save space
     alignSelf: 'center',
     opacity: disabled ? 0.6 : 1,
     flexShrink: 1, // Allow divider to shrink if needed
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&::after': {
+      content: '"→"',
+      fontSize: '20px',
+      color: disabled ? theme.palette.grey[300] : theme.palette.divider,
+      fontWeight: 'bold',
+    }
   }));
   
   // Check localStorage for completeApplicationStatus on component mount and when tab changes
@@ -463,36 +471,87 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
   
-  // New useEffect to determine overall registration status
-  useEffect(() => {
-    const steps = [
-      { key: 'completeApplication', hasData: completeApplicationStatus },
-      { key: 'facilityOwnership', hasData: tabValidationStates.facilityOwnership },
-      { key: 'employeeRegistration', hasData: tabValidationStates.employeeRegistration },
-      { key: 'servicesOffered', hasData: tabValidationStates.servicesOffered },
-      { key: 'statutoryCompliance', hasData: tabValidationStates.statutoryCompliance },
-      { key: 'equipmentMachinery', hasData: tabValidationStates.equipmentMachinery },
-      { key: 'inspectionSchedule', hasData: inspectionEvents.length > 0 }
-    ];
-
-    const allStepsComplete = steps.every(step => step.hasData);
-    const firstFiveComplete = steps.slice(0, 5).every(step => step.hasData);
-    if (allStepsComplete) {
-      setRegistrationStatus("Completed");
-    } else if (firstFiveComplete) {
-      setRegistrationStatus("Application Sent to MOH and is Under Review");
-    } else if (steps[0].hasData) {
-      setRegistrationStatus("In Progress");
-    } else {
-      setRegistrationStatus("Pending Application");
+  // Helper function to check if facility ownership event has specific data value
+  const hasFacilityOwnershipDataValue = (dataElementId, expectedValue = "true") => {
+    if (!events || events.length === 0) {
+      return false;
     }
+    
+    const facilityOwnershipEvents = events.filter(e => e.programStage === 'MuJubgTzJrY');
+    if (facilityOwnershipEvents.length === 0) {
+      return false;
+    }
+    
+    return facilityOwnershipEvents.some(event => {
+      if (!event.dataValues) return false;
+      const dataValue = event.dataValues.find(dv => dv.dataElement === dataElementId);
+      return dataValue && dataValue.value === expectedValue;
+    });
+  };
+
+  // New useEffect to determine overall registration status with new logic
+  useEffect(() => {
+    console.log("🔄 === STATUS LOGIC RUNNING ===");
+    console.log("- completeApplicationStatus:", completeApplicationStatus);
+    console.log("- tabValidationStates.facilityOwnership:", tabValidationStates.facilityOwnership);
+    
+    // Check if Admin User & Facility Details has no event
+    if (!completeApplicationStatus) {
+      console.log("📝 Setting status: Complete Administrative Information Below");
+      setRegistrationStatus("Complete Administrative Information Below");
+      return;
+    }
+    
+    // Check if Facility Ownership has no event
+    if (!tabValidationStates.facilityOwnership) {
+      console.log("📝 Setting status: Complete Facility Ownership Details");
+      setRegistrationStatus("Complete Facility Ownership Details");
+      return;
+    }
+    
+    // Check if Application Submitted is not true
+    if (!hasFacilityOwnershipDataValue("N3bVE3GRqdf", "true")) {
+      console.log("📝 Setting status: Under Facility Ownership Complete and submit Documents for review");
+      setRegistrationStatus("Under Facility Ownership Complete and submit Documents for review");
+      return;
+    }
+    
+    // Check if Passed MOH Screening is not true
+    if (!hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
+      console.log("📝 Setting status: Documents Under Screening Review");
+      setRegistrationStatus("Documents Under Screening Review");
+      return;
+    }
+    
+    // Check if Complied for Licensing is not true
+    if (!hasFacilityOwnershipDataValue("SIq5ADQjCEM", "true")) {
+      console.log("📝 Setting status: Documents Under Screening Compliance");
+      setRegistrationStatus("Documents Under Screening Compliance");
+      return;
+    }
+    
+    // Check if Passed MOH Screening is true (this means we can proceed to next steps)
+    if (hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
+      console.log("📝 Setting status: You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
+      setRegistrationStatus("You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
+      return;
+    }
+    
+    // Check if Inspection Schedule is not green (not completed)
+    if (!hasTabData('inspectionSchedule')) {
+      console.log("📝 Setting status: Complete a Self Inspection");
+      setRegistrationStatus("Complete a Self Inspection");
+      return;
+    }
+    
+    // All conditions met
+    console.log("📝 Setting status: Select a date for Inspection");
+    setRegistrationStatus("Select a date for Inspection");
   }, [
     completeApplicationStatus,
     tabValidationStates.facilityOwnership,
-    tabValidationStates.employeeRegistration,
-    tabValidationStates.servicesOffered,
-    tabValidationStates.statutoryCompliance,
-    tabValidationStates.equipmentMachinery,
+    events,
+    tabValidationStates.inspectionSchedule,
     inspectionEvents
   ]);
   
@@ -1527,17 +1586,33 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const credentials = await StorageService.get('userCredentials');
+        // Get credentials using the helper with fallbacks
+        const credentials = await getCredentials();
+        
+        if (!credentials) {
+          console.error('❌ No credentials available for fetching metadata');
+          setFacilityOwnershipMetadata(null);
+          return;
+        }
+        
+        console.log("🔐 Credentials available for metadata fetch:", !!credentials);
+        
         const response = await fetch(
           `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
           {
             headers: { Authorization: `Basic ${credentials}` },
           }
         );
-        if (!response.ok) throw new Error('Failed to fetch metadata');
+
+        if (!response.ok) {
+          console.error('❌ Failed to fetch metadata:', response.status);
+          throw new Error('Failed to fetch metadata');
+        }
+        
         const metadata = await response.json();
         setFacilityOwnershipMetadata(metadata);
       } catch (error) {
+        console.error('❌ Error fetching metadata:', error);
         setFacilityOwnershipMetadata(null);
       }
     };
@@ -1550,18 +1625,32 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Fetch user info when Facility Ownership tab is active
   useEffect(() => {
     if (activeTab === 'facilityOwnership') {
-      const credentials = localStorage.getItem('userCredentials');
-      if (credentials) {
-        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
-          headers: { 'Authorization': `Basic ${credentials}` }
-        })
-          .then(res => res.json())
-          .then(data => setUserInfo({
-            id: data.id,
-            organisationUnits: data.organisationUnits || []
-          }))
-          .catch(() => setUserInfo({ id: 'Error', organisationUnits: [] }));
-      }
+      // Get credentials using the helper with fallbacks
+      getCredentials().then(credentials => {
+        if (credentials) {
+          console.log('🔐 Fetching user info with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
+          })
+            .then(res => {
+              if (!res.ok) {
+                console.error('❌ Failed to fetch user info:', res.status);
+                throw new Error('Failed to fetch user info');
+              }
+              return res.json();
+            })
+            .then(data => setUserInfo({
+              id: data.id,
+              organisationUnits: data.organisationUnits || []
+            }))
+            .catch((error) => {
+              console.error('❌ Error fetching user info:', error);
+              setUserInfo({ id: 'Error', organisationUnits: [] });
+            });
+        } else {
+          console.error('❌ No credentials available for fetching user info');
+        }
+      });
     }
   }, [activeTab]);
 
@@ -1571,21 +1660,35 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Fetch trackedEntityInstanceId when Facility Ownership tab loads
   useEffect(() => {
     if (activeTab === 'facilityOwnership') {
-      const credentials = localStorage.getItem('userCredentials');
-      if (credentials) {
-        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
-          headers: { 'Authorization': `Basic ${credentials}` }
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
-              setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
-            } else {
-              setFacilityOwnershipTeiId(null);
-            }
+      // Get credentials using the helper with fallbacks
+      getCredentials().then(credentials => {
+        if (credentials) {
+          console.log('🔐 Fetching tracked entity instances with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
           })
-          .catch(() => setFacilityOwnershipTeiId(null));
-      }
+            .then(res => {
+              if (!res.ok) {
+                console.error('❌ Failed to fetch tracked entity instances:', res.status);
+                throw new Error('Failed to fetch tracked entity instances');
+              }
+              return res.json();
+            })
+            .then(data => {
+              if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
+                setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
+              } else {
+                setFacilityOwnershipTeiId(null);
+              }
+            })
+            .catch((error) => {
+              console.error('❌ Error fetching tracked entity instances:', error);
+              setFacilityOwnershipTeiId(null);
+            });
+        } else {
+          console.error('❌ No credentials available for fetching tracked entity instances');
+        }
+      });
     }
   }, [activeTab]);
 
@@ -1614,14 +1717,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </div>
         );
       case 'facilityOwnership':
-        // Add debugging information
-        console.log("RENDERING FACILITY OWNERSHIP TAB");
-        console.log("- trackedEntityInstanceId (prop):", trackedEntityInstanceId);
-        // localTrackedEntityInstanceId logging removed
-        console.log("- effectiveTrackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
-        console.log("- events.length:", events.length);
-        console.log("- isLoading:", isLoading);
-        console.log("- showReviewDialog:", showReviewDialog);
+
         
         // Inside the Facility Ownership tab render logic, before any use of 'events':
         
@@ -1751,36 +1847,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <p>No facility ownership records found.</p>
-                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                    Debug: isLoading={isLoading.toString()}, 
-                    events.length={facilityOwnershipEvents.length}, 
-                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
-                  </p>
+
                 </div>
               ) : null}
-              {/* Debugging info for Facility Ownership events */}
-              <div style={{
-                background: '#fffbe6',
-                border: '1px solid #ffe58f',
-                borderRadius: '6px',
-                padding: '12px',
-                margin: '16px 0',
-                color: '#ad8b00',
-                fontSize: '0.95rem',
-                wordBreak: 'break-all',
-                maxWidth: 700,
-                marginLeft: 'auto',
-                marginRight: 'auto',
-              }}>
-                <strong>Facility Ownership Debug Info (DHIS2):</strong>
-                <div>Fetch attempted: {typeof isLoading !== 'undefined' ? 'Yes' : 'No'}</div>
-                <div>Events fetched: {facilityOwnershipEvents.length}</div>
-                <div>Events array: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(facilityOwnershipEvents, null, 2)}</pre></div>
-                {/* If you have an error state for fetch, show it here. Example: */}
-                {/* <div>Error: {fetchError || 'None'}</div> */}
-                <div>User ID: {userInfo.id || 'N/A'}</div>
-                <div>Organisation Units: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(userInfo.organisationUnits, null, 2)}</pre></div>
-              </div>
+
             </div>
           </div>
         );
@@ -2426,7 +2496,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
               Registration Details
             </Typography>
-            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`}>
+            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`} style={{ 
+              backgroundColor: '#007bff', 
+              color: 'white', 
+              padding: '8px 16px', 
+              borderRadius: '20px', 
+              fontSize: '14px', 
+              fontWeight: 'bold',
+              display: 'inline-block',
+              marginLeft: '20px'
+            }}>
               Status: {registrationStatus}
             </span>
           </Box>
@@ -2436,34 +2515,60 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </Box>
         </Box>
         
-        <StepContainer>
-          {[
-            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
-            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' }
-          ].map((step, index) => {
-            // Determine if the tab should be disabled
-            const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+        <StepContainer style={{ 
+          justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
+        }}>
+          {(() => {
+            const allSteps = [
+              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
+              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 7, title: 'Inspection Schedule', key: 'inspectionSchedule' }
+            ];
             
-            return (
-              <React.Fragment key={step.number}>
-                <Tooltip
-                  title={
-                    step.key === 'inspectionSchedule'
-                      ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
-                      : isTabDisabled(step.key)
-                        ? "Submit Application For review under Facility Ownership"
-                        : (isDisabled ? "Complete the Application details first" : "")
-                  }
-                  arrow
-                  placement="top"
-                >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Step
-                      active={activeTab === step.key}
-                      hasdata={hasTabData(step.key)}
-                      disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
-                      onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
-                    >
+            // Check if "Passed MOH Screening" is true (status shows permission message)
+            const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+            
+            // Filter steps based on permission
+            const visibleSteps = hasPermissionToEstablish 
+              ? allSteps 
+              : allSteps.slice(0, 2); // Only show first 2 steps if no permission
+            
+                        return visibleSteps.map((step, index) => {
+              // Determine if the tab should be disabled
+              const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+              
+              // Center the Facility Ownership tab when only 2 tabs are visible
+              const shouldCenter = !hasPermissionToEstablish && step.key === 'facilityOwnership';
+              
+              return (
+                <React.Fragment key={step.number}>
+                  <Tooltip
+                    title={
+                      step.key === 'inspectionSchedule'
+                        ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
+                        : isTabDisabled(step.key)
+                          ? "Submit Application For review under Facility Ownership"
+                          : (isDisabled ? "Complete the Application details first" : "")
+                    }
+                    arrow
+                    placement="top"
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      marginLeft: shouldCenter ? '25%' : '0',
+                      marginRight: shouldCenter ? '25%' : '0'
+                    }}>
+                      <Step
+                        active={activeTab === step.key}
+                        hasdata={hasTabData(step.key)}
+                        disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
+                        onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
+                      >
                       <span className="step-number">{step.number}</span>
                       <Typography
                         variant="subtitle1"
@@ -2484,11 +2589,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 1 && <StyledDivider disabled={isDisabled} />}
-                {index === 1 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
+                {index < (visibleSteps.length - 1) && <StyledDivider disabled={isDisabled} />}
               </React.Fragment>
             );
-          })}
+          });
+        })()}
         </StepContainer>
 
         {renderTabContent()}

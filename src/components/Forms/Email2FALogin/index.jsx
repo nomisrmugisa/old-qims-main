@@ -138,14 +138,41 @@ const LoginForm = () => {
 
             await AuthService.success2StepAuth();
             await StorageService.setUserData(userData);
+            
+            // Set userCredentials for dashboard authentication using helper
+            const authorization_creds = btoa(`${formData.email}:${formData.password}`);
+            await import('../../../utils/credentialHelper').then(module => 
+              module.setCredentials(authorization_creds)
+            );
+            
+            // Update the login state in App.jsx
+            eventBus.emit(EVENTS.LOGIN_SUCCESS, true);
+            
+            console.log('✅ 2FA Login: Credentials set successfully');
+            
+            console.log('🔀 2FA Login: About to redirect to /dashboards/facility-ownership');
+            
+            // Show success notification
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Login Successful',
                 message: 'Welcome back!',
-                type: 'success',
-                options: {
-                    willClose: () => navigate('/dashboard')
-                }
+                type: 'success'
             });
+            
+            // Direct redirect after a short delay to ensure notification shows
+            setTimeout(() => {
+                console.log('🔀 2FA Login: Executing redirect to /dashboards/facility-ownership');
+                console.log('🔀 2FA Login: navigate function available:', !!navigate);
+                try {
+                    console.log('🔀 2FA Login: Trying navigate with /dashboards/facility-ownership');
+                    navigate('/dashboards/facility-ownership');
+                    console.log('🔀 2FA Login: navigate() called successfully');
+                } catch (error) {
+                    console.error('🔀 2FA Login: navigate() failed, trying window.location:', error);
+                    console.log('🔀 2FA Login: Trying window.location with /main/dashboards/facility-ownership');
+                    window.location.href = '/main/dashboards/facility-ownership';
+                }
+            }, 1000);
 
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {

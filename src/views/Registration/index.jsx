@@ -65,7 +65,6 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-
             const response = await AuthService.registerEmail({
                 email: formData.email,
                 username: formData.email,
@@ -79,36 +78,24 @@ const Registration = () => {
                 type: 'success'
             });
             setStep(2);
+            
+            // Scroll to top when moving to next step
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
             window.console.log("RESPONSE---");
             window.console.log(response);
             window.console.log(response.code);
             window.console.log(response.data);
             window.console.log("***---");
 
-            /*const response = await fetch('/api/auth/send-verification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                    title: 'OTP Sent',
-                    message: 'Verification code sent to your email',
-                    type: 'success'
-                });
-                setStep(2);
-            } else {
-                throw new Error(data.message || 'Failed to send OTP');
-            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
                 message: error.message,
                 type: 'error'
             });
+            // Scroll to top on error as well
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
@@ -120,48 +107,38 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-
             const response = await AuthService.registerComplete(formData);
+            
+            // Show success message
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Registration Complete',
                 message: 'Your account has been created successfully',
                 type: 'success',
                 options: {
-                    willClose: () => window.location.href = '/main/login'
+                    willClose: () => {
+                        // Scroll to top and redirect
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setTimeout(() => {
+                            window.location.href = '/main/login';
+                        }, 500);
+                    }
                 }
             });
+            
             window.console.log("RESPONSE---");
             window.console.log(response);
             window.console.log(response.code);
             window.console.log(response.data);
             window.console.log("***---");
 
-            /*const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                    title: 'Registration Complete',
-                    message: 'Your account has been created successfully',
-                    type: 'success',
-                    options: {
-                        willClose: () => window.location.href = '/dashboard'
-                    }
-                });
-            } else {
-                throw new Error(data.message || 'Registration failed');
-            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
                 message: error.message,
                 type: 'error'
             });
+            // Scroll to top on error as well
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
