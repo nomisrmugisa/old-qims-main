@@ -197,20 +197,44 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   useEffect(() => {
     if (eventData && eventData.dataValues) {
       const initialFormValues = {};
+      
+      // Map all data values from the event to form fields
       eventData.dataValues.forEach(dv => {
         initialFormValues[dv.dataElement] = dv.value;
       });
       
+      // Ensure all required fields are present with proper defaults
+      const fieldMappings = {
+        // Licensed Users Details Section
+        'NVlLoMZbXIW': initialFormValues['NVlLoMZbXIW'] || '', // Users Email Address
+        'g3J1CH26hSA': initialFormValues['g3J1CH26hSA'] || '', // Preferred User Name (same as email)
+        'SVzSsDiZMN5': initialFormValues['SVzSsDiZMN5'] || '', // B.H.P.C Registration Number
+        'SReqZgQk0RY': initialFormValues['SReqZgQk0RY'] || '', // Phone Number
+        'aMFg2iq9VIg': initialFormValues['aMFg2iq9VIg'] || '', // Private Practice Number
+        'HMk4LZ9ESOq': initialFormValues['HMk4LZ9ESOq'] || '', // Name of the License Holder
+        'ykwhsQQPVH0': initialFormValues['ykwhsQQPVH0'] || '', // Surname of License Holder
+        
+        // Select Location Facility is in Botswana Section
+        'PdtizqOqE6Q': initialFormValues['PdtizqOqE6Q'] || '', // Name of Facility to be Registered
+        'VJzk8OdFJKA': initialFormValues['VJzk8OdFJKA'] || '', // Location in Botswana (Ward)
+        
+        // Additional fields that might be in the event data
+        'jV5Y8XOfkgb': initialFormValues['jV5Y8XOfkgb'] || 'true', // Application status
+      };
+      
       // If user email is not in event data, add it from user data
-      if (!initialFormValues['NVlLoMZbXIW'] && registrationCode) {
-        // Get user email from localStorage or fetch it
+      if (!fieldMappings['NVlLoMZbXIW'] && registrationCode) {
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
-          initialFormValues['NVlLoMZbXIW'] = userEmail;
+          fieldMappings['NVlLoMZbXIW'] = userEmail;
+          fieldMappings['g3J1CH26hSA'] = userEmail; // Set preferred username to email if not provided
         }
       }
       
-      setFormValues(initialFormValues);
+      console.log('📋 Mapped form values:', fieldMappings);
+      console.log('📊 Original event data values:', eventData.dataValues);
+      
+      setFormValues(fieldMappings);
       setHasExistingData(true);
       setIsEditing(false);
       
@@ -1071,7 +1095,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       const firstEvent = { ...eventPayload };
       firstEvent.programStage = 'YzqtE5Uv8Qd';
       const allowedKeys = [
-        'occurredAt', 'status', 'notes', 'completedAt', 'program', 'programStage', 'orgUnit', 'dataValues'
+        'event', 'occurredAt', 'status', 'notes', 'completedAt', 'program', 'programStage', 'orgUnit', 'dataValues'
       ];
       const strippedFirstEvent = Object.fromEntries(
         Object.entries(firstEvent).filter(([key]) => allowedKeys.includes(key))
