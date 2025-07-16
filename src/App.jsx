@@ -28,6 +28,8 @@ import CorrectiveActionPlanPage from './views/CorrectiveActionPlanPage';
 import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
 import FacilityUserEnrolmentSelfPage from './views/Facility/User/Enrolment/SelfPage';
+import EnrolmentApplicationReviewPage from './views/Facility/User/Enrolment/ApplicationReviewPage';
+import FacilityUserEnrolmentApplicationPage from './views/Facility/User/Enrolment/ApplicationPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
 import PasswordChangePage from './views/ChangePassword';
@@ -265,11 +267,13 @@ function App() {
               <Route path="/inspection-final-report" element={<InspectionFinalReportPage />} />
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
               <Route path="/facility-user-enrolment-self" element={<FacilityUserEnrolmentSelfPage />} />
+              <Route path="/facility/user/enrolment/application" element={<FacilityUserEnrolmentApplicationPage />} />
               <Route path="/dashboard" element={<FacilityUserDashboardPage />} />
               <Route path="/facility-user-management" element={<FacilityUserManagementPage />} />
               <Route path="/password-change" element={<PasswordChangePage />} />
               <Route path="/facility-calendar" element={<FacilityCalendarPage />} />
               <Route path="/facility-calendar-advanced" element={<FacilityCalendarPage />} />
+              <Route path="/enrolment/application-review" element={<EnrolmentApplicationReviewPage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

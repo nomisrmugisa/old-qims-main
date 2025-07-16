@@ -9,3 +9,4 @@ export { default as OTPApiService } from './otp.service';
 export { default as StorageService } from './storage.service';
 export { default as UserService } from './user.service';
 export { default as InspectionService } from './inspection.service';
+export { default as FacilityService } from './facility.service';

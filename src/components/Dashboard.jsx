@@ -339,7 +339,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                 </Card.Text>
                                                 <Button
                                                     variant="outline-primary"
-                                                    onClick={() => navigate('/facility-user-enrolment-self')}
+                                                    onClick={() => navigate('/facility/user/enrolment/application')}
                                                 >
                                                     <PlusCircle className="me-1" /> Enroll in New Facility
                                                 </Button>
