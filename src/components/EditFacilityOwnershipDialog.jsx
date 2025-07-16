@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const EditFacilityOwnershipDialog = ({ 
   open, 
@@ -26,15 +27,20 @@ const EditFacilityOwnershipDialog = ({
   const [submitError, setSubmitError] = useState(null);
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [facilityOrgUnitId, setFacilityOrgUnitId] = useState(null);
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
-    console.log("🔄 FACILITY OWNERSHIP: Starting to fetch program stage metadata...");
-    
-    const credentials = localStorage.getItem('userCredentials');
+    console.log("🛠 FACILITY OWNERSHIP: Starting to fetch program stage metadata...");
+
+    let credentials = await StorageService.get('userCredentials');
+  
     if (!credentials) {
-      console.error("❌ FACILITY OWNERSHIP: No credentials found in localStorage");
+      console.warn("⚠️ FACILITY OWNERSHIP: StorageService returned no credentials. Falling back to localStorage.");
+      credentials = localStorage.getItem('userCredentials');
+    }
+  
+    if (!credentials) {
+      console.error("❌ FACILITY OWNERSHIP: No credentials found in either StorageService or localStorage");
       setErrorMessage("Authentication required. Please log in again.");
       setIsLoading(false);
       return;
@@ -79,7 +85,7 @@ const EditFacilityOwnershipDialog = ({
   const checkIfInScreeningGroup = useCallback(async () => {
     if (!event || !event.orgUnit) return;
     
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       return;
     }
@@ -114,8 +120,8 @@ const EditFacilityOwnershipDialog = ({
       // Example: Fetch user info and org unit as on page load
       try {
         // Fetch user credentials (assume already in memory or session)
-        const userCredentials = sessionStorage.getItem('userCredentials') || localStorage.getItem('userCredentials');
-        if (userCredentials) localStorage.setItem('userCredentials', userCredentials);
+        const userCredentials = sessionStorage.getItem('userCredentials') || await StorageService.get('userCredentials');
+        if (userCredentials) await StorageService.set('userCredentials', userCredentials);
 
         // Fetch user org unit
         const credentials = userCredentials;
@@ -200,7 +206,7 @@ const EditFacilityOwnershipDialog = ({
             }
           });
         });
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = await StorageService.get('userCredentials');
         const newFileNames = {};
         for (const field of fileFields) {
           try {
@@ -237,7 +243,7 @@ const EditFacilityOwnershipDialog = ({
     if (!file) return;
     setFileUploadStatus(prev => ({ ...prev, [de.id]: { uploading: true, error: null } }));
     setSelectedFileNames(prev => ({ ...prev, [de.id]: file.name }));
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const fileData = new FormData();
     fileData.append('file', file);
     try {
@@ -280,7 +286,7 @@ const EditFacilityOwnershipDialog = ({
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       setErrorMessage("Authentication required.");
       setIsSubmitting(false);
@@ -456,7 +462,7 @@ const EditFacilityOwnershipDialog = ({
     console.log('Timestamp:', new Date().toISOString());
 
     // Check credentials
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       console.error('❌ NO CREDENTIALS FOUND IN LOCALSTORAGE');
       console.groupEnd();
@@ -1146,7 +1152,7 @@ const EditFacilityOwnershipDialog = ({
   // Function to fetch org unit ID by name
   const fetchOrgUnitIdByName = async (name) => {
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials || !name) return null;
       
       const encodedName = encodeURIComponent(name);
@@ -1179,7 +1185,7 @@ const EditFacilityOwnershipDialog = ({
     setSubmitError(null);
     try {
       // 1. Get facility name from sessionStorage
-      const credentials = localStorage.getItem('userCredentials');
+      let credentials = localStorage.getItem('userCredentials');
       const meRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
         headers: { Authorization: `Basic ${credentials}` },
       });
@@ -1189,7 +1195,7 @@ const EditFacilityOwnershipDialog = ({
       if (!orgUnit) throw new Error('No organisation unit found for user');
       const orgUnitId = orgUnit.id;
       const facilityName = orgUnit.displayName;
-      setFacilityOrgUnitId(orgUnitId);
+      // setFacilityOrgUnitId(orgUnitId); // This line is removed
 
 
       // 1.1 Set "Application Submitted" to true before saving
@@ -1217,7 +1223,7 @@ const EditFacilityOwnershipDialog = ({
       if (facilityName) {
         const orgUnitId = await fetchOrgUnitIdByName(facilityName);
         if (orgUnitId) {
-          setFacilityOrgUnitId(orgUnitId);
+          // setFacilityOrgUnitId(orgUnitId); // This line is removed
         } else {
           throw new Error('Could not find organization unit for the facility');
         }
@@ -1226,6 +1232,21 @@ const EditFacilityOwnershipDialog = ({
       }
       
       // 3.1 Add facility to Screening org unit group
+
+credentials = await StorageService.get('userCredentials');
+
+if (!credentials) {
+  console.warn("⚠️ FACILITY OWNERSHIP: StorageService returned no credentials. Falling back to localStorage.");
+  credentials = localStorage.getItem('userCredentials');
+}
+
+if (!credentials) {
+  console.error("❌ FACILITY OWNERSHIP: No credentials found in either StorageService or localStorage");
+  setErrorMessage("Authentication required. Please log in again.");
+  setIsLoading(false);
+  return;
+}
+
       const nextGroupId = 'nDAvPPtYHQP';
       const nextGroupName = 'Screening Review';
       

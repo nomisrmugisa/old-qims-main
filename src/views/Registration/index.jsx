@@ -1,14 +1,14 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField } from '@mui/material';
 import { eventBus, EVENTS } from '../../events';
 import { validateEmail, validatePassword } from '../../utils/validators';
 import registrationIllustration from '../../assets/MOH-logo-bots.png';
 import './index.css';
-import { AuthService, UserService } from '../../services';
+import { OTPApiService, AuthService, UserService } from '../../services';
 
 
 const Registration = () => {
@@ -65,7 +65,8 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            await AuthService.registerEmail({
+
+            const response = await AuthService.registerEmail({
                 email: formData.email,
                 username: formData.email,
                 password: formData.password,
@@ -78,6 +79,30 @@ const Registration = () => {
                 type: 'success'
             });
             setStep(2);
+            window.console.log("RESPONSE---");
+            window.console.log(response);
+            window.console.log(response.code);
+            window.console.log(response.data);
+            window.console.log("***---");
+
+            /*const response = await fetch('/api/auth/send-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                    title: 'OTP Sent',
+                    message: 'Verification code sent to your email',
+                    type: 'success'
+                });
+                setStep(2);
+            } else {
+                throw new Error(data.message || 'Failed to send OTP');
+            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
@@ -95,15 +120,42 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            await AuthService.registerComplete(formData);
+
+            const response = await AuthService.registerComplete(formData);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Registration Complete',
                 message: 'Your account has been created successfully',
                 type: 'success',
                 options: {
-                    willClose: () => window.location.href = '/login'
+                    willClose: () => window.location.href = '/main/login'
                 }
             });
+            window.console.log("RESPONSE---");
+            window.console.log(response);
+            window.console.log(response.code);
+            window.console.log(response.data);
+            window.console.log("***---");
+
+            /*const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                    title: 'Registration Complete',
+                    message: 'Your account has been created successfully',
+                    type: 'success',
+                    options: {
+                        willClose: () => window.location.href = '/dashboard'
+                    }
+                });
+            } else {
+                throw new Error(data.message || 'Registration failed');
+            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
@@ -153,6 +205,7 @@ const Registration = () => {
                                     >
                                         {isSubmitting ? 'Sending...' : 'Send Verification Code'}
                                     </Button>
+
                                 </Form>
                             ) : (
                                 <Form onSubmit={handleCompleteRegistration}>
@@ -216,7 +269,15 @@ const Registration = () => {
                             )}
 
                             <div className="text-center mt-4">
+                                {step === 1 && (
+                                    <span>Already have an OTP? <a href="javascript:void(0);" onClick={() => setStep(2)}>Click here</a><br/></span>
+                                    )}
+                                {step === 2 && (
+                                    <span>You do not have an OTP? <a href="javascript:void(0);" onClick={() => setStep(1)}>Request for an OTP here</a><br/></span>
+                                    )}
                                 <p className="text-muted">
+
+
                                     Already have an account? <a href="/main/login">Sign in</a>
                                 </p>
                             </div>

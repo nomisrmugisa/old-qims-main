@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AddServiceOfferingDialog.css'; // Reuse the same CSS
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
   const [formData, setFormData] = useState({
@@ -72,7 +73,7 @@ const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
 
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required. Please log in again.");
@@ -116,7 +117,7 @@ const EditServiceOfferingDialog = ({ open, onClose, onSuccess, event }) => {
     setIsLoading(true);
 
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");
       }

@@ -20,6 +20,7 @@ import {
   Box as MuiBox
 } from '@mui/material';
 import debounce from 'lodash/debounce';
+import {StorageService} from '../services';
 
 // Define required fields for "Other Details" section
 const requiredOtherDetailsFields = [
@@ -54,7 +55,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const [currentStep, setCurrentStep] = useState('');
 
   const [locationName, setLocationName] = useState('');
-  const credentials = localStorage.getItem('userCredentials');
+  const credentials = StorageService.get('userCredentials');
 
   // Add state for progress
   const [progress, setProgress] = useState(0);
@@ -106,7 +107,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     const fetchData = async () => {
       try {
         setLoading(true);
-        // const credentials = localStorage.getItem('userCredentials');
+        // const credentials = StorageService.get('userCredentials');
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
         if (!credentials || !userOrgUnitId) {
@@ -258,7 +259,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       }
 
       try {
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = StorageService.get('userCredentials');
         if (!credentials) {
           console.error('No credentials found for fetching org unit name');
           return;
@@ -394,7 +395,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const fetchOrganisationalUnits = async () => {
     setIsLoadingOrgUnits(true);
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = StorageService.get('userCredentials');
       if (!credentials) {
         console.error("No credentials found");
         setIsLoadingOrgUnits(false);

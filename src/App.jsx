@@ -14,6 +14,7 @@ import NavigationWrapper from './components/NavigationWrapper';
 
 
 import AlertNotification from './components/AlertNotification';
+import { AuthService, StorageService } from './services';
 
 //Routes
 import ForgotPassword from './views/ForgotPassword';
@@ -28,6 +29,7 @@ import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
+import PasswordChangePage from './views/ChangePassword';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -52,7 +54,7 @@ function App() {
     }, []);
 
     // Safety timeout to prevent infinite loading
-    useEffect(() => {
+    /*useEffect(() => {
         if (isLoading) {
             const timeout = setTimeout(() => {
                 console.warn('Loading timeout - forcing loading state to false');
@@ -63,6 +65,10 @@ function App() {
             return () => clearTimeout(timeout);
         }
     }, [isLoading]);
+
+    useEffect(() => {
+        console.log(`LoadingProcesses changed to: ${loadingProcesses}`);
+    }, [loadingProcesses]);*/
 
     const handleShow = useCallback((source) => {
         window.console.log("handleShow");
@@ -89,23 +95,50 @@ function App() {
    * Loading screen Management
    ----------------------------*/
 
-    const checkExistingLogin = () => {
-        const credentials = localStorage.getItem('userCredentials');
-        const rememberMe = localStorage.getItem('rememberMe');
+    const checkExistingLogin = async() => {
+        try {
+            const credentials = await StorageService.get('userCredentials');
+            const rememberMe = await StorageService.get('rememberMe');
 
-        if (credentials && rememberMe) {
-            setIsLoggedIn(true);
-            navigate('/dashboards/facility-ownership');
+            if (credentials) {
+                window.console.log("credentials: ", credentials);
+                window.console.log("remember: ", rememberMe);
+                setIsLoggedIn(true);
+                //navigate('/dashboards/facility-ownership');
+            }
+        } catch (error) {
+            console.error('Error checking existing login:', error);
+            // Clear potentially corrupted data
+            try {
+                StorageService.remove('userCredentials');
+                StorageService.remove('rememberMe');
+                console.log('Cleared potentially corrupted authentication data');
+            } catch (clearError) {
+                console.error('Failed to clear corrupted data:', clearError);
+            }
+        } finally {
+            setIsLoading(false); // Finish initial loading regardless of login state
         }
-
-        setIsLoading(false); // Finish initial loading regardless of login state
     };
   // Check for existing credentials on app load
   useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Clear any corrupted data first
+        const corruptedCount = await StorageService.clearCorruptedData();
+        if (corruptedCount > 0) {
+          console.log(`Cleared ${corruptedCount} corrupted data entries`);
+        }
+        
+        // Then check for existing login
+        await checkExistingLogin();
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setIsLoading(false);
+      }
+    };
 
-
-    checkExistingLogin();
-
+    initializeApp();
   }, [navigate]);
 
   const handleLogin = (status) => {
@@ -118,18 +151,26 @@ function App() {
   };
 
   const triggerLoginClick = () => {
-      setShowLoginModal(true);
-      // navigate('/login'); // Temporarily disabled to prevent routing
+      //setShowLoginModal(true);
+      navigate('/login');
   };
 
   const handleLogout = () => {
     setIsLoading(true);
+    AuthService.clearAuth();
+    window.console.log("logout 1");
     localStorage.clear(); // Clear local storage on logout
-    setTimeout(() => {
+    /*setTimeout(() => {
       setIsLoggedIn(false);
       setIsLoading(false);
-      navigate('/'); // Redirect to home/login page after logout
-    }, 2000);
+        window.console.log("logout 2");
+      navigate('/login'); // Redirect to home/login page after logout
+    }, 2000);*/
+
+      setIsLoggedIn(false);
+      setIsLoading(false);
+      window.console.log("logout 2");
+      navigate('/login'); // Redirect to home/login page after logout
   };
 
   return (
@@ -155,7 +196,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/register" element={<Registration />} />
-              {/* <Route path="/login" element={<Login />} /> */}
+              <Route path="/login" element={<Login />} />
               <Route path="/facilities" element={<FacilitiesPage />} />
               <Route path="/facility/:facilityId" element={<FacilityDetailPage />} />
               <Route path="/conflict-resolution" element={<ConflictResolutionPage />} />
@@ -164,6 +205,7 @@ function App() {
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
               <Route path="/dashboard" element={<FacilityUserDashboardPage />} />
               <Route path="/facility-user-management" element={<FacilityUserManagementPage />} />
+              <Route path="/password-change" element={<PasswordChangePage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

@@ -7,6 +7,7 @@ import UserTable from './User/Management/Table';
 import useUserManagement from './hooks/useUserManagement';
 import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
+import {StorageService} from '../services';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
@@ -31,7 +32,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     } = useUserManagement();
 
     const fetchTrackedEntityInstance = async () => {
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = await StorageService.get('userCredentials');
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
         const userOrgUnitName = localStorage.getItem('userOrgUnitName');
 
@@ -206,7 +207,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
         // Test if the API is accessible at all
         const testApiAccess = async () => {
             try {
-                const credentials = localStorage.getItem('userCredentials');
+                const credentials = await StorageService.get('userCredentials');
                 const userOrgUnitId = localStorage.getItem('userOrgUnitId');
                 
                 if (!credentials || !userOrgUnitId) {
@@ -254,7 +255,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
 
     const fetchInspectionEvents = async () => {
         setIsLoadingInspections(true);
-        const credentials = localStorage.getItem('userCredentials');
+        const credentials = await StorageService.get('userCredentials');
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
         if (!trackedEntityInstanceId || !credentials || !userOrgUnitId) {
             setInspectionEvents([]);

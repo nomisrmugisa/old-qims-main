@@ -57,7 +57,7 @@ const DashboardLayout = ({ children }) => {
                         {authUser && (
                             <Nav.Link>
                                 <Person size={20} className="me-1" />
-                                {authUser.displayName}
+                                {authUser.firstName}
                             </Nav.Link>
                         )}
 

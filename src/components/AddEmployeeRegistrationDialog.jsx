@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AddEmployeeRegistrationDialog.css';
 import ModalPortal from './ModalPortal';
+import {StorageService} from '../services';
 
 const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess, trackedEntityInstanceId }) => {
   const [newFormData, setNewFormData] = useState({
@@ -29,7 +30,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required. Please log in again.");
@@ -63,7 +64,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
   // Get enrollment ID for the specific program from the tracked entity instance
   const getEnrollmentIdForProgram = async (teiId, programId = "EE8yeLVo6cN") => {
-    const credentials = localStorage.getItem('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     
     if (!credentials) {
       throw new Error("Authentication required");
@@ -123,7 +124,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
     setIsLoading(true);
 
     try {
-      const credentials = localStorage.getItem('userCredentials');
+      const credentials = await StorageService.get('userCredentials');
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");
       }

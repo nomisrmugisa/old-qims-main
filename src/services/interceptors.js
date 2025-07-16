@@ -3,9 +3,17 @@ import httpService from './http.service';
 import StorageService from './storage.service';
 import AuthService from './auth.service';
 import { STORAGE_KEYS, API_STATUS, API_ERRORS } from './constants';
+import { eventBus, EVENTS } from '../events';
 
 let isRefreshing = false;
 let failedQueue = [];
+
+// Add this at the top
+const SKIP_REFRESH_ENDPOINTS = [
+    '/auth/login',
+    '/auth/forgotPassword',
+    '/auth/resetPassword'
+];
 
 const processQueue = (error, token = null) => {
     failedQueue.forEach(prom => {
@@ -61,13 +69,24 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
             window.console.log("Error Log");
             window.console.log(error);
 
-            if (error.response?.status === API_STATUS.UNAUTHORIZED && !originalRequest._retry) {
+            const creds = await StorageService.get('userCredentials');
+
+            let isAuthenticated = false;
+            if(creds)
+                isAuthenticated = true;
+
+            if (error.response?.status === API_STATUS.UNAUTHORIZED &&
+            !originalRequest._retry &&
+            (isAuthenticated && !SKIP_REFRESH_ENDPOINTS.some(endpoint => originalRequest.url.includes(endpoint)))) {
                 if (isRefreshing) {
                     return new Promise((resolve, reject) => {
+                        eventBus.emit(EVENTS.LOADING_HIDE, { source: "interceptor 1"});
                         failedQueue.push({ resolve, reject });
                     }).then(() => {
+                        eventBus.emit(EVENTS.LOADING_HIDE, { source: "interceptor 2"});
                         return httpService(originalRequest);
                     }).catch(err => {
+                        eventBus.emit(EVENTS.LOADING_HIDE, { source: "interceptor 3"});
                         return Promise.reject(err);
                     });
                 }
@@ -84,11 +103,12 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
                     return httpService(originalRequest);
                 } catch (refreshError) {
                     processQueue(refreshError, null);
-                    clearAuth();
+                    AuthService.clearAuth();
                     window.location.href = '/main/'; // Redirect to login
                     return Promise.reject(refreshError);
                 } finally {
                     isRefreshing = false;
+                    eventBus.emit(EVENTS.LOADING_HIDE, { source: "interceptor 4"});
                 }
             }
             window.console.log("error");
@@ -104,6 +124,12 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
                         code: API_ERRORS.NETWORK_ERROR,
                     },
                 };
+            }
+            else if(error.request && error.request.responseText) {
+                window.console.log(error.request.responseText);
+                const {message} = JSON.parse(error.request.responseText);
+                if(message)
+                    error.message = message;
             }
 
             return Promise.reject(error);
