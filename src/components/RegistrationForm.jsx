@@ -56,7 +56,7 @@ function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState(false);
-  const [registrationSubmittedMessage, setRegistrationSubmittedMessage] = useState(false);
+
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentMessage, setEmailSentMessage] = useState(false);
@@ -144,7 +144,7 @@ function RegistrationForm() {
     // Reset all message states when closing the dialog
     setSuccessOpen(false);
     setUserCreatedMessage(false);
-    setRegistrationSubmittedMessage(false);
+    
   };
 
   const handleChange = (e) => {
@@ -167,7 +167,7 @@ function RegistrationForm() {
 
   // Handle closing individual snackbars
   const handleUserCreatedClose = () => setUserCreatedMessage(false);
-  const handleRegistrationSubmittedClose = () => setRegistrationSubmittedMessage(false);
+
   const handleSuccessClose = () => setSuccessOpen(false);
 
   const closeErrorDialog = () => {
@@ -243,49 +243,7 @@ function RegistrationForm() {
       // Show user created success message
       setUserCreatedMessage(true);
 
-      // 2. Submit Registration Data (Tracker Event) (now second)
-      const trackerPayload = {
-        events: [
-          {
-            event: formData.dhisRegistrationCode, // Use DHIS2 Registration Code as the eventID
-            occurredAt: new Date().toISOString().split('T')[0],
-            notes: [],
-            program: "Y4W5qIKlOsh",
-            programStage: "YzqtE5Uv8Qd",
-            orgUnit: "OVpBNoteQ2Y", // Match the org unit used in user creation
-            dataValues: [
-              { dataElement: "SReqZgQk0RY", value: formData.cellNumber },
-              { dataElement: "SVzSsDiZMN5", value: formData.BHPCRegistrationNumber },
-              { dataElement: "g3J1CH26hSA", value: formData.userName },
-              { dataElement: "EAi89g7IBjp", value: formData.dhisRegistrationCode },
-              { dataElement: "NVlLoMZbXIW", value: formData.email }
-            ]
-          }
-        ]
-      };
-
-      const trackerResponse = await fetch(
-        `${import.meta.env.VITE_DHIS2_URL}/api/40/tracker?async=false`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${credentials}`,
-          },
-          body: JSON.stringify(trackerPayload),
-        },
-      );
-
-      if (!trackerResponse.ok) {
-        const errorText = await trackerResponse.text();
-        throw new Error(`Failed to submit registration: ${errorText}`);
-      }
-      console.log("Tracker event submitted successfully!");
-
-      // Show registration submitted success message
-      setRegistrationSubmittedMessage(true);
-
-      // 3. Send Welcome Email (remains third)
+      // 2. Send Welcome Email (now second, tracker event submission removed)
       try {
         const emailResponse = await fetch('/email2/api/send-email', {
           method: 'POST',
@@ -516,42 +474,7 @@ function RegistrationForm() {
         }
       />
 
-      <Snackbar
-        open={registrationSubmittedMessage}
-        autoHideDuration={6000}
-        onClose={handleRegistrationSubmittedClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ 
-          zIndex: 999999,
-          top: '10px !important',
-          '& .MuiSnackbar-root': {
-            top: '10px !important'
-          }
-        }}
-      >
-        <Alert
-          severity="success"
-          variant="filled"
-          sx={{ 
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            minWidth: '450px',
-            maxWidth: '600px',
-            boxShadow: '0 10px 40px rgba(46, 125, 50, 0.5)',
-            border: '3px solid #2e7d32',
-            animation: 'slideInFromTop 0.5s ease-out',
-            background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
-            '& .MuiAlert-message': {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }
-          }}
-          icon={<span style={{ fontSize: '2rem' }}>✅</span>}
-        >
-          <strong>🎉 STEP 2/3: Registration data submitted successfully! 🎉</strong>
-        </Alert>
-      </Snackbar>
+
 
       <Snackbar
         open={emailSentMessage}
@@ -586,7 +509,7 @@ function RegistrationForm() {
           }}
           icon={<span style={{ fontSize: '2rem' }}>📧</span>}
         >
-          <strong>📬 STEP 3/3: Login credentials sent to your email! Check inbox! 📬</strong>
+          <strong>📬 STEP 2/2: Login credentials sent to your email! Check inbox! 📬</strong>
         </Alert>
       </Snackbar>
 

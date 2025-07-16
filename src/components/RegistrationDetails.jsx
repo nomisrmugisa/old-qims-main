@@ -39,6 +39,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
   const [facilityName, setFacilityName] = useState('');
+  const [completeApplicationEvent, setCompleteApplicationEvent] = useState(null);
   
   // Situational Analysis state
   const [inspectionEvents, setInspectionEvents] = useState([]);
@@ -603,7 +604,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             // window.location.reload(); // Removing this to avoid blank screen
             
             // Instead, update local state directly
-            setLocalTrackedEntityInstanceId(teiId);
+            // setLocalTrackedEntityInstanceId removed
             
             // Now fetch the facility ownership data with this ID
             console.log('🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID');
@@ -1543,10 +1544,57 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     fetchMetadata();
   }, []);
 
+  // Add state for user info
+  const [userInfo, setUserInfo] = useState({ id: '', organisationUnits: [] });
+
+  // Fetch user info when Facility Ownership tab is active
+  useEffect(() => {
+    if (activeTab === 'facilityOwnership') {
+      const credentials = localStorage.getItem('userCredentials');
+      if (credentials) {
+        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+          headers: { 'Authorization': `Basic ${credentials}` }
+        })
+          .then(res => res.json())
+          .then(data => setUserInfo({
+            id: data.id,
+            organisationUnits: data.organisationUnits || []
+          }))
+          .catch(() => setUserInfo({ id: 'Error', organisationUnits: [] }));
+      }
+    }
+  }, [activeTab]);
+
+  // Add state for trackedEntityInstanceId fetched from API
+  const [facilityOwnershipTeiId, setFacilityOwnershipTeiId] = useState(null);
+
+  // Fetch trackedEntityInstanceId when Facility Ownership tab loads
+  useEffect(() => {
+    if (activeTab === 'facilityOwnership') {
+      const credentials = localStorage.getItem('userCredentials');
+      if (credentials) {
+        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
+          headers: { 'Authorization': `Basic ${credentials}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
+              setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
+            } else {
+              setFacilityOwnershipTeiId(null);
+            }
+          })
+          .catch(() => setFacilityOwnershipTeiId(null));
+      }
+    }
+  }, [activeTab]);
+
+  // Prepare variables used globally in component and dialogs
+  const effectiveTrackedEntityInstanceId = facilityOwnershipTeiId || trackedEntityInstanceId;
+  const facilityOwnershipEvents = Array.isArray(events) ? events.filter(e => e.programStage === 'MuJubgTzJrY') : [];
+  const facilityOwnershipEvent = facilityOwnershipEvents.length > 0 ? facilityOwnershipEvents[0] : undefined;
+
   const renderTabContent = () => {
-    // Prepare variables used in multiple cases
-    const effectiveTrackedEntityInstanceId = localTrackedEntityInstanceId || trackedEntityInstanceId;
-    
     switch (activeTab) {
       case 'completeApplication':
         return (
@@ -1556,6 +1604,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               <TrackerEventDetails 
                 onFormStatusChange={handleFormStatusChange}
                 onUpdateSuccess={handleApplicationUpdateSuccess}
+                onEventDataFetched={(eventData) => {
+                  console.log('Event data fetched in Admin User & Facility Details:', eventData);
+                  // Store the event data for use in other tabs
+                  setCompleteApplicationEvent(eventData);
+                }}
               />
             </div>
           </div>
@@ -1564,18 +1617,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         // Add debugging information
         console.log("RENDERING FACILITY OWNERSHIP TAB");
         console.log("- trackedEntityInstanceId (prop):", trackedEntityInstanceId);
-        console.log("- localTrackedEntityInstanceId (state):", localTrackedEntityInstanceId);
+        // localTrackedEntityInstanceId logging removed
         console.log("- effectiveTrackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
         console.log("- events.length:", events.length);
         console.log("- isLoading:", isLoading);
         console.log("- showReviewDialog:", showReviewDialog);
+        
+        // Inside the Facility Ownership tab render logic, before any use of 'events':
         
         return (
           <div className="tab-content">
             <div className="facility-ownership-details">
               <h2 
                 style={{
-                  ...(events.length === 0 && {
+                  ...(facilityOwnershipEvents.length === 0 && {
                     animation: 'blink 1.5s infinite',
                     color: '#dc3545',
                     fontWeight: 'bold'
@@ -1586,13 +1641,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 <button 
                   className="add-icon" 
                   onClick={() => {
-                    if (events.length === 0) setOpenAddDialog(true);
+                    if (facilityOwnershipEvents.length === 0) setOpenAddDialog(true);
                   }}
                   style={{ 
                     background: 'none',
                     border: 'none',
                     fontSize: '28px',
-                    color: events.length === 0 ? '#dc3545' : '#28a745',
+                    color: facilityOwnershipEvents.length === 0 ? '#dc3545' : '#28a745',
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     padding: '0 5px'
@@ -1614,23 +1669,31 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               
               {isLoading ? (
                 <p>Loading facility ownership data...</p>
-              ) : events.length > 0 ? (
-                <div style={{
-                  background: '#e2f0ff',
-                  borderRadius: '8px',
-                  padding: '24px',
-                  margin: '24px 0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                  maxWidth: '340px',
-                  minWidth: '220px',
-                  fontSize: '0.98rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                }}>
+              ) : facilityOwnershipEvents.length > 0 ? (
+                <div
+                  style={{
+                    background: '#e2f0ff',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    margin: '24px 0',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                    maxWidth: '340px',
+                    minWidth: '220px',
+                    fontSize: '0.98rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    cursor: 'pointer',
+                    transition: 'box-shadow 0.2s',
+                  }}
+                  onClick={() => setOpenAddDialog(true)}
+                  onMouseOver={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.13)'}
+                  onMouseOut={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
+                  title="Click to add or edit Facility Ownership event"
+                >
                   <h3 style={{marginBottom: '12px', fontSize: '1.08rem'}}>Compliance Section (Read Only)</h3>
                   {facilityOwnershipMetadata && facilityOwnershipMetadata.programStageSections
                     ? facilityOwnershipMetadata.programStageSections.filter(section =>
@@ -1639,7 +1702,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         <div key={section.id} style={{marginBottom: '18px'}}>
                           <h4 style={{fontSize: '1.1rem', fontWeight: 600, marginBottom: '10px'}}>{section.name}</h4>
                           {section.dataElements.map(de => {
-                            const value = (events[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
+                            const value = (facilityOwnershipEvents[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
                             return (
                               <div key={de.id} style={{marginBottom: '10px'}}>
                                 <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>Not provided</span>}
@@ -1650,7 +1713,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       ))
                     : <p>Loading compliance section metadata...</p>}
                 </div>
-              ) : showReviewDialog && events.length === 0 ? (
+              ) : showReviewDialog && facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
                     <h4 style={{ color: '#721c24', marginTop: 0 }}>Reloading Facility Ownership Data</h4>
@@ -1679,49 +1742,45 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   </div>
                   <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
                     Debug: isLoading={isLoading.toString()}, 
-                    events.length={events.length}, 
+                    events.length={facilityOwnershipEvents.length}, 
                     trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
                   </p>
                 </div>
-              ) : !effectiveTrackedEntityInstanceId ? (
-                <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
-                  <h4 style={{ color: '#721c24', marginTop: 0 }}>Missing Facility Registration</h4>
-                  <p style={{ color: '#721c24' }}>
-                    Before you can add facility ownership information, you need to complete the facility registration process.
-                  </p>
-                  <ol style={{ color: '#721c24', paddingLeft: '20px' }}>
-                    <li>Click on the <strong>"Admin User & Facility Details"</strong> button in the left sidebar</li>
-                    <li>Fill out all required fields in the application form</li>
-                    <li>Submit the application form</li>
-                    <li>Return to this tab after completing those steps</li>
-                  </ol>
-                  <button 
-                    onClick={() => setActiveTab('completeApplication')} 
-                    style={{
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      marginTop: '10px'
-                    }}
-                  >
-                    Go to Admin User & Facility Details
-                  </button>
-                </div>
-              ) : showReviewDialog && events.length === 0 ? (
+              ) : showReviewDialog && facilityOwnershipEvents.length === 0 ? (
                 <p className="error-message">Error loading data. Please try again or contact support.</p>
-              ) : events.length === 0 ? (
+              ) : facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <p>No facility ownership records found.</p>
                   <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
                     Debug: isLoading={isLoading.toString()}, 
-                    events.length={events.length}, 
+                    events.length={facilityOwnershipEvents.length}, 
                     trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
                   </p>
                 </div>
               ) : null}
+              {/* Debugging info for Facility Ownership events */}
+              <div style={{
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: '6px',
+                padding: '12px',
+                margin: '16px 0',
+                color: '#ad8b00',
+                fontSize: '0.95rem',
+                wordBreak: 'break-all',
+                maxWidth: 700,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}>
+                <strong>Facility Ownership Debug Info (DHIS2):</strong>
+                <div>Fetch attempted: {typeof isLoading !== 'undefined' ? 'Yes' : 'No'}</div>
+                <div>Events fetched: {facilityOwnershipEvents.length}</div>
+                <div>Events array: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(facilityOwnershipEvents, null, 2)}</pre></div>
+                {/* If you have an error state for fetch, show it here. Example: */}
+                {/* <div>Error: {fetchError || 'None'}</div> */}
+                <div>User ID: {userInfo.id || 'N/A'}</div>
+                <div>Organisation Units: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(userInfo.organisationUnits, null, 2)}</pre></div>
+              </div>
             </div>
           </div>
         );
@@ -2260,14 +2319,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Add a special effect to check for trackedEntityInstanceId in localStorage
   // This is a workaround for when the parent component's prop doesn't update
-  const [localTrackedEntityInstanceId, setLocalTrackedEntityInstanceId] = useState(null);
+  // Note: localTrackedEntityInstanceId removed as it's no longer needed
   
   useEffect(() => {
     // Check if we have a trackedEntityInstanceId in localStorage
     const tempId = localStorage.getItem('tempTrackedEntityInstanceId');
     if (tempId && !trackedEntityInstanceId) {
       console.log("🔍 Using trackedEntityInstanceId from localStorage:", tempId);
-      setLocalTrackedEntityInstanceId(tempId);
+      // setLocalTrackedEntityInstanceId removed
       
       // Also fetch facility ownership data with this ID
       const userOrgUnitId = localStorage.getItem('userOrgUnitId');
@@ -2277,7 +2336,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
     } else {
       // If parent prop is available, use that instead
-      setLocalTrackedEntityInstanceId(trackedEntityInstanceId);
+      // setLocalTrackedEntityInstanceId removed
     }
   }, [trackedEntityInstanceId]);
   
@@ -2350,14 +2409,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     console.log('[Debug Information]', {
       'trackedEntityInstanceId (prop)': trackedEntityInstanceId || 'null',
-      'localTrackedEntityInstanceId (state)': localTrackedEntityInstanceId || 'null',
+              // 'localTrackedEntityInstanceId removed
       // 'effectiveTrackedEntityInstanceId': effectiveTrackedEntityInstanceId || 'null', // Removed to fix ReferenceError
       'events.length': events.length,
       'isLoading': isLoading,
       'showReviewDialog': showReviewDialog,
       'localStorage TEI': localStorage.getItem('tempTrackedEntityInstanceId') || 'null',
     });
-  }, [trackedEntityInstanceId, localTrackedEntityInstanceId, events.length, isLoading, showReviewDialog]); // Removed effectiveTrackedEntityInstanceId from dependencies
+  }, [trackedEntityInstanceId, events.length, isLoading, showReviewDialog]); // Removed localTrackedEntityInstanceId and effectiveTrackedEntityInstanceId from dependencies
 
   return (
     <div className="registration-details-container">
@@ -2440,17 +2499,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <EditFacilityOwnershipDialog
           open={openAddDialog}
           onClose={() => {
-            console.log("FacilityOwnershipDialog onClose called - reloading facility ownership data");
             setOpenAddDialog(false);
-            fetchFacilityOwnershipData(); // Always reload data when dialog closes
+            fetchFacilityOwnershipData(effectiveTrackedEntityInstanceId);
           }}
           onAddSuccess={() => {
-            console.log("FacilityOwnershipDialog onAddSuccess called - reloading facility ownership data");
             setOpenAddDialog(false);
-            fetchFacilityOwnershipData();
+            fetchFacilityOwnershipData(effectiveTrackedEntityInstanceId);
           }}
-          isEditMode={false}
-          // facilityName={facilityName}
+          isEditMode={!!facilityOwnershipEvent}
+          event={facilityOwnershipEvent}
+          trackedEntityInstanceId={effectiveTrackedEntityInstanceId}
         />
       )}
 

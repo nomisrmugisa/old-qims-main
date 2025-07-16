@@ -96,24 +96,49 @@ function App() {
    ----------------------------*/
 
     const checkExistingLogin = async() => {
-        const credentials = await StorageService.get('userCredentials');
-        const rememberMe = await StorageService.get('rememberMe');
+        try {
+            const credentials = await StorageService.get('userCredentials');
+            const rememberMe = await StorageService.get('rememberMe');
 
-        if (credentials) {
-            window.console.log("credentials: ", credentials);
-            window.console.log("remember: ", rememberMe);
-            setIsLoggedIn(true);
-            //navigate('/dashboards/facility-ownership');
-        }
-        else
+            if (credentials) {
+                window.console.log("credentials: ", credentials);
+                window.console.log("remember: ", rememberMe);
+                setIsLoggedIn(true);
+                //navigate('/dashboards/facility-ownership');
+            }
+        } catch (error) {
+            console.error('Error checking existing login:', error);
+            // Clear potentially corrupted data
+            try {
+                StorageService.remove('userCredentials');
+                StorageService.remove('rememberMe');
+                console.log('Cleared potentially corrupted authentication data');
+            } catch (clearError) {
+                console.error('Failed to clear corrupted data:', clearError);
+            }
+        } finally {
             setIsLoading(false); // Finish initial loading regardless of login state
+        }
     };
   // Check for existing credentials on app load
   useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Clear any corrupted data first
+        const corruptedCount = await StorageService.clearCorruptedData();
+        if (corruptedCount > 0) {
+          console.log(`Cleared ${corruptedCount} corrupted data entries`);
+        }
+        
+        // Then check for existing login
+        await checkExistingLogin();
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setIsLoading(false);
+      }
+    };
 
-
-    checkExistingLogin();
-
+    initializeApp();
   }, [navigate]);
 
   const handleLogin = (status) => {

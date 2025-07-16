@@ -1,7 +1,7 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField } from '@mui/material';
 import { eventBus, EVENTS } from '../../events';
@@ -65,14 +65,13 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            eventBus.emit(EVENTS.LOADING_SHOW, { source: "NOWHERE"});
-            const response = await OTPApiService.requestOtp({
-                emails: [formData.email],
-            });
 
-            window.console.log("RESPONSE---");
-            window.console.log(response);
-            window.console.log("***---");
+            const response = await AuthService.registerEmail({
+                email: formData.email,
+                username: formData.email,
+                password: formData.password,
+                otp: formData.otp
+            });
 
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'OTP Sent',
@@ -80,7 +79,11 @@ const Registration = () => {
                 type: 'success'
             });
             setStep(2);
-
+            window.console.log("RESPONSE---");
+            window.console.log(response);
+            window.console.log(response.code);
+            window.console.log(response.data);
+            window.console.log("***---");
 
             /*const response = await fetch('/api/auth/send-verification', {
                 method: 'POST',
@@ -118,12 +121,7 @@ const Registration = () => {
         setIsSubmitting(true);
         try {
 
-            let response = await OTPApiService.verifyOtp({
-                email: formData.email,
-                otp: formData.otp
-            });
-            window.console.log("otp verification", response);
-            response = await AuthService.registrationDHISDev(formData);
+            const response = await AuthService.registerComplete(formData);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Registration Complete',
                 message: 'Your account has been created successfully',
@@ -134,8 +132,30 @@ const Registration = () => {
             });
             window.console.log("RESPONSE---");
             window.console.log(response);
+            window.console.log(response.code);
+            window.console.log(response.data);
             window.console.log("***---");
 
+            /*const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                    title: 'Registration Complete',
+                    message: 'Your account has been created successfully',
+                    type: 'success',
+                    options: {
+                        willClose: () => window.location.href = '/dashboard'
+                    }
+                });
+            } else {
+                throw new Error(data.message || 'Registration failed');
+            }*/
         } catch (error) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',

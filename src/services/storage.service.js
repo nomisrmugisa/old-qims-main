@@ -115,17 +115,40 @@ const StorageService = {
             const item = localStorage.getItem(key);
             if (!item) return null;
 
+            // First, try to parse as JSON
+            let parsed;
+            try {
+                parsed = JSON.parse(item);
+            } catch (parseError) {
+                console.warn(`StorageService.get: Failed to parse JSON for key '${key}'. Data may be corrupted.`, parseError);
+                // If it's not valid JSON, it might be old unencrypted data or corrupted data
+                // Try to return the raw string for backward compatibility
+                return item;
+            }
+
             // Check if data is encrypted (has IV and data properties)
-            const parsed = JSON.parse(item);
-            if (parsed.iv && parsed.data) {
-                const decrypted = await this._decrypt(parsed);
-                return JSON.parse(decrypted);
+            if (parsed && typeof parsed === 'object' && parsed.iv && parsed.data) {
+                try {
+                    const decrypted = await this._decrypt(parsed);
+                    return JSON.parse(decrypted);
+                } catch (decryptError) {
+                    console.warn(`StorageService.get: Failed to decrypt data for key '${key}'. Data may be corrupted.`, decryptError);
+                    // If decryption fails, try to return the raw parsed data
+                    return parsed;
+                }
             }
 
             // If not encrypted, return as-is (for backward compatibility)
             return parsed;
         } catch (error) {
             console.error('StorageService.get error:', error);
+            // Clear corrupted data
+            try {
+                localStorage.removeItem(key);
+                console.log(`StorageService.get: Removed corrupted data for key '${key}'`);
+            } catch (removeError) {
+                console.error('StorageService.get: Failed to remove corrupted data:', removeError);
+            }
             return null;
         }
     },
@@ -160,6 +183,42 @@ const StorageService = {
             localStorage.clear();
         } catch (error) {
             console.error('StorageService.clear error:', error);
+        }
+    },
+
+    // Clear corrupted data and validate storage
+    async clearCorruptedData() {
+        try {
+            const keys = Object.keys(localStorage);
+            const corruptedKeys = [];
+            
+            for (const key of keys) {
+                try {
+                    const item = localStorage.getItem(key);
+                    if (item) {
+                        // Try to parse as JSON
+                        JSON.parse(item);
+                    }
+                } catch (error) {
+                    console.warn(`Found corrupted data for key '${key}':`, error);
+                    corruptedKeys.push(key);
+                }
+            }
+            
+            // Remove corrupted keys
+            for (const key of corruptedKeys) {
+                try {
+                    localStorage.removeItem(key);
+                    console.log(`Removed corrupted data for key '${key}'`);
+                } catch (error) {
+                    console.error(`Failed to remove corrupted key '${key}':`, error);
+                }
+            }
+            
+            return corruptedKeys.length;
+        } catch (error) {
+            console.error('StorageService.clearCorruptedData error:', error);
+            return 0;
         }
     },
 
