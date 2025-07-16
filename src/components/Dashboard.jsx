@@ -8,15 +8,21 @@ import useUserManagement from './hooks/useUserManagement';
 import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
 import {StorageService} from '../services';
+import { safeFetch, showErrorMessage, logAPICall, logAPIResponse, API_ERROR_CODES } from '../utils/apiErrorHandler';
+import { Snackbar, Alert } from '@mui/material';
+import { testCredentialStorage } from '../utils/loginTest';
+import { fixCredentials } from '../utils/credentialHelper';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
     const [dashboardLoading, setDashboardLoading] = useState(true);
     const [showFacilityReviewDialog, setShowFacilityReviewDialog] = useState(false);
-    const [facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
+    const [_facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
     const [activeUserTab, setActiveUserTab] = useState('users');
+    const [error, setError] = useState(null);
+    const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
     
     // User management state
     const {
@@ -72,48 +78,27 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             const url = `${baseUrl}${endpoint}?${params.toString()}`;
             
             // Log the API call details
-            console.log('📡 === API CALL DETAILS ===');
-            console.log('- HTTP Method: GET');
-            console.log('- Base URL:', baseUrl);
-            console.log('- Endpoint:', endpoint);
-            console.log('- Parameters:');
-            console.log('  • ou (Organization Unit):', userOrgUnitId);
-            console.log('  • ouMode:', 'SELECTED');
-            console.log('  • program:', 'EE8yeLVo6cN');
-            console.log('  • fields:', 'trackedEntityInstance');
-            console.log('  • paging:', 'false');
-            console.log('- Full URL:', url);
-            console.log('- Headers:');
-            console.log('  • Authorization: Basic [credentials]');
-            console.log('- Request started at:', new Date().toISOString());
+            logAPICall('GET', url, {
+                headers: {
+                    'Authorization': `Basic ${credentials}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            }, 'Dashboard.fetchTrackedEntityInstance');
             
-            // Make the API call
-            const startTime = performance.now();
-            const response = await fetch(url, {
+            // Make the API call with error handling
+            const response = await safeFetch(url, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-            });
-            const endTime = performance.now();
-            
-            // Log the response details
-            console.log('📥 === API RESPONSE DETAILS ===');
-            console.log('- Response received in:', Math.round(endTime - startTime), 'ms');
-            console.log('- Response status:', response.status, response.statusText);
-            console.log('- Response OK:', response.ok);
-            console.log('- Response headers:');
-            response.headers.forEach((value, name) => {
-                console.log(`  • ${name}: ${value}`);
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            }, 'Dashboard.fetchTrackedEntityInstance');
 
             const data = await response.json();
+            logAPIResponse(response, data, 'Dashboard.fetchTrackedEntityInstance');
+            
             console.log('- Response data:', data);
             console.log('- Has trackedEntityInstances:', Boolean(data.trackedEntityInstances));
             console.log('- Number of instances:', data.trackedEntityInstances?.length || 0);
@@ -132,13 +117,22 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             }
         } catch (error) {
             console.error("- Error fetching tracked entity instance:", error);
-            console.error("- Error name:", error.name);
-            console.error("- Error message:", error.message);
-            console.error("- Error stack:", error.stack);
-            // setTrackedEntityInstanceId(null); // This line is removed
+            
+            // Handle specific error types
+            if (error.code === API_ERROR_CODES.UNAUTHORIZED) {
+                // Unauthorized errors are handled by the error handler utility
+                // No need to show additional error messages
+                return;
+            }
+            
+            // Show user-friendly error message
+            const errorMessage = showErrorMessage(error, 'Dashboard.fetchTrackedEntityInstance');
+            setError(errorMessage);
+            setShowErrorSnackbar(true);
+            
             // Only set showFacilityReviewDialog to true for actual errors, not for missing data
             if (error.message !== "No tracked entity instances found") {
-            setShowFacilityReviewDialog(true);
+                setShowFacilityReviewDialog(true);
             }
         } finally {
             console.log('=== FETCH TRACKED ENTITY INSTANCE COMPLETED ===');
@@ -280,7 +274,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                 });
             }
             setInspectionEvents(fetchedEvents);
-        } catch (error) {
+        } catch {
             setInspectionEvents([]);
         } finally {
             setIsLoadingInspections(false);
@@ -344,7 +338,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                 </Card.Text>
                                                 <Button
                                                     variant="outline-primary"
-                                                    onClick={() => setActiveTab('enrolment')}
+                                                    onClick={() => setActiveSection('enrolment')}
                                                 >
                                                     <PlusCircle className="me-1" /> Enroll in New Facility
                                                 </Button>
@@ -535,6 +529,167 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
+                {/* Debug button for credential testing */}
+                <button 
+                    onClick={async () => {
+                        console.log('🧪 Running credential storage test...');
+                        await testCredentialStorage();
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Test Credentials
+                </button>
+                <button 
+                    onClick={async () => {
+                        console.log('🔧 Running credential fix...');
+                        // You can replace these with actual credentials for testing
+                        await fixCredentials('testuser', 'testpass');
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '40px',
+                        right: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Fix Credentials
+                </button>
+                <button 
+                    onClick={async () => {
+                        console.log('🔍 === AUTHENTICATION STATE DEBUG ===');
+                        const { getCredentials } = await import('../utils/credentialHelper');
+                        const credentials = await getCredentials();
+                        console.log('🔍 Credentials found:', !!credentials);
+                        console.log('🔍 Credentials value:', credentials);
+                        console.log('🔍 localStorage userCredentials:', localStorage.getItem('userCredentials'));
+                        console.log('🔍 localStorage rememberMe:', localStorage.getItem('rememberMe'));
+                        console.log('🔍 localStorage userOrgUnitId:', localStorage.getItem('userOrgUnitId'));
+                        console.log('🔍 localStorage userOrgUnitName:', localStorage.getItem('userOrgUnitName'));
+                        console.log('🔍 === END AUTHENTICATION STATE DEBUG ===');
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '70px',
+                        right: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#ffc107',
+                        color: 'black',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Debug Auth
+                </button>
+                <button 
+                    onClick={async () => {
+                        console.log('🔍 === APP STATE DEBUG ===');
+                        // Force a re-check of login state
+                        const { getCredentials } = await import('../utils/credentialHelper');
+                        const credentials = await getCredentials();
+                        const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+                        
+                        if (credentials && userOrgUnitId) {
+                            console.log('🔍 All data available, forcing login state update...');
+                            // Emit login success event to update App.jsx state
+                            const { eventBus, EVENTS } = await import('../events');
+                            eventBus.emit(EVENTS.LOGIN_SUCCESS, true);
+                            console.log('🔍 Login success event emitted');
+                        } else {
+                            console.log('🔍 Missing data - credentials:', !!credentials, 'orgUnitId:', !!userOrgUnitId);
+                        }
+                        console.log('🔍 === END APP STATE DEBUG ===');
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '100px',
+                        right: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Force Login
+                </button>
+                <button 
+                    onClick={async () => {
+                        console.log('🗺️ === TESTING ORGANIZATIONAL UNITS FETCH ===');
+                        const { getCredentials } = await import('../utils/credentialHelper');
+                        const credentials = await getCredentials();
+                        
+                        if (!credentials) {
+                            console.log('❌ No credentials available');
+                            return;
+                        }
+                        
+                        try {
+                            const url = `/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`;
+                            console.log('🔗 Testing API URL:', url);
+                            
+                            const response = await fetch(url, {
+                                headers: {
+                                    Authorization: `Basic ${credentials}`,
+                                },
+                            });
+                            
+                            console.log('📡 Response status:', response.status);
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to fetch: ${response.status}`);
+                            }
+                            
+                            const data = await response.json();
+                            console.log('📊 Response data:', data);
+                            console.log('🏢 Number of org units:', data.organisationUnits?.length || 0);
+                            
+                            if (data.organisationUnits && data.organisationUnits.length > 0) {
+                                console.log('✅ Organizational units fetch successful');
+                                console.log('📍 Sample locations:', data.organisationUnits.slice(0, 5).map(u => u.displayName));
+                            } else {
+                                console.log('⚠️ No organizational units found');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error testing organizational units fetch:', error);
+                        }
+                        console.log('🏁 === END TESTING ORGANIZATIONAL UNITS FETCH ===');
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '130px',
+                        right: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#17a2b8',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Test Locations
+                </button>
             </div>
             <div className="dashboard-main">
                 <div className="dashboard-sidebar">
@@ -595,6 +750,22 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     )}
                 </div>
             </div>
+            
+            {/* Error Snackbar */}
+            <Snackbar
+                open={showErrorSnackbar}
+                autoHideDuration={6000}
+                onClose={() => setShowErrorSnackbar(false)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert 
+                    onClose={() => setShowErrorSnackbar(false)} 
+                    severity="error" 
+                    sx={{ width: '100%' }}
+                >
+                    {error}
+                </Alert>
+            </Snackbar>
         </div>
     );
 };

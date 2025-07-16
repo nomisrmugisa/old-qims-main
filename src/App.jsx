@@ -46,21 +46,30 @@ function App() {
     const updateLoadingState = useCallback((increment) => {
         setLoadingProcesses(prev => {
             const newVal = Math.max(0, prev + increment);
-            setIsLoading(newVal > 0);
-            console.log("isLoading: "+ isLoading);
+            const newLoadingState = newVal > 0;
+            setIsLoading(newLoadingState);
+            console.log("isLoading: "+ newLoadingState);
             console.log(`Loading update: ${increment > 0 ? '+' : '-'}${Math.abs(increment)} -> ${newVal}`);
+            
+            // If loading just finished (went from > 0 to 0), scroll to top
+            if (prev > 0 && newVal === 0) {
+                console.log("Loading completed - scrolling to top");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            
             return newVal;
         });
     }, []);
 
     // Safety timeout to prevent infinite loading
-    /*useEffect(() => {
+    useEffect(() => {
         if (isLoading) {
             const timeout = setTimeout(() => {
                 console.warn('Loading timeout - forcing loading state to false');
                 setIsLoading(false);
                 setLoadingProcesses(0);
-            }, 30000); // 30 second timeout
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 15000); // 15 second timeout
 
             return () => clearTimeout(timeout);
         }
@@ -68,26 +77,30 @@ function App() {
 
     useEffect(() => {
         console.log(`LoadingProcesses changed to: ${loadingProcesses}`);
-    }, [loadingProcesses]);*/
+    }, [loadingProcesses]);
 
     const handleShow = useCallback((source) => {
-        window.console.log("handleShow");
-        window.console.log(source);
+        window.console.log("handleShow", source);
         updateLoadingState(1);
     }, [updateLoadingState]);
+    
     const handleHide = useCallback((source) => {
-        window.console.log("handleHide");
-        window.console.log(source);
+        window.console.log("handleHide", source);
         updateLoadingState(-1);
     }, [updateLoadingState]);
     useEffect(() => {
 
         eventBus.on(EVENTS.LOADING_SHOW, handleShow);
         eventBus.on(EVENTS.LOADING_HIDE, handleHide);
+        eventBus.on(EVENTS.LOGIN_SUCCESS, (status) => {
+            console.log('🔐 App.jsx: Login success event received, setting isLoggedIn to:', status);
+            setIsLoggedIn(status);
+        });
 
         return () => {
             eventBus.off(EVENTS.LOADING_SHOW, handleShow);
             eventBus.off(EVENTS.LOADING_HIDE, handleHide);
+            eventBus.off(EVENTS.LOGIN_SUCCESS);
         };
     }, [updateLoadingState]);
   /*----------------------------
@@ -97,14 +110,52 @@ function App() {
 
     const checkExistingLogin = async() => {
         try {
-            const credentials = await StorageService.get('userCredentials');
+            // Use the credential helper for consistent behavior
+            const { getCredentials } = await import('./utils/credentialHelper');
+            const credentials = await getCredentials();
             const rememberMe = await StorageService.get('rememberMe');
 
             if (credentials) {
-                window.console.log("credentials: ", credentials);
+                window.console.log("🔐 App.jsx: Found existing credentials:", credentials ? 'YES' : 'NO');
                 window.console.log("remember: ", rememberMe);
+                
+                // Check if we have organization unit data
+                const userOrgUnitId = localStorage.getItem('userOrgUnitId');
+                const userOrgUnitName = localStorage.getItem('userOrgUnitName');
+                
+                console.log('🔐 App.jsx: userOrgUnitId:', userOrgUnitId);
+                console.log('🔐 App.jsx: userOrgUnitName:', userOrgUnitName);
+                
+                // If we have credentials but no org unit data, try to fetch it
+                if (!userOrgUnitId && credentials) {
+                    console.log('🔐 App.jsx: No org unit data found, fetching from API...');
+                    try {
+                        const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[id,displayName]`, {
+                            headers: {
+                                'Authorization': `Basic ${credentials}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.organisationUnits && data.organisationUnits.length > 0) {
+                                const orgUnit = data.organisationUnits[0];
+                                localStorage.setItem('userOrgUnitId', orgUnit.id);
+                                localStorage.setItem('userOrgUnitName', orgUnit.displayName);
+                                console.log('🔐 App.jsx: Restored org unit data:', orgUnit.id, orgUnit.displayName);
+                            }
+                        }
+                    } catch (apiError) {
+                        console.warn('🔐 App.jsx: Failed to fetch org unit data:', apiError);
+                    }
+                }
+                
                 setIsLoggedIn(true);
+                console.log('🔐 App.jsx: Setting isLoggedIn to true');
                 //navigate('/dashboards/facility-ownership');
+            } else {
+                console.log('🔐 App.jsx: No existing credentials found');
             }
         } catch (error) {
             console.error('Error checking existing login:', error);
@@ -123,6 +174,7 @@ function App() {
   // Check for existing credentials on app load
   useEffect(() => {
     const initializeApp = async () => {
+      console.log('🚀 App.jsx: Starting app initialization...');
       try {
         // Clear any corrupted data first
         const corruptedCount = await StorageService.clearCorruptedData();
@@ -131,7 +183,9 @@ function App() {
         }
         
         // Then check for existing login
+        console.log('🚀 App.jsx: Calling checkExistingLogin...');
         await checkExistingLogin();
+        console.log('🚀 App.jsx: checkExistingLogin completed');
       } catch (error) {
         console.error('Error initializing app:', error);
         setIsLoading(false);
@@ -191,7 +245,12 @@ function App() {
             <Route path="/" element={<Main />} />
             <Route
                 path="/dashboards/facility-ownership"
-                element={isLoggedIn ? <Dashboard activeSection={activeDashboardSection} setActiveSection={setActiveDashboardSection} /> : <Main />}
+                element={
+                    (() => {
+                        console.log('🔍 Route check: isLoggedIn =', isLoggedIn, 'for /dashboards/facility-ownership');
+                        return isLoggedIn ? <Dashboard activeSection={activeDashboardSection} setActiveSection={setActiveDashboardSection} /> : <Main />;
+                    })()
+                }
             />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

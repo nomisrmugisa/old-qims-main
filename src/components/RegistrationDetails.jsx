@@ -13,6 +13,7 @@ import TrackerEventDetails from './TrackerEventDetails';
 import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import {StorageService} from '../services';
+import { getCredentials } from '../utils/credentialHelper';
 // import { useTheme } from '@mui/material/styles';
 
 // Inside your component:
@@ -1527,17 +1528,33 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const credentials = await StorageService.get('userCredentials');
+        // Get credentials using the helper with fallbacks
+        const credentials = await getCredentials();
+        
+        if (!credentials) {
+          console.error('❌ No credentials available for fetching metadata');
+          setFacilityOwnershipMetadata(null);
+          return;
+        }
+        
+        console.log("🔐 Credentials available for metadata fetch:", !!credentials);
+        
         const response = await fetch(
           `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
           {
             headers: { Authorization: `Basic ${credentials}` },
           }
         );
-        if (!response.ok) throw new Error('Failed to fetch metadata');
+
+        if (!response.ok) {
+          console.error('❌ Failed to fetch metadata:', response.status);
+          throw new Error('Failed to fetch metadata');
+        }
+        
         const metadata = await response.json();
         setFacilityOwnershipMetadata(metadata);
       } catch (error) {
+        console.error('❌ Error fetching metadata:', error);
         setFacilityOwnershipMetadata(null);
       }
     };
@@ -1550,18 +1567,32 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Fetch user info when Facility Ownership tab is active
   useEffect(() => {
     if (activeTab === 'facilityOwnership') {
-      const credentials = localStorage.getItem('userCredentials');
-      if (credentials) {
-        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
-          headers: { 'Authorization': `Basic ${credentials}` }
-        })
-          .then(res => res.json())
-          .then(data => setUserInfo({
-            id: data.id,
-            organisationUnits: data.organisationUnits || []
-          }))
-          .catch(() => setUserInfo({ id: 'Error', organisationUnits: [] }));
-      }
+      // Get credentials using the helper with fallbacks
+      getCredentials().then(credentials => {
+        if (credentials) {
+          console.log('🔐 Fetching user info with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
+          })
+            .then(res => {
+              if (!res.ok) {
+                console.error('❌ Failed to fetch user info:', res.status);
+                throw new Error('Failed to fetch user info');
+              }
+              return res.json();
+            })
+            .then(data => setUserInfo({
+              id: data.id,
+              organisationUnits: data.organisationUnits || []
+            }))
+            .catch((error) => {
+              console.error('❌ Error fetching user info:', error);
+              setUserInfo({ id: 'Error', organisationUnits: [] });
+            });
+        } else {
+          console.error('❌ No credentials available for fetching user info');
+        }
+      });
     }
   }, [activeTab]);
 
@@ -1571,21 +1602,35 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Fetch trackedEntityInstanceId when Facility Ownership tab loads
   useEffect(() => {
     if (activeTab === 'facilityOwnership') {
-      const credentials = localStorage.getItem('userCredentials');
-      if (credentials) {
-        fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
-          headers: { 'Authorization': `Basic ${credentials}` }
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
-              setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
-            } else {
-              setFacilityOwnershipTeiId(null);
-            }
+      // Get credentials using the helper with fallbacks
+      getCredentials().then(credentials => {
+        if (credentials) {
+          console.log('🔐 Fetching tracked entity instances with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
           })
-          .catch(() => setFacilityOwnershipTeiId(null));
-      }
+            .then(res => {
+              if (!res.ok) {
+                console.error('❌ Failed to fetch tracked entity instances:', res.status);
+                throw new Error('Failed to fetch tracked entity instances');
+              }
+              return res.json();
+            })
+            .then(data => {
+              if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
+                setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
+              } else {
+                setFacilityOwnershipTeiId(null);
+              }
+            })
+            .catch((error) => {
+              console.error('❌ Error fetching tracked entity instances:', error);
+              setFacilityOwnershipTeiId(null);
+            });
+        } else {
+          console.error('❌ No credentials available for fetching tracked entity instances');
+        }
+      });
     }
   }, [activeTab]);
 
@@ -1614,14 +1659,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </div>
         );
       case 'facilityOwnership':
-        // Add debugging information
-        console.log("RENDERING FACILITY OWNERSHIP TAB");
-        console.log("- trackedEntityInstanceId (prop):", trackedEntityInstanceId);
-        // localTrackedEntityInstanceId logging removed
-        console.log("- effectiveTrackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
-        console.log("- events.length:", events.length);
-        console.log("- isLoading:", isLoading);
-        console.log("- showReviewDialog:", showReviewDialog);
+
         
         // Inside the Facility Ownership tab render logic, before any use of 'events':
         
@@ -1751,36 +1789,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <p>No facility ownership records found.</p>
-                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                    Debug: isLoading={isLoading.toString()}, 
-                    events.length={facilityOwnershipEvents.length}, 
-                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
-                  </p>
+
                 </div>
               ) : null}
-              {/* Debugging info for Facility Ownership events */}
-              <div style={{
-                background: '#fffbe6',
-                border: '1px solid #ffe58f',
-                borderRadius: '6px',
-                padding: '12px',
-                margin: '16px 0',
-                color: '#ad8b00',
-                fontSize: '0.95rem',
-                wordBreak: 'break-all',
-                maxWidth: 700,
-                marginLeft: 'auto',
-                marginRight: 'auto',
-              }}>
-                <strong>Facility Ownership Debug Info (DHIS2):</strong>
-                <div>Fetch attempted: {typeof isLoading !== 'undefined' ? 'Yes' : 'No'}</div>
-                <div>Events fetched: {facilityOwnershipEvents.length}</div>
-                <div>Events array: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(facilityOwnershipEvents, null, 2)}</pre></div>
-                {/* If you have an error state for fetch, show it here. Example: */}
-                {/* <div>Error: {fetchError || 'None'}</div> */}
-                <div>User ID: {userInfo.id || 'N/A'}</div>
-                <div>Organisation Units: <pre style={{whiteSpace: 'pre-wrap', fontSize: '0.85em', background: '#fffbe6', margin: 0}}>{JSON.stringify(userInfo.organisationUnits, null, 2)}</pre></div>
-              </div>
+
             </div>
           </div>
         );

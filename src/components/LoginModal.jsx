@@ -159,7 +159,11 @@ const LoginModal = ({ show, onClose, onLogin }) => {
                     localStorage.setItem("userOrgUnitId", data.organisationUnits[0].id);
                     console.log("orgUnitIdStored:", data.organisationUnits[0].id);
                     localStorage.setItem("userOrgUnitName", data.organisationUnits[0].displayName);
-                    localStorage.setItem("userCredentials", credentials);
+                    
+                    // Set credentials using helper for consistency
+                    await import('../utils/credentialHelper').then(module => 
+                      module.setCredentials(credentials)
+                    );
                     console.log("credSetStorage");
                     if (rememberMe) {
                         localStorage.setItem("rememberMe", "true");

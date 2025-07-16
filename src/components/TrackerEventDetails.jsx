@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import debounce from 'lodash/debounce';
 import {StorageService} from '../services';
+import { getCredentials, setCredentials } from '../utils/credentialHelper';
 
 // Define required fields for "Other Details" section
 const requiredOtherDetailsFields = [
@@ -55,7 +56,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const [currentStep, setCurrentStep] = useState('');
 
   const [locationName, setLocationName] = useState('');
-  const credentials = StorageService.get('userCredentials');
+  const [credentials, setCredentials] = useState(null);
 
   // Add state for progress
   const [progress, setProgress] = useState(0);
@@ -67,12 +68,20 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const setUserDataOnly = async () => {
     console.log('Setting user data only (no event data found)');
     
+    // Get credentials using the helper with fallbacks
+    const effectiveCredentials = credentials || await getCredentials();
+    
+    if (!effectiveCredentials) {
+      console.error('No credentials available for setUserDataOnly');
+      return;
+    }
+    
     // Fetch user data to get email
     let userEmail = '';
     try {
-      const meResponse = await fetch('/api/me', {
+      const meResponse = await fetch(`/api/me`, {
         headers: {
-          Authorization: `Basic ${credentials}`,
+          Authorization: `Basic ${effectiveCredentials}`,
         },
       });
       
@@ -96,30 +105,50 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     checkFormCompletion();
   };
 
-  // Notify parent when facility name changes
-  // useEffect(() => {
-  //   if (formValues['PdtizqOqE6Q'] && onFacilityNameChange) {
-  //     onFacilityNameChange(formValues['PdtizqOqE6Q']);
-  //   }
-  // }, [formValues['PdtizqOqE6Q']]);
+  // Load credentials on component mount
+  useEffect(() => {
+    const loadCredentials = async () => {
+      try {
+        console.log('🔐 Loading credentials with helper...');
+        const creds = await getCredentials();
+        console.log('🔐 Credentials loaded:', creds ? 'Available' : 'Not available');
+        setCredentials(creds);
+      } catch (error) {
+        console.error('❌ Error loading credentials:', error);
+        setCredentials(null);
+      }
+    };
+    
+    loadCredentials();
+  }, []);
 
+  // Fetch data when credentials are available
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('🔄 Starting data fetch...');
+        console.log('🔐 Credentials available:', !!credentials);
+        
         setLoading(true);
-        // const credentials = StorageService.get('userCredentials');
+        
+        // Get credentials using the helper with fallbacks
+        const effectiveCredentials = credentials || await getCredentials();
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
-        if (!credentials || !userOrgUnitId) {
+        console.log('🔐 Effective credentials:', effectiveCredentials ? 'Available' : 'Not available');
+        console.log('🏢 User org unit ID:', userOrgUnitId);
+
+        if (!effectiveCredentials || !userOrgUnitId) {
+          console.error('❌ Missing credentials or org unit ID');
           setError('Authentication required. Please log in again.');
           setLoading(false);
           return;
         }
 
         // Fetch user data to get the twitter value (DHIS2 Registration Code)
-        const meResponse = await fetch('/api/me', {
+        const meResponse = await fetch(`/api/me`, {
           headers: {
-            Authorization: `Basic ${credentials}`,
+            Authorization: `Basic ${effectiveCredentials}`,
           },
         });
 
@@ -156,7 +185,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
           const eventsResponse = await fetch(eventsUrl, {
             headers: {
-              Authorization: `Basic ${credentials}`,
+              Authorization: `Basic ${effectiveCredentials}`,
             },
           });
 
@@ -192,8 +221,10 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     };
 
 
-    fetchData();
-  }, []);
+    if (credentials) {
+      fetchData();
+    }
+  }, [credentials]);
 
   useEffect(() => {
     if (eventData && eventData.dataValues) {
@@ -259,18 +290,20 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       }
 
       try {
-        const credentials = StorageService.get('userCredentials');
-        if (!credentials) {
+        // Get credentials using the helper with fallbacks
+        const effectiveCredentials = credentials || await getCredentials();
+        
+        if (!effectiveCredentials) {
           console.error('No credentials found for fetching org unit name');
           return;
         }
 
         console.log('Fetching org unit name for ID:', formValues['VJzk8OdFJKA']);
-        console.log('Full API URL:', `/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`);
+        console.log('Full API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`);
 
         const response = await fetch(`/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`, {
           headers: {
-            Authorization: `Basic ${credentials}`,
+            Authorization: `Basic ${effectiveCredentials}`,
           },
         });
 
@@ -316,21 +349,34 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const validateAllRequiredFields = () => {
     const missingFields = [];
     
+    console.log('🔍 === FORM VALIDATION DEBUG ===');
+    console.log('Current formValues:', formValues);
+    
     // Check each required field
     requiredOtherDetailsFields.forEach(fieldId => {
       const value = formValues[fieldId];
-      if (!value || value.trim() === '') {
+      console.log(`Field ${fieldId}:`, value, 'Type:', typeof value);
+      
+      // Handle different data types properly
+      if (!value || (typeof value === 'string' && value.trim() === '') || value === null || value === undefined) {
         missingFields.push(fieldId);
+        console.log(`❌ Field ${fieldId} is missing or empty`);
+      } else {
+        console.log(`✅ Field ${fieldId} is valid`);
       }
     });
     
+    console.log('Missing fields:', missingFields);
+    console.log('=== END FORM VALIDATION DEBUG ===');
+    
     // Additional validation for specific fields
-    if (formValues['PdtizqOqE6Q'] && formValues['PdtizqOqE6Q'].trim().length < 3) {
+    if (formValues['PdtizqOqE6Q'] && typeof formValues['PdtizqOqE6Q'] === 'string' && formValues['PdtizqOqE6Q'].trim().length < 3) {
       missingFields.push('PdtizqOqE6Q'); // Facility name too short
     }
     
-    if (formValues['aMFg2iq9VIg'] && formValues['aMFg2iq9VIg'].trim().length < 5) {
-      missingFields.push('aMFg2iq9VIg'); // Private Practice Number too short
+    // Private Practice Number - accept any non-empty value (minimum 1 character)
+    if (formValues['aMFg2iq9VIg'] && typeof formValues['aMFg2iq9VIg'] === 'string' && formValues['aMFg2iq9VIg'].trim().length < 1) {
+      missingFields.push('aMFg2iq9VIg'); // Private Practice Number cannot be empty
     }
     
     return {
@@ -371,12 +417,12 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     }
   };
 
-  // Fetch organisational units when entering edit mode
+  // Fetch organisational units when component loads or when entering edit mode
   useEffect(() => {
-    if (isEditing) {
+    if (credentials) {
       fetchOrganisationalUnits();
     }
-  }, [isEditing]);
+  }, [credentials, isEditing]);
 
   // Update filtered org units when organizational units change or search query changes
   useEffect(() => {
@@ -393,33 +439,46 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   }, [formValues]);
 
   const fetchOrganisationalUnits = async () => {
+    console.log('🗺️ === FETCHING ORGANIZATIONAL UNITS ===');
     setIsLoadingOrgUnits(true);
     try {
-      const credentials = StorageService.get('userCredentials');
       if (!credentials) {
-        console.error("No credentials found");
+        console.error("❌ No credentials found");
         setIsLoadingOrgUnits(false);
         return;
       }
 
-      const response = await fetch(
-        "/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false",
-        {
-          headers: {
-            Authorization: `Basic ${credentials}`,
-          },
-        }
-      );
+      console.log('🌐 VITE_DHIS2_URL:', import.meta.env.VITE_DHIS2_URL);
+      // Use the proxy configuration instead of full URL
+      const url = `/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`;
+      console.log('🔗 API URL (using proxy):', url);
+      console.log('🔐 Credentials available:', !!credentials);
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch organisational units");
+        throw new Error(`Failed to fetch organisational units: ${response.status}`);
       }
+      
       const data = await response.json();
-      setOrganisationalUnits(data.organisationUnits);
-      setFilteredOrgUnits(data.organisationUnits);
+      console.log('📊 Response data:', data);
+      console.log('🏢 Number of org units:', data.organisationUnits?.length || 0);
+      
+      setOrganisationalUnits(data.organisationUnits || []);
+      setFilteredOrgUnits(data.organisationUnits || []);
+      
+      console.log('✅ Organizational units loaded successfully');
     } catch (error) {
-      console.error("Error fetching organisational units:", error);
+      console.error("❌ Error fetching organisational units:", error);
     } finally {
       setIsLoadingOrgUnits(false);
+      console.log('🏁 === END FETCHING ORGANIZATIONAL UNITS ===');
     }
   };
 
@@ -524,7 +583,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       try {
         const response = await fetch(
-          "/api/organisationUnits?paging=false",
+          `/api/organisationUnits?paging=false`,
           {
             headers: {
               Authorization: `Basic ${credentials}`,
@@ -1514,127 +1573,6 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
-          {/* Debug Information Section */}
-          <Box sx={{ 
-            mb: 3, 
-            p: 2, 
-            backgroundColor: '#f8f9fa', 
-            border: '1px solid #dee2e6', 
-            borderRadius: 1,
-            borderLeft: '4px solid #007bff'
-          }}>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
-              🔍 Debug Information
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Registration Code (Twitter):
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  fontFamily: 'monospace', 
-                  backgroundColor: '#e9ecef', 
-                  p: 1, 
-                  borderRadius: 0.5,
-                  wordBreak: 'break-all'
-                }}>
-                  {registrationCode || 'Not found'}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Event Data Status:
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  fontFamily: 'monospace', 
-                  backgroundColor: eventData ? '#d4edda' : '#f8d7da', 
-                  color: eventData ? '#155724' : '#721c24',
-                  p: 1, 
-                  borderRadius: 0.5
-                }}>
-                  {eventData ? '✅ Event data found' : '❌ No event data'}
-                </Typography>
-              </Grid>
-              
-              {eventData && (
-                <>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      Event ID:
-                    </Typography>
-                    <Typography variant="body2" sx={{ 
-                      fontFamily: 'monospace', 
-                      backgroundColor: '#e9ecef', 
-                      p: 1, 
-                      borderRadius: 0.5,
-                      wordBreak: 'break-all'
-                    }}>
-                      {eventData.event || 'Not available'}
-                    </Typography>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      Tracked Entity Instance:
-                    </Typography>
-                    <Typography variant="body2" sx={{ 
-                      fontFamily: 'monospace', 
-                      backgroundColor: '#e9ecef', 
-                      p: 1, 
-                      borderRadius: 0.5,
-                      wordBreak: 'break-all'
-                    }}>
-                      {eventData.trackedEntityInstance || 'Not available'}
-                    </Typography>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      Data Values Count:
-                    </Typography>
-                    <Typography variant="body2" sx={{ 
-                      fontFamily: 'monospace', 
-                      backgroundColor: '#e9ecef', 
-                      p: 1, 
-                      borderRadius: 0.5
-                    }}>
-                      {eventData.dataValues ? `${eventData.dataValues.length} data values found` : 'No data values'}
-                    </Typography>
-                  </Grid>
-                  
-                  {eventData.dataValues && eventData.dataValues.length > 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Data Values Preview:
-                      </Typography>
-                      <Box sx={{ 
-                        maxHeight: '200px', 
-                        overflow: 'auto', 
-                        backgroundColor: '#e9ecef', 
-                        p: 1, 
-                        borderRadius: 0.5,
-                        border: '1px solid #dee2e6'
-                      }}>
-                        <pre style={{ 
-                          margin: 0, 
-                          fontSize: '0.75rem', 
-                          fontFamily: 'monospace',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-all'
-                        }}>
-                          {JSON.stringify(eventData.dataValues.slice(0, 5), null, 2)}
-                          {eventData.dataValues.length > 5 && '\n... (showing first 5 values)'}
-                        </pre>
-                      </Box>
-                    </Grid>
-                  )}
-                </>
-              )}
-            </Grid>
-          </Box>
-
           <Typography
             variant="h6"
             gutterBottom
@@ -1859,6 +1797,13 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                       fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
                     }
                   }}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.id}>
+                      <Typography noWrap>
+                        {option.displayName}
+                      </Typography>
+                    </li>
+                  )}
                   PaperComponent={props => (
                     <Paper
                       {...props}
