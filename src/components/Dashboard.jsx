@@ -9,6 +9,7 @@ import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
 import {StorageService} from '../services';
 import { Link, useNavigate } from 'react-router-dom';
+import { safeFetch, showErrorMessage, logAPICall, logAPIResponse, API_ERROR_CODES } from '../utils/apiErrorHandler';
 import { Snackbar, Alert } from '@mui/material';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
@@ -78,35 +79,27 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             const url = `${baseUrl}${endpoint}?${params.toString()}`;
             
             // Log the API call details
-            console.log('📡 === API CALL DETAILS ===');
-            console.log('  • fields:', 'trackedEntityInstance');
-            console.log('  • paging:', 'false');
-            console.log('- Full URL:', url);
-            console.log('- Headers:');
-            console.log('  • Authorization: Basic [credentials]');
-            console.log('- Request started at:', new Date().toISOString());
+            logAPICall('GET', url, {
+                headers: {
+                    'Authorization': `Basic ${credentials}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            }, 'Dashboard.fetchTrackedEntityInstance');
             
-            // Make the API call
-            const startTime = performance.now();
-            const response = await fetch(url, {
+            // Make the API call with error handling
+            const response = await safeFetch(url, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-            });
-            const endTime = performance.now();
-            console.log('- Response headers:');
-            response.headers.forEach((value, name) => {
-                console.log(`  • ${name}: ${value}`);
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            }, 'Dashboard.fetchTrackedEntityInstance');
 
             const data = await response.json();
+            logAPIResponse(response, data, 'Dashboard.fetchTrackedEntityInstance');
+            
             console.log('- Response data:', data);
             console.log('- Has trackedEntityInstances:', Boolean(data.trackedEntityInstances));
             console.log('- Number of instances:', data.trackedEntityInstances?.length || 0);
@@ -125,14 +118,22 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
             }
         } catch (error) {
             console.error("- Error fetching tracked entity instance:", error);
-            console.error("- Error name:", error.name);
             
             // Handle specific error types
             if (error.code === API_ERROR_CODES.UNAUTHORIZED) {
                 // Unauthorized errors are handled by the error handler utility
+                // No need to show additional error messages
+                return;
+            }
+            
+            // Show user-friendly error message
+            const errorMessage = showErrorMessage(error, 'Dashboard.fetchTrackedEntityInstance');
+            setError(errorMessage);
+            setShowErrorSnackbar(true);
+            
             // Only set showFacilityReviewDialog to true for actual errors, not for missing data
             if (error.message !== "No tracked entity instances found") {
-            setShowFacilityReviewDialog(true);
+                setShowFacilityReviewDialog(true);
             }
         } finally {
             console.log('=== FETCH TRACKED ENTITY INSTANCE COMPLETED ===');
@@ -274,7 +275,6 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                 });
             }
             setInspectionEvents(fetchedEvents);
-        } catch (error) {
         } catch {
             setInspectionEvents([]);
         } finally {
@@ -590,6 +590,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     )}
                 </div>
             </div>
+            
             {/* Error Snackbar */}
             <Snackbar
                 open={showErrorSnackbar}
@@ -597,7 +598,11 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                 onClose={() => setShowErrorSnackbar(false)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
+                <Alert 
                     onClose={() => setShowErrorSnackbar(false)} 
+                    severity="error" 
+                    sx={{ width: '100%' }}
+                >
                     {error}
                 </Alert>
             </Snackbar>
