@@ -32,3 +32,21 @@ export const formatOperationalHours = (hours) => {
 export const getStatusColor = (status) => {
     return status === 'OPERATIONAL' ? 'success' : 'danger';
 };
+
+export const getInitials = (name) => {
+    if (!name) return '';
+    return name
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => w[0].toUpperCase())
+        .join('');
+};
+
+export const toggle = (val, selected, onChange) => {
+    if (selected.includes(val)) {
+        onChange(selected.filter(v => v !== val));
+    } else {
+        onChange([...selected, val]);
+    }
+};

@@ -11,6 +11,7 @@ import FacilitySearchResults from '../../Facility/Search/Results';
 import {lookupFacilities} from '../helpers';
 import { eventBus, EVENTS } from '../../../events';
 import OTPVerification from '../../OTPVerification';
+import {InspectionService} from '../../../services';
 
 const EnrolmentSelf = () => {
     const [facilities, setFacilities] = useState([]);
@@ -38,6 +39,8 @@ const EnrolmentSelf = () => {
         }
 
     };
+
+
 
     const handleEnrolmentAction = async (facility) => {
         setIsLoading(true);

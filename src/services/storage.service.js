@@ -30,8 +30,8 @@ const StorageService = {
             });
             throw new Error('Encryption secret not defined');
         }
-        window.console.log("passphrase: "+passphrase);
-        window.console.log(`salt: ${import.meta.env.VITE_STORAGE_SALT}`);
+        //window.console.log("passphrase: "+passphrase);
+        //window.console.log(`salt: ${import.meta.env.VITE_STORAGE_SALT}`);
 
         try {
             const keyMaterial = await crypto.subtle.importKey(
