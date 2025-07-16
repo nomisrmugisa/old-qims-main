@@ -140,14 +140,21 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     },
   }));
   
-  const StyledDivider = styled(Divider)(({ theme, disabled }) => ({
+  const StyledDivider = styled(Box)(({ theme, disabled }) => ({
     width: '60px', // Reduced width to save horizontal space
-    borderBottomWidth: 2,
-    borderColor: disabled ? theme.palette.grey[300] : theme.palette.divider,
     margin: '0 4px', // Reduced margin to save space
     alignSelf: 'center',
     opacity: disabled ? 0.6 : 1,
     flexShrink: 1, // Allow divider to shrink if needed
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&::after': {
+      content: '"→"',
+      fontSize: '20px',
+      color: disabled ? theme.palette.grey[300] : theme.palette.divider,
+      fontWeight: 'bold',
+    }
   }));
   
   // Check localStorage for completeApplicationStatus on component mount and when tab changes
@@ -464,36 +471,87 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
   
-  // New useEffect to determine overall registration status
-  useEffect(() => {
-    const steps = [
-      { key: 'completeApplication', hasData: completeApplicationStatus },
-      { key: 'facilityOwnership', hasData: tabValidationStates.facilityOwnership },
-      { key: 'employeeRegistration', hasData: tabValidationStates.employeeRegistration },
-      { key: 'servicesOffered', hasData: tabValidationStates.servicesOffered },
-      { key: 'statutoryCompliance', hasData: tabValidationStates.statutoryCompliance },
-      { key: 'equipmentMachinery', hasData: tabValidationStates.equipmentMachinery },
-      { key: 'inspectionSchedule', hasData: inspectionEvents.length > 0 }
-    ];
-
-    const allStepsComplete = steps.every(step => step.hasData);
-    const firstFiveComplete = steps.slice(0, 5).every(step => step.hasData);
-    if (allStepsComplete) {
-      setRegistrationStatus("Completed");
-    } else if (firstFiveComplete) {
-      setRegistrationStatus("Application Sent to MOH and is Under Review");
-    } else if (steps[0].hasData) {
-      setRegistrationStatus("In Progress");
-    } else {
-      setRegistrationStatus("Pending Application");
+  // Helper function to check if facility ownership event has specific data value
+  const hasFacilityOwnershipDataValue = (dataElementId, expectedValue = "true") => {
+    if (!events || events.length === 0) {
+      return false;
     }
+    
+    const facilityOwnershipEvents = events.filter(e => e.programStage === 'MuJubgTzJrY');
+    if (facilityOwnershipEvents.length === 0) {
+      return false;
+    }
+    
+    return facilityOwnershipEvents.some(event => {
+      if (!event.dataValues) return false;
+      const dataValue = event.dataValues.find(dv => dv.dataElement === dataElementId);
+      return dataValue && dataValue.value === expectedValue;
+    });
+  };
+
+  // New useEffect to determine overall registration status with new logic
+  useEffect(() => {
+    console.log("🔄 === STATUS LOGIC RUNNING ===");
+    console.log("- completeApplicationStatus:", completeApplicationStatus);
+    console.log("- tabValidationStates.facilityOwnership:", tabValidationStates.facilityOwnership);
+    
+    // Check if Admin User & Facility Details has no event
+    if (!completeApplicationStatus) {
+      console.log("📝 Setting status: Complete Administrative Information Below");
+      setRegistrationStatus("Complete Administrative Information Below");
+      return;
+    }
+    
+    // Check if Facility Ownership has no event
+    if (!tabValidationStates.facilityOwnership) {
+      console.log("📝 Setting status: Complete Facility Ownership Details");
+      setRegistrationStatus("Complete Facility Ownership Details");
+      return;
+    }
+    
+    // Check if Application Submitted is not true
+    if (!hasFacilityOwnershipDataValue("N3bVE3GRqdf", "true")) {
+      console.log("📝 Setting status: Under Facility Ownership Complete and submit Documents for review");
+      setRegistrationStatus("Under Facility Ownership Complete and submit Documents for review");
+      return;
+    }
+    
+    // Check if Passed MOH Screening is not true
+    if (!hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
+      console.log("📝 Setting status: Documents Under Screening Review");
+      setRegistrationStatus("Documents Under Screening Review");
+      return;
+    }
+    
+    // Check if Complied for Licensing is not true
+    if (!hasFacilityOwnershipDataValue("SIq5ADQjCEM", "true")) {
+      console.log("📝 Setting status: Documents Under Screening Compliance");
+      setRegistrationStatus("Documents Under Screening Compliance");
+      return;
+    }
+    
+    // Check if Passed MOH Screening is true (this means we can proceed to next steps)
+    if (hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
+      console.log("📝 Setting status: You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
+      setRegistrationStatus("You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
+      return;
+    }
+    
+    // Check if Inspection Schedule is not green (not completed)
+    if (!hasTabData('inspectionSchedule')) {
+      console.log("📝 Setting status: Complete a Self Inspection");
+      setRegistrationStatus("Complete a Self Inspection");
+      return;
+    }
+    
+    // All conditions met
+    console.log("📝 Setting status: Select a date for Inspection");
+    setRegistrationStatus("Select a date for Inspection");
   }, [
     completeApplicationStatus,
     tabValidationStates.facilityOwnership,
-    tabValidationStates.employeeRegistration,
-    tabValidationStates.servicesOffered,
-    tabValidationStates.statutoryCompliance,
-    tabValidationStates.equipmentMachinery,
+    events,
+    tabValidationStates.inspectionSchedule,
     inspectionEvents
   ]);
   
@@ -2438,7 +2496,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
               Registration Details
             </Typography>
-            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`}>
+            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`} style={{ 
+              backgroundColor: '#007bff', 
+              color: 'white', 
+              padding: '8px 16px', 
+              borderRadius: '20px', 
+              fontSize: '14px', 
+              fontWeight: 'bold',
+              display: 'inline-block',
+              marginLeft: '20px'
+            }}>
               Status: {registrationStatus}
             </span>
           </Box>
@@ -2448,34 +2515,60 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </Box>
         </Box>
         
-        <StepContainer>
-          {[
-            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
-            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' }
-          ].map((step, index) => {
-            // Determine if the tab should be disabled
-            const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+        <StepContainer style={{ 
+          justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
+        }}>
+          {(() => {
+            const allSteps = [
+              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
+              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 7, title: 'Inspection Schedule', key: 'inspectionSchedule' }
+            ];
             
-            return (
-              <React.Fragment key={step.number}>
-                <Tooltip
-                  title={
-                    step.key === 'inspectionSchedule'
-                      ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
-                      : isTabDisabled(step.key)
-                        ? "Submit Application For review under Facility Ownership"
-                        : (isDisabled ? "Complete the Application details first" : "")
-                  }
-                  arrow
-                  placement="top"
-                >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Step
-                      active={activeTab === step.key}
-                      hasdata={hasTabData(step.key)}
-                      disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
-                      onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
-                    >
+            // Check if "Passed MOH Screening" is true (status shows permission message)
+            const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+            
+            // Filter steps based on permission
+            const visibleSteps = hasPermissionToEstablish 
+              ? allSteps 
+              : allSteps.slice(0, 2); // Only show first 2 steps if no permission
+            
+                        return visibleSteps.map((step, index) => {
+              // Determine if the tab should be disabled
+              const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+              
+              // Center the Facility Ownership tab when only 2 tabs are visible
+              const shouldCenter = !hasPermissionToEstablish && step.key === 'facilityOwnership';
+              
+              return (
+                <React.Fragment key={step.number}>
+                  <Tooltip
+                    title={
+                      step.key === 'inspectionSchedule'
+                        ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
+                        : isTabDisabled(step.key)
+                          ? "Submit Application For review under Facility Ownership"
+                          : (isDisabled ? "Complete the Application details first" : "")
+                    }
+                    arrow
+                    placement="top"
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      marginLeft: shouldCenter ? '25%' : '0',
+                      marginRight: shouldCenter ? '25%' : '0'
+                    }}>
+                      <Step
+                        active={activeTab === step.key}
+                        hasdata={hasTabData(step.key)}
+                        disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
+                        onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
+                      >
                       <span className="step-number">{step.number}</span>
                       <Typography
                         variant="subtitle1"
@@ -2496,11 +2589,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     </Step>
                   </div>
                 </Tooltip>
-                {index < 1 && <StyledDivider disabled={isDisabled} />}
-                {index === 1 && <StyledDivider disabled={isDisabled} style={{ visibility: 'hidden' }} />}
+                {index < (visibleSteps.length - 1) && <StyledDivider disabled={isDisabled} />}
               </React.Fragment>
             );
-          })}
+          });
+        })()}
         </StepContainer>
 
         {renderTabContent()}
