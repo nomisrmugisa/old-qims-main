@@ -27,9 +27,11 @@ import ConflictResolutionPage from './views/ConflictResolverPage';
 import CorrectiveActionPlanPage from './views/CorrectiveActionPlanPage';
 import InspectionFinalReportPage from './views/InspectionFinalReportPage';
 import FacilityUserEnrolmentManagerPage from './views/Facility/User/Enrolment/ManagerPage';
+import FacilityUserEnrolmentSelfPage from './views/Facility/User/Enrolment/SelfPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
 import PasswordChangePage from './views/ChangePassword';
+import FacilityCalendarPage from './views/Facility/Calendar';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
@@ -203,9 +205,12 @@ function App() {
               <Route path="/corrective-action-plan" element={<CorrectiveActionPlanPage />} />
               <Route path="/inspection-final-report" element={<InspectionFinalReportPage />} />
               <Route path="/facility-user-enrolment" element={<FacilityUserEnrolmentManagerPage />} />
+              <Route path="/facility-user-enrolment-self" element={<FacilityUserEnrolmentSelfPage />} />
               <Route path="/dashboard" element={<FacilityUserDashboardPage />} />
               <Route path="/facility-user-management" element={<FacilityUserManagementPage />} />
               <Route path="/password-change" element={<PasswordChangePage />} />
+              <Route path="/facility-calendar" element={<FacilityCalendarPage />} />
+              <Route path="/facility-calendar-advanced" element={<FacilityCalendarPage />} />
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

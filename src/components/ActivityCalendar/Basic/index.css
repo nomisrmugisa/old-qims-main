@@ -1,0 +1,36 @@
+/* Simple calendar CSS */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.calendar-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.calendar-day {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    min-height: 100px;
+    padding: 0.25rem;
+}
+
+.out-of-month {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.day-number {
+    text-align: right;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.day-activities {
+    overflow-y: auto;
+    max-height: 80px;
+}

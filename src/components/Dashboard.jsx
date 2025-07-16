@@ -8,6 +8,7 @@ import useUserManagement from './hooks/useUserManagement';
 import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
 import {StorageService} from '../services';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
@@ -17,6 +18,8 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
     const [activeUserTab, setActiveUserTab] = useState('users');
+
+    const navigate = useNavigate();
     
     // User management state
     const {
@@ -344,7 +347,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                 </Card.Text>
                                                 <Button
                                                     variant="outline-primary"
-                                                    onClick={() => setActiveTab('enrolment')}
+                                                    onClick={() => navigate('/facility-user-enrolment-self')}
                                                 >
                                                     <PlusCircle className="me-1" /> Enroll in New Facility
                                                 </Button>
