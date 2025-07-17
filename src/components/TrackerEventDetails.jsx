@@ -19,6 +19,7 @@ import {
   Backdrop,
   Box as MuiBox
 } from '@mui/material';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import debounce from 'lodash/debounce';
 import {StorageService} from '../services';
 import { getCredentials, setCredentials } from '../utils/credentialHelper';
@@ -1578,6 +1579,48 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         <MuiBox sx={{ width: 300, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <LinearProgress variant="determinate" value={progress} sx={{ width: '100%', height: 8 }} />
           <Typography align="center" sx={{ mt: 2 }}>{progress}% Complete</Typography>
+        </MuiBox>
+      </Modal>
+
+      {/* Success Confirmation Dialog */}
+      <Modal
+        open={showSuccessDialog}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{ backdrop: { timeout: 500 } }}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+      >
+        <MuiBox sx={{ 
+          width: 400, 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
+          p: 4, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <CheckCircleIcon sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'success.main' }}>
+            Profile Update Completed Successfully!
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
+            Your profile has been updated successfully. Please proceed to the Facility Ownership tab to continue with your application.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSuccessDialogConfirm}
+            sx={{ 
+              px: 4, 
+              py: 1.5, 
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
+            }}
+          >
+            OK, Proceed to Facility Ownership
+          </Button>
         </MuiBox>
       </Modal>
 

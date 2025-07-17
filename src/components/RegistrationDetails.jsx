@@ -1905,7 +1905,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 <button 
                   className="add-icon" 
                   onClick={() => {
-                    
+                    console.log('+ button clicked - opening facility ownership dialog');
+                    setOpenAddDialog(true);
                   }}
                   style={{ 
                     background: 'none',
