@@ -37,7 +37,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
     }
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
+      const response = await fetch(`/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -163,7 +163,7 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
       console.log("Employee Registration Payload:", payload);
 
-      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
+      const eventRes = await fetch(`/api/events`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,

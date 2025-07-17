@@ -716,7 +716,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }
           
           console.log('📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY');
-          const orgUnitResponse = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=organisationUnits[displayName,id]`, {
+          const orgUnitResponse = await fetch(`/api/me?fields=organisationUnits[displayName,id]`, {
             headers: {
               'Authorization': `Basic ${credentials}`
             }
@@ -744,7 +744,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           
           // Now fetch the trackedEntityInstanceId using this organization unit ID
           console.log('🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID');
-          const teiUrl = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
+          const teiUrl = `/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
           console.log('- API URL:', teiUrl);
           
           const teiResponse = await fetch(teiUrl, {
@@ -864,7 +864,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       // Add cache-busting parameter to ensure fresh data
       const timestamp = new Date().getTime();
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false&_t=${timestamp}`;
+              const url = `/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false&_t=${timestamp}`;
       
       console.log("🚀 === FACILITY OWNERSHIP API REQUEST ===");
       console.log("- HTTP Method: GET");
@@ -1071,7 +1071,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingServices(true);
       // Use the correct program stage ID for Services Offered
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
       
       console.log("Services Offered API Request:");
       console.log("- Full URL:", url);
@@ -1180,17 +1180,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = StorageService.get('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
+      console.log("❌ Missing credentials or userOrgUnitId for employee data fetch");
+      console.log("  - credentials:", !!credentials);
+      console.log("  - userOrgUnitId:", !!userOrgUnitId);
       setIsLoadingEmployees(false);
       return;
     }
 
     try {
       setIsLoadingEmployees(true);
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
       
       // Log the endpoint and parameters for debugging
       console.log("Employee Registration API Request:");
@@ -1281,7 +1284,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingInspections(true);
       // Use the correct program stage ID for Situational Analysis (Inspection)
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Situational Analysis API Request:");
       console.log("- Full URL:", url);
@@ -1402,7 +1405,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingEquipment(true);
       // Using the correct program stage ID for Equipment & Machinery
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Equipment API Request:");
       console.log("- Full URL:", url);
@@ -2086,10 +2089,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>BHPC/NMC Number</th>
                           <th>Position</th>
                           <th>Contract Type</th>
-                          <th>Organization Unit</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2112,10 +2111,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{getFormattedValue("xcTxmEUy6g6")}</td>
                               <td>{getFormattedValue("FClCncccLzw")}</td>
                               <td>{getFormattedValue("F3h1A96t3uL")}</td>
-                              <td>{localStorage.getItem('userOrgUnitName')}</td>
-                              <td>{event.programStage}</td>
-                              <td>{event.event}</td>
-                              <td>{event.trackedEntityInstance}</td>
                             </tr>
                           );
                         })}
@@ -2180,9 +2175,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Specialised Services</th>
                           <th>Support Services</th>
                           <th>Additional Services</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3003,7 +2995,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchEmployeeData(); // Always reload data when dialog closes
           }}
           onSuccess={handleEmployeeAddSuccess}
-          trackedEntityInstanceId={trackedEntityInstanceId}
+          trackedEntityInstanceId={getCurrentTrackedEntityInstanceId()}
         />
       )}
 
@@ -3035,7 +3027,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchServiceData(); // Always reload data when dialog closes
           }}
           onSuccess={handleServiceAddSuccess}
-          trackedEntityInstanceId={trackedEntityInstanceId}
+          trackedEntityInstanceId={getCurrentTrackedEntityInstanceId()}
         />
       )}
 
@@ -3066,7 +3058,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             handleCloseInspectionDialog();
           }}
           onSuccess={handleInspectionAddSuccess}
-          trackedEntityInstanceId={trackedEntityInstanceId}
+          trackedEntityInstanceId={getCurrentTrackedEntityInstanceId()}
         />
       )}
 
@@ -3100,7 +3092,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchStatutoryComplianceData(); // Always reload data when dialog closes
           }}
           onSuccess={handleStatutoryComplianceAddSuccess}
-          trackedEntityInstanceId={trackedEntityInstanceId}
+          trackedEntityInstanceId={getCurrentTrackedEntityInstanceId()}
         />
       )}
 
@@ -3134,7 +3126,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchEquipmentData(); // Always reload data when dialog closes
           }}
           onSuccess={handleEquipmentAddSuccess}
-          trackedEntityInstanceId={trackedEntityInstanceId}
+          trackedEntityInstanceId={getCurrentTrackedEntityInstanceId()}
         />
       )}
 
