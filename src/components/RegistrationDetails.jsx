@@ -562,13 +562,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       borderColor: "#c3e6cb"
     },
     COMPLETE_SELF_INSPECTION: {
-      text: "Complete a Self Inspection",
+      text: "Complete a Self Assessment",
       color: "#fd7e14", // Orange
       bgColor: "#ffe8d1",
       borderColor: "#ffd8a8"
     },
     SELECT_INSPECTION_DATE: {
-      text: "Select a date for Inspection",
+      text: "Select a date for Self Assessment",
       color: "#6f42c1", // Purple
       bgColor: "#e2d9f3",
       borderColor: "#d1c7e5"
@@ -637,15 +637,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
     
-          // Step 6: Check inspection schedule
+          // Step 6: Check self assessment
     if (!hasTabData('inspectionSchedule')) {
-            console.log("📝 Setting status: Complete Self Inspection");
+            console.log("📝 Setting status: Complete Self Assessment");
             setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
       return;
     }
     
           // Step 7: All conditions met
-          console.log("📝 Setting status: Select Inspection Date");
+          console.log("📝 Setting status: Select Self Assessment Date");
           setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
           return;
         }
@@ -690,7 +690,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       fetchEquipmentData();
     }
     
-    // Manually trigger fetch for inspection data when clicking on inspectionSchedule tab
+    // Manually trigger fetch for self assessment data when clicking on inspectionSchedule tab
     if (tabKey === 'inspectionSchedule') {
       console.log("- Manually triggering fetchInspectionData for Situational Analysis tab");
       fetchInspectionData();
@@ -999,7 +999,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     return () => clearInterval(intervalId);
   }, []);
   
-  // Auto-navigate to View Inspections when both Complete Application and Facility Ownership are complete
+  // Auto-navigate to View Self Assessment when both Complete Application and Facility Ownership are complete
   useEffect(() => {
     const checkAndNavigateToInspections = () => {
       try {
@@ -1010,7 +1010,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         const isFacilityOwnershipDone = facilityOwnershipStatus === 'true';
         
         if (isCompleteApplicationDone && isFacilityOwnershipDone) {
-          // Navigate to View Inspections tab
+          // Navigate to View Self Assessment tab
           const event = new CustomEvent('switchToTab', { detail: 'inspections' });
           window.dispatchEvent(event);
         }
@@ -1053,7 +1053,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("🔄 === STARTING SERVICE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     
-    if (!trackedEntityInstanceId) {
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    if (!currentTeiId) {
+      console.log("❌ No trackedEntityInstanceId available for service data fetch");
       setIsLoadingServices(false);
       return;
     }
@@ -1069,11 +1071,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingServices(true);
       // Use the correct program stage ID for Services Offered
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
       
       console.log("Services Offered API Request:");
       console.log("- Full URL:", url);
-      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: uL262bA2IP3");
@@ -1251,13 +1253,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   const fetchInspectionData = async () => {
-    console.log("🔄 === STARTING INSPECTION DATA FETCH ===");
+    console.log("🔄 === STARTING SELF ASSESSMENT DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-    console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+    
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    console.log("- trackedEntityInstanceId:", currentTeiId);
     console.log("- userCredentials exists:", !!StorageService.get('userCredentials'));
     console.log("- userOrgUnitId:", localStorage.getItem('userOrgUnitId'));
     
-    if (!trackedEntityInstanceId) {
+    if (!currentTeiId) {
       console.log("- EARLY RETURN: No trackedEntityInstanceId");
       setIsLoadingInspections(false);
       return;
@@ -1277,11 +1281,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingInspections(true);
       // Use the correct program stage ID for Situational Analysis (Inspection)
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Situational Analysis API Request:");
       console.log("- Full URL:", url);
-      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: Eupjm3J0dt2");
@@ -1368,7 +1372,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
     } catch (error) {
-      console.error("Error fetching inspection data:", error);
+      console.error("Error fetching self assessment data:", error);
       setIsLoadingInspections(false);
     }
   };
@@ -1376,9 +1380,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchEquipmentData = async () => {
     console.log("🔄 === STARTING EQUIPMENT DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-    console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
     
-    if (!trackedEntityInstanceId) {
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    console.log("- trackedEntityInstanceId:", currentTeiId);
+    
+    if (!currentTeiId) {
       console.log("- EARLY RETURN: No trackedEntityInstanceId");
       setIsLoadingEquipment(false);
       return;
@@ -1396,11 +1402,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingEquipment(true);
       // Using the correct program stage ID for Equipment & Machinery
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Equipment API Request:");
       console.log("- Full URL:", url);
-      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: chlbXjBiIup"); // Equipment & Machinery stage ID
@@ -1455,7 +1461,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Add fetch function for service offerings
     // Add useEffect to fetch service data
   useEffect(() => {
-    if (trackedEntityInstanceId) {
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    if (currentTeiId) {
       fetchServiceData();
       fetchInspectionData();
       fetchStatutoryComplianceData();
@@ -1660,7 +1667,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("🔄 === STARTING STATUTORY COMPLIANCE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     
-    if (!trackedEntityInstanceId) {
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    if (!currentTeiId) {
+      console.log("❌ No trackedEntityInstanceId available for statutory compliance data fetch");
       setIsLoadingStatutoryCompliance(false);
       return;
     }
@@ -1676,11 +1685,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingStatutoryCompliance(true);
       // Fetch all events and filter by program stage in JavaScript
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
       console.log("Statutory Compliance API Request:");
       console.log("- Full URL:", url);
-      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: vyv7zncjCmV");
@@ -2004,9 +2013,23 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <p>No facility ownership records found.</p>
-
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {facilityOwnershipEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    isLoading: {isLoading.toString()}<br/>
+                    showReviewDialog: {showReviewDialog.toString()}
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                  <strong>Debug Info:</strong><br/>
+                  Events: {facilityOwnershipEvents.length}<br/>
+                  TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                  Event IDs: {facilityOwnershipEvents.map(e => e.event).join(', ') || 'none'}<br/>
+                  Program Stage IDs: {facilityOwnershipEvents.map(e => e.programStage).join(', ') || 'none'}
+                </div>
+              )}
 
             </div>
           </div>
@@ -2036,53 +2059,70 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingEmployees ? (
                 <p>Loading employee data...</p>
               ) : employeeEvents.length === 0 ? (
-                <p>No employee records found.</p>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>BHPC/NMC Number</th>
-                        <th>Position</th>
-                        <th>Contract Type</th>
-                        <th>Organization Unit</th>
-                        <th>Program Stage ID</th>
-                        <th>Event ID</th>
-                        <th>Tracked Entity Instance ID</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {employeeEvents.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : '';
-                        };
-
-                        return (
-                          <tr 
-                            key={event.event || index}
-                            onClick={() => handleEmployeeRowClick(event)}
-                            style={{ cursor: 'pointer' }}
-                            className="hover-row"
-                          >
-                            <td>{getFormattedValue("IIxbad41cH6")}</td>
-                            <td>{getFormattedValue("VFTRgPnvSHV")}</td>
-                            <td>{getFormattedValue("xcTxmEUy6g6")}</td>
-                            <td>{getFormattedValue("FClCncccLzw")}</td>
-                            <td>{getFormattedValue("F3h1A96t3uL")}</td>
-                            <td>{localStorage.getItem('userOrgUnitName')}</td>
-                            <td>{event.programStage}</td>
-                            <td>{event.event}</td>
-                            <td>{event.trackedEntityInstance}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div>
+                  <p>No employee records found.</p>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {employeeEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    isLoadingEmployees: {isLoadingEmployees.toString()}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {employeeEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    Event IDs: {employeeEvents.map(e => e.event).join(', ') || 'none'}<br/>
+                    Program Stage IDs: {employeeEvents.map(e => e.programStage).join(', ') || 'none'}
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>First Name</th>
+                          <th>Last Name</th>
+                          <th>BHPC/NMC Number</th>
+                          <th>Position</th>
+                          <th>Contract Type</th>
+                          <th>Organization Unit</th>
+                          <th>Program Stage ID</th>
+                          <th>Event ID</th>
+                          <th>Tracked Entity Instance ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeEvents.map((event, index) => {
+                          const dataValues = event.dataValues || [];
+                          const getFormattedValue = (dataElementId) => {
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : '';
+                          };
+
+                          return (
+                            <tr 
+                              key={event.event || index}
+                              onClick={() => handleEmployeeRowClick(event)}
+                              style={{ cursor: 'pointer' }}
+                              className="hover-row"
+                            >
+                              <td>{getFormattedValue("IIxbad41cH6")}</td>
+                              <td>{getFormattedValue("VFTRgPnvSHV")}</td>
+                              <td>{getFormattedValue("xcTxmEUy6g6")}</td>
+                              <td>{getFormattedValue("FClCncccLzw")}</td>
+                              <td>{getFormattedValue("F3h1A96t3uL")}</td>
+                              <td>{localStorage.getItem('userOrgUnitName')}</td>
+                              <td>{event.programStage}</td>
+                              <td>{event.event}</td>
+                              <td>{event.trackedEntityInstance}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2112,90 +2152,107 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingServices ? (
                 <p>Loading services data...</p>
               ) : serviceEvents.length === 0 ? (
-                <p>No service offering records found.</p>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Core Services</th>
-                        <th>Specialised Services</th>
-                        <th>Support Services</th>
-                        <th>Additional Services</th>
-                        <th>Program Stage ID</th>
-                        <th>Event ID</th>
-                        <th>Tracked Entity Instance ID</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {serviceEvents.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : '';
-                        };
-
-                        // Helper function to check if service type is offered
-                        const isServiceOffered = (dataElementId) => {
-                          return getFormattedValue(dataElementId) === 'true';
-                        };
-
-                        // Aggregate services by category
-                        const coreServices = [
-                          isServiceOffered("j57HXXX4Ijz") ? "Emergency" : "",
-                          isServiceOffered("ECjGkIq0Deq") ? "General Practice" : "",
-                          isServiceOffered("aM41KiGDJAs") ? "Treatment & Care" : "",
-                          isServiceOffered("flzyZUlf30v") ? "Urgent Care" : "",
-                        ].filter(Boolean).join(", ");
-                        
-                        const specialisedServices = [
-                          isServiceOffered("y9QSgKRoc6L") ? "Maternity & Reproductive" : "",
-                          isServiceOffered("yZhlCTgamq0") ? "Mental Health" : "",
-                          isServiceOffered("RCvjFJQUaPV") ? "Radiology" : "",
-                          isServiceOffered("uxcdCPnaqWL") ? "Rehabilitation" : "",
-                        ].filter(Boolean).join(", ");
-                        
-                        const supportServices = [
-                          isServiceOffered("r76ODkNZv43") ? "Ambulatory Care" : "",
-                          isServiceOffered("E7OMKr09N0R") ? "Dialysis" : "",
-                          isServiceOffered("GyQNkXpNraW") ? "Hospices" : "",
-                          isServiceOffered("OgpVvPxkLwf") ? "Lab Services" : "",
-                          isServiceOffered("rLC2CE79p7Q") ? "Nursing Homes" : "",
-                          isServiceOffered("w86r0XZCLCr") ? "Outpatient" : "",
-                          isServiceOffered("m8Kl585eWSK") ? "Transportation" : "",
-                          isServiceOffered("yecnkdC7HtM") ? "Pharmacy" : "",
-                        ].filter(Boolean).join(", ");
-                        
-                        const additionalServices = [
-                          isServiceOffered("SMvKa2EWeBO") ? "Health Education" : "",
-                          isServiceOffered("i0QXYWMOUjy") ? "Counseling" : "",
-                          isServiceOffered("e48W7983nBs") ? "Community-Based" : "",
-                        ].filter(Boolean).join(", ");
-
-                        return (
-                          <tr 
-                            key={event.event || index}
-                            onClick={() => handleServiceRowClick(event)}
-                            style={{ cursor: 'pointer' }}
-                            className="hover-row"
-                          >
-                            <td>{getFormattedValue("IR8eO63QKKe")}</td>
-                            <td>{getFormattedValue("pRPw37nqZQ3")}</td>
-                            <td>{coreServices || "None"}</td>
-                            <td>{specialisedServices || "None"}</td>
-                            <td>{supportServices || "None"}</td>
-                            <td>{additionalServices || "None"}</td>
-                            <td>{event.programStage}</td>
-                            <td>{event.event}</td>
-                            <td>{event.trackedEntityInstance}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div>
+                  <p>No service offering records found.</p>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {serviceEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    isLoadingServices: {isLoadingServices.toString()}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {serviceEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    Event IDs: {serviceEvents.map(e => e.event).join(', ') || 'none'}<br/>
+                    Program Stage IDs: {serviceEvents.map(e => e.programStage).join(', ') || 'none'}
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Description</th>
+                          <th>Core Services</th>
+                          <th>Specialised Services</th>
+                          <th>Support Services</th>
+                          <th>Additional Services</th>
+                          <th>Program Stage ID</th>
+                          <th>Event ID</th>
+                          <th>Tracked Entity Instance ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {serviceEvents.map((event, index) => {
+                          const dataValues = event.dataValues || [];
+                          const getFormattedValue = (dataElementId) => {
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : '';
+                          };
+
+                          // Helper function to check if service type is offered
+                          const isServiceOffered = (dataElementId) => {
+                            return getFormattedValue(dataElementId) === 'true';
+                          };
+
+                          // Aggregate services by category
+                          const coreServices = [
+                            isServiceOffered("j57HXXX4Ijz") ? "Emergency" : "",
+                            isServiceOffered("ECjGkIq0Deq") ? "General Practice" : "",
+                            isServiceOffered("aM41KiGDJAs") ? "Treatment & Care" : "",
+                            isServiceOffered("flzyZUlf30v") ? "Urgent Care" : "",
+                          ].filter(Boolean).join(", ");
+                          
+                          const specialisedServices = [
+                            isServiceOffered("y9QSgKRoc6L") ? "Maternity & Reproductive" : "",
+                            isServiceOffered("yZhlCTgamq0") ? "Mental Health" : "",
+                            isServiceOffered("RCvjFJQUaPV") ? "Radiology" : "",
+                            isServiceOffered("uxcdCPnaqWL") ? "Rehabilitation" : "",
+                          ].filter(Boolean).join(", ");
+                          
+                          const supportServices = [
+                            isServiceOffered("r76ODkNZv43") ? "Ambulatory Care" : "",
+                            isServiceOffered("E7OMKr09N0R") ? "Dialysis" : "",
+                            isServiceOffered("GyQNkXpNraW") ? "Hospices" : "",
+                            isServiceOffered("OgpVvPxkLwf") ? "Lab Services" : "",
+                            isServiceOffered("rLC2CE79p7Q") ? "Nursing Homes" : "",
+                            isServiceOffered("w86r0XZCLCr") ? "Outpatient" : "",
+                            isServiceOffered("m8Kl585eWSK") ? "Transportation" : "",
+                            isServiceOffered("yecnkdC7HtM") ? "Pharmacy" : "",
+                          ].filter(Boolean).join(", ");
+                          
+                          const additionalServices = [
+                            isServiceOffered("SMvKa2EWeBO") ? "Health Education" : "",
+                            isServiceOffered("i0QXYWMOUjy") ? "Counseling" : "",
+                            isServiceOffered("e48W7983nBs") ? "Community-Based" : "",
+                          ].filter(Boolean).join(", ");
+
+                          return (
+                            <tr 
+                              key={event.event || index}
+                              onClick={() => handleServiceRowClick(event)}
+                              style={{ cursor: 'pointer' }}
+                              className="hover-row"
+                            >
+                              <td>{getFormattedValue("IR8eO63QKKe")}</td>
+                              <td>{getFormattedValue("pRPw37nqZQ3")}</td>
+                              <td>{coreServices || "None"}</td>
+                              <td>{specialisedServices || "None"}</td>
+                              <td>{supportServices || "None"}</td>
+                              <td>{additionalServices || "None"}</td>
+                              <td>{event.programStage}</td>
+                              <td>{event.event}</td>
+                              <td>{event.trackedEntityInstance}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2225,97 +2282,114 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingEquipment ? (
                 <p>Loading equipment data...</p>
               ) : equipmentEvents.length === 0 ? (
-                <p>No equipment records found.</p>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Emergency Equipment</th>
-                        <th>General Practice</th>
-                        <th>Laboratory Services</th>
-                        <th>Radiology</th>
-                        <th>Pharmacy</th>
-                        <th>Compliance Status</th>
-                        <th>Program Stage ID</th>
-                        <th>Event ID</th>
-                        <th>Tracked Entity Instance ID</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {equipmentEvents.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : 'N/A';
-                        };
-
-                        // Helper function to format boolean values
-                        const formatBoolean = (value) => {
-                          if (value === 'true') return 'Yes';
-                          if (value === 'false') return 'No';
-                          return 'N/A';
-                        };
-
-                        // Aggregate emergency equipment
-                        const emergencyEquipment = [
-                          getFormattedValue("Ldkhcngpzm0") === 'true' ? "Defibrillator" : "",
-                          getFormattedValue("Dpzjb4f4zie") === 'true' ? "Ambulance" : "",
-                          getFormattedValue("iBa0EKW8Rs4") === 'true' ? "Oxygen Supply" : "",
-                          getFormattedValue("BBk59Ex46rC") === 'true' ? "Resuscitation Beds" : "",
-                        ].filter(Boolean).join(", ");
-
-                        // Aggregate general practice equipment
-                        const generalPracticeEquipment = [
-                          getFormattedValue("mBr9e3ecOze") === 'true' ? "BP Machines" : "",
-                          getFormattedValue("ftukRsNTA80") === 'true' ? "Examination Beds" : "",
-                          getFormattedValue("yA7QpYbNo7s") === 'true' ? "Thermometers" : "",
-                        ].filter(Boolean).join(", ");
-
-                        // Aggregate laboratory equipment
-                        const labEquipment = [
-                          getFormattedValue("K2Wj7GjneQq") === 'true' ? "Analyzers" : "",
-                          getFormattedValue("RzTeaeV0dKS") === 'true' ? "Centrifuge" : "",
-                          getFormattedValue("tlh2pkI5qro") === 'true' ? "Fridges" : "",
-                          getFormattedValue("H5zk9T4UZgr") === 'true' ? "Microscopes" : "",
-                        ].filter(Boolean).join(", ");
-
-                        // Aggregate radiology equipment
-                        const radiologyEquipment = [
-                          getFormattedValue("nh6jg8mhDpC") === 'true' ? "CT Scanner" : "",
-                          getFormattedValue("BDdXSCIVk5J") === 'true' ? "MRI" : "",
-                          getFormattedValue("SuvRvDmUtN6") === 'true' ? "PACS Systems" : "",
-                          getFormattedValue("OR7j7sVr19a") === 'true' ? "X-Ray" : "",
-                        ].filter(Boolean).join(", ");
-
-                        // Aggregate pharmacy equipment
-                        const pharmacyEquipment = [
-                          getFormattedValue("bDw85eij2QA") === 'true' ? "Dispensing Counters" : "",
-                          getFormattedValue("VCWdWq5cnqo") === 'true' ? "Inventory Software" : "",
-                        ].filter(Boolean).join(", ");
-
-                        return (
-                          <tr 
-                            key={event.event || index}
-                            onClick={() => handleEquipmentRowClick(event)}
-                            style={{ cursor: 'pointer' }}
-                            className="hover-row"
-                          >
-                            <td>{emergencyEquipment || "None"}</td>
-                            <td>{generalPracticeEquipment || "None"}</td>
-                            <td>{labEquipment || "None"}</td>
-                            <td>{radiologyEquipment || "None"}</td>
-                            <td>{pharmacyEquipment || "None"}</td>
-                            <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
-                            <td>{event.programStage || 'N/A'}</td>
-                            <td>{event.event || 'N/A'}</td>
-                            <td>{event.trackedEntityInstance || 'N/A'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div>
+                  <p>No equipment records found.</p>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {equipmentEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    isLoadingEquipment: {isLoadingEquipment.toString()}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {equipmentEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    Event IDs: {equipmentEvents.map(e => e.event).join(', ') || 'none'}<br/>
+                    Program Stage IDs: {equipmentEvents.map(e => e.programStage).join(', ') || 'none'}
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Emergency Equipment</th>
+                          <th>General Practice</th>
+                          <th>Laboratory Services</th>
+                          <th>Radiology</th>
+                          <th>Pharmacy</th>
+                          <th>Compliance Status</th>
+                          <th>Program Stage ID</th>
+                          <th>Event ID</th>
+                          <th>Tracked Entity Instance ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {equipmentEvents.map((event, index) => {
+                          const dataValues = event.dataValues || [];
+                          const getFormattedValue = (dataElementId) => {
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'N/A';
+                          };
+
+                          // Helper function to format boolean values
+                          const formatBoolean = (value) => {
+                            if (value === 'true') return 'Yes';
+                            if (value === 'false') return 'No';
+                            return 'N/A';
+                          };
+
+                          // Aggregate emergency equipment
+                          const emergencyEquipment = [
+                            getFormattedValue("Ldkhcngpzm0") === 'true' ? "Defibrillator" : "",
+                            getFormattedValue("Dpzjb4f4zie") === 'true' ? "Ambulance" : "",
+                            getFormattedValue("iBa0EKW8Rs4") === 'true' ? "Oxygen Supply" : "",
+                            getFormattedValue("BBk59Ex46rC") === 'true' ? "Resuscitation Beds" : "",
+                          ].filter(Boolean).join(", ");
+
+                          // Aggregate general practice equipment
+                          const generalPracticeEquipment = [
+                            getFormattedValue("mBr9e3ecOze") === 'true' ? "BP Machines" : "",
+                            getFormattedValue("ftukRsNTA80") === 'true' ? "Examination Beds" : "",
+                            getFormattedValue("yA7QpYbNo7s") === 'true' ? "Thermometers" : "",
+                          ].filter(Boolean).join(", ");
+
+                          // Aggregate laboratory equipment
+                          const labEquipment = [
+                            getFormattedValue("K2Wj7GjneQq") === 'true' ? "Analyzers" : "",
+                            getFormattedValue("RzTeaeV0dKS") === 'true' ? "Centrifuge" : "",
+                            getFormattedValue("tlh2pkI5qro") === 'true' ? "Fridges" : "",
+                            getFormattedValue("H5zk9T4UZgr") === 'true' ? "Microscopes" : "",
+                          ].filter(Boolean).join(", ");
+
+                          // Aggregate radiology equipment
+                          const radiologyEquipment = [
+                            getFormattedValue("nh6jg8mhDpC") === 'true' ? "CT Scanner" : "",
+                            getFormattedValue("BDdXSCIVk5J") === 'true' ? "MRI" : "",
+                            getFormattedValue("SuvRvDmUtN6") === 'true' ? "PACS Systems" : "",
+                            getFormattedValue("OR7j7sVr19a") === 'true' ? "X-Ray" : "",
+                          ].filter(Boolean).join(", ");
+
+                          // Aggregate pharmacy equipment
+                          const pharmacyEquipment = [
+                            getFormattedValue("bDw85eij2QA") === 'true' ? "Dispensing Counters" : "",
+                            getFormattedValue("VCWdWq5cnqo") === 'true' ? "Inventory Software" : "",
+                          ].filter(Boolean).join(", ");
+
+                          return (
+                            <tr 
+                              key={event.event || index}
+                              onClick={() => handleEquipmentRowClick(event)}
+                              style={{ cursor: 'pointer' }}
+                              className="hover-row"
+                            >
+                              <td>{emergencyEquipment || "None"}</td>
+                              <td>{generalPracticeEquipment || "None"}</td>
+                              <td>{labEquipment || "None"}</td>
+                              <td>{radiologyEquipment || "None"}</td>
+                              <td>{pharmacyEquipment || "None"}</td>
+                              <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
+                              <td>{event.programStage || 'N/A'}</td>
+                              <td>{event.event || 'N/A'}</td>
+                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2325,7 +2399,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="inspection-schedule-details">
               <h2>
-                Situational Analysis 
+                Self Assessment 
                 <button 
                   className="add-icon" 
                   onClick={handleAddInspection}
@@ -2343,103 +2417,113 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </button>
               </h2>
               {isLoadingInspections ? (
-                <p>Loading inspection data...</p>
+                <p>Loading self assessment data...</p>
               ) : inspectionEvents.length === 0 ? (
                 <div>
-                  <p>No inspection records found.</p>
-                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                    Debug: isLoadingInspections={isLoadingInspections.toString()}, 
-                    inspectionEvents.length={inspectionEvents.length}, 
-                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
-                  </p>
+                  <p>No self assessment records found.</p>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {inspectionEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    isLoadingInspections: {isLoadingInspections.toString()}
+                  </div>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Date and Time</th>
-                        <th>Inspection Code</th>
-                        <th>Inspector</th>
-                        <th>Type</th>
-                        <th>Organization Structure</th>
-                        <th>Patient Policies</th>
-                        <th>Facility Environment</th>
-                        <th>Program Stage ID</th>
-                        <th>Event ID</th>
-                        <th>Tracked Entity Instance ID</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inspectionEvents.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : 'N/A';
-                        };
+                <>
+                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
+                    <strong>Debug Info:</strong><br/>
+                    Events: {inspectionEvents.length}<br/>
+                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
+                    Event IDs: {inspectionEvents.map(e => e.event).join(', ') || 'none'}<br/>
+                    Program Stage IDs: {inspectionEvents.map(e => e.programStage).join(', ') || 'none'}
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Date and Time</th>
+                          <th>Self Assessment Code</th>
+                          <th>Inspector</th>
+                          <th>Type</th>
+                          <th>Organization Structure</th>
+                          <th>Patient Policies</th>
+                          <th>Facility Environment</th>
+                          <th>Program Stage ID</th>
+                          <th>Event ID</th>
+                          <th>Tracked Entity Instance ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inspectionEvents.map((event, index) => {
+                          const dataValues = event.dataValues || [];
+                          const getFormattedValue = (dataElementId) => {
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'N/A';
+                          };
 
-                        // Helper function to format date
-                        const formatDate = (dateString) => {
-                          if (!dateString) return 'N/A';
-                          try {
-                            return new Date(dateString).toLocaleDateString();
-                          } catch {
-                            return dateString;
-                          }
-                        };
+                          // Helper function to format date
+                          const formatDate = (dateString) => {
+                            if (!dateString) return 'N/A';
+                            try {
+                              return new Date(dateString).toLocaleDateString();
+                            } catch {
+                              return dateString;
+                            }
+                          };
 
-                        // Helper function to format boolean values
-                        const formatBoolean = (value) => {
-                          if (value === 'true') return 'Yes';
-                          if (value === 'false') return 'No';
-                          return 'N/A';
-                        };
+                          // Helper function to format boolean values
+                          const formatBoolean = (value) => {
+                            if (value === 'true') return 'Yes';
+                            if (value === 'false') return 'No';
+                            return 'N/A';
+                          };
 
-                        // Aggregate policy compliance
-                        const patientPolicies = [
-                          getFormattedValue("pCxcolinfQ0"), // hasPoliciesForPatientAssessment
-                          getFormattedValue("D6yET9Rm3Ql"), // hasPoliciesForPatientReferral
-                          getFormattedValue("qxWs7aK3qGZ")  // hasPoliciesForPatientConsent
-                        ];
-                        const policiesCompliant = patientPolicies.filter(p => p === 'true').length;
-                        const policiesStatus = policiesCompliant === 3 ? 'All Compliant' : 
-                                             policiesCompliant > 0 ? `${policiesCompliant}/3 Compliant` : 'Not Compliant';
+                          // Aggregate policy compliance
+                          const patientPolicies = [
+                            getFormattedValue("pCxcolinfQ0"), // hasPoliciesForPatientAssessment
+                            getFormattedValue("D6yET9Rm3Ql"), // hasPoliciesForPatientReferral
+                            getFormattedValue("qxWs7aK3qGZ")  // hasPoliciesForPatientConsent
+                          ];
+                          const policiesCompliant = patientPolicies.filter(p => p === 'true').length;
+                          const policiesStatus = policiesCompliant === 3 ? 'All Compliant' : 
+                                               policiesCompliant > 0 ? `${policiesCompliant}/3 Compliant` : 'Not Compliant';
 
-                        // Aggregate facility environment
-                        const facilityChecks = [
-                          getFormattedValue("wjLqyKpPclD"), // hasWheelchairAccessibility
-                          getFormattedValue("uiwrRhfPUX9"), // isFencedAndSecure
-                          getFormattedValue("bWVuvn0rN0W"), // hasAdequateParking
-                          getFormattedValue("mE0keb9FteW"), // isCleanAndNeat
-                          getFormattedValue("K3me4A3CyVO")  // hasAdequateLighting
-                        ];
-                        const facilityCompliant = facilityChecks.filter(f => f === 'true').length;
-                        const facilityStatus = facilityCompliant >= 4 ? 'Compliant' : 
-                                             facilityCompliant >= 2 ? 'Partial' : 'Non-Compliant';
+                          // Aggregate facility environment
+                          const facilityChecks = [
+                            getFormattedValue("wjLqyKpPclD"), // hasWheelchairAccessibility
+                            getFormattedValue("uiwrRhfPUX9"), // isFencedAndSecure
+                            getFormattedValue("bWVuvn0rN0W"), // hasAdequateParking
+                            getFormattedValue("mE0keb9FteW"), // isCleanAndNeat
+                            getFormattedValue("K3me4A3CyVO")  // hasAdequateLighting
+                          ];
+                          const facilityCompliant = facilityChecks.filter(f => f === 'true').length;
+                          const facilityStatus = facilityCompliant >= 4 ? 'Compliant' : 
+                                               facilityCompliant >= 2 ? 'Partial' : 'Non-Compliant';
 
-                                                 return (
-                           <tr 
-                             key={event.event || index}
-                             onClick={() => handleInspectionRowClick(event)}
-                             style={{ cursor: 'pointer' }}
-                             className="hover-row"
-                           >
-                             <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
-                             <td>{getFormattedValue("wS6bfV1hrU0")}</td>
-                             <td>{getFormattedValue("VOjM6ArpORU")}</td>
-                             <td>{getFormattedValue("Pl4RdRtKErd")}</td>
-                             <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
-                             <td>{policiesStatus}</td>
-                             <td>{facilityStatus}</td>
-                             <td>{event.programStage || 'N/A'}</td>
-                             <td>{event.event || 'N/A'}</td>
-                             <td>{event.trackedEntityInstance || 'N/A'}</td>
-                           </tr>
-                         );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                                  return (
+                            <tr 
+                              key={event.event || index}
+                              onClick={() => handleInspectionRowClick(event)}
+                              style={{ cursor: 'pointer' }}
+                              className="hover-row"
+                            >
+                              <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
+                              <td>{getFormattedValue("wS6bfV1hrU0")}</td>
+                              <td>{getFormattedValue("VOjM6ArpORU")}</td>
+                              <td>{getFormattedValue("Pl4RdRtKErd")}</td>
+                              <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
+                              <td>{policiesStatus}</td>
+                              <td>{facilityStatus}</td>
+                              <td>{event.programStage || 'N/A'}</td>
+                              <td>{event.event || 'N/A'}</td>
+                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2471,63 +2555,65 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : statutoryComplianceEvents.length === 0 ? (
                 <p>No statutory compliance records found.</p>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Application Type</th>
-                        <th>Facility Name</th>
-                        <th>License Holder</th>
-                        <th>Payment Number</th>
-                        <th>Phone Number</th>
-                        <th>Registration Status</th>
-                        <th>Program Stage ID</th>
-                        <th>Event ID</th>
-                        <th>Tracked Entity Instance ID</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {statutoryComplianceEvents.map((event, index) => {
-                        const dataValues = event.dataValues || [];
-                        const getFormattedValue = (dataElementId) => {
-                          const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                          return dataValue ? dataValue.value : 'N/A';
-                        };
+                <>
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Application Type</th>
+                          <th>Facility Name</th>
+                          <th>License Holder</th>
+                          <th>Payment Number</th>
+                          <th>Phone Number</th>
+                          <th>Registration Status</th>
+                          <th>Program Stage ID</th>
+                          <th>Event ID</th>
+                          <th>Tracked Entity Instance ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {statutoryComplianceEvents.map((event, index) => {
+                          const dataValues = event.dataValues || [];
+                          const getFormattedValue = (dataElementId) => {
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'N/A';
+                          };
 
-                        // Helper function to format boolean values
-                        const formatBoolean = (value) => {
-                          if (value === 'true') return 'Yes';
-                          if (value === 'false') return 'No';
-                          return 'N/A';
-                        };
+                          // Helper function to format boolean values
+                          const formatBoolean = (value) => {
+                            if (value === 'true') return 'Yes';
+                            if (value === 'false') return 'No';
+                            return 'N/A';
+                          };
 
-                        // Build license holder name
-                        const firstName = getFormattedValue("HMk4LZ9ESOq");
-                        const surname = getFormattedValue("ykwhsQQPVH0");
-                        const licenseHolderName = `${firstName} ${surname}`.trim() || 'N/A';
+                          // Build license holder name
+                          const firstName = getFormattedValue("HMk4LZ9ESOq");
+                          const surname = getFormattedValue("ykwhsQQPVH0");
+                          const licenseHolderName = `${firstName} ${surname}`.trim() || 'N/A';
 
-                        return (
-                          <tr 
-                            key={event.event || index}
-                            onClick={() => handleStatutoryComplianceRowClick(event)}
-                            style={{ cursor: 'pointer' }}
-                            className="hover-row"
-                          >
-                            <td>{getFormattedValue("JSwAq5HRQa8")}</td>
-                            <td>{getFormattedValue("D707dj4Rpjz")}</td>
-                            <td>{licenseHolderName}</td>
-                            <td>{getFormattedValue("LAHlCWh18bP")}</td>
-                            <td>{getFormattedValue("SReqZgQk0RY")}</td>
-                            <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
-                            <td>{event.programStage || 'N/A'}</td>
-                            <td>{event.event || 'N/A'}</td>
-                            <td>{event.trackedEntityInstance || 'N/A'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                          return (
+                            <tr 
+                              key={event.event || index}
+                              onClick={() => handleStatutoryComplianceRowClick(event)}
+                              style={{ cursor: 'pointer' }}
+                              className="hover-row"
+                            >
+                              <td>{getFormattedValue("JSwAq5HRQa8")}</td>
+                              <td>{getFormattedValue("D707dj4Rpjz")}</td>
+                              <td>{licenseHolderName}</td>
+                              <td>{getFormattedValue("LAHlCWh18bP")}</td>
+                              <td>{getFormattedValue("SReqZgQk0RY")}</td>
+                              <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
+                              <td>{event.programStage || 'N/A'}</td>
+                              <td>{event.event || 'N/A'}</td>
+                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2782,7 +2868,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               { number: 4, title: 'Services Offered', key: 'servicesOffered' },
               { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
               { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Inspection Schedule', key: 'inspectionSchedule' }
+              { number: 7, title: 'Self Assessment', key: 'inspectionSchedule' }
             ];
             
             // Check if "Passed MOH Screening" is true (status shows permission message)
@@ -2976,7 +3062,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={openInspectionDialog}
           onClose={() => {
-            console.log("AddInspectionDialog onClose called - reloading inspection data");
+            console.log("AddInspectionDialog onClose called - reloading self assessment data");
             handleCloseInspectionDialog();
           }}
           onSuccess={handleInspectionAddSuccess}
@@ -2989,12 +3075,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={showEditInspectionDialog}
           onClose={() => {
-            console.log("EditInspectionDialog onClose called - reloading inspection data");
+            console.log("EditInspectionDialog onClose called - reloading self assessment data");
             setShowEditInspectionDialog(false);
             fetchInspectionData(); // Always reload data when dialog closes
           }}
           onSuccess={() => {
-            console.log("EditInspectionDialog onSuccess called - reloading inspection data");
+            console.log("EditInspectionDialog onSuccess called - reloading self assessment data");
             setShowEditInspectionDialog(false);
             fetchInspectionData();
           }}
