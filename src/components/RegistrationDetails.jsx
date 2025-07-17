@@ -76,6 +76,22 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Track if application has been submitted for review
   const [isApplicationSubmitted, setIsApplicationSubmitted] = useState(false);
 
+  // Centralized function to get the current trackedEntityInstanceId
+  const getCurrentTrackedEntityInstanceId = () => {
+    // Priority order: props > localStorage > null
+    const propId = trackedEntityInstanceId;
+    const localStorageId = localStorage.getItem('tempTrackedEntityInstanceId');
+    
+    console.log("🔍 === GETTING TRACKED ENTITY INSTANCE ID ===");
+    console.log("- Prop ID:", propId);
+    console.log("- LocalStorage ID:", localStorageId);
+    
+    const finalId = propId || localStorageId;
+    console.log("- Final ID:", finalId);
+    
+    return finalId;
+  };
+
   // Listen for a custom event to set submission state (can be triggered from the review button)
   useEffect(() => {
     const handler = () => setIsApplicationSubmitted(true);
@@ -201,31 +217,42 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return false; // No records exist
     }
 
-    // Required fields for facility ownership (based on the form structure)
-    const requiredFields = [
+    // First, check if application is submitted
+    const applicationSubmitted = facilityEvents.some(event => {
+      if (!event.dataValues) return false;
+      const dataValue = event.dataValues.find(dv => dv.dataElement === DATA_ELEMENTS.APPLICATION_SUBMITTED);
+      return dataValue && dataValue.value === "true";
+    });
+
+    console.log("- Application Submitted:", applicationSubmitted);
+
+    // If application is submitted, consider facility ownership complete
+    if (applicationSubmitted) {
+      console.log("- VALIDATION RESULT: TRUE (Application submitted)");
+      return true;
+    }
+
+    // If application is not submitted, check for basic required fields
+    const basicRequiredFields = [
       "HMk4LZ9ESOq", // firstName
       "ykwhsQQPVH0", // surname
       "zVmmto7HwOc", // citizen
       "vAHHXaW0Pna", // ownershipType
       "FLcrCfTNcQi", // idType
-      "aUGSyyfbUVI", // id
-      "KRj1TOR5cVM", // copyOfIdPassport
-      "yP49GKSQxPl", // professionalReference1
-      "lC217zTgC6C", // professionalReference2
-      "pelCBFPIFY1"  // qualificationCertificates
+      "aUGSyyfbUVI"  // id
     ];
 
-    console.log("- Required fields count:", requiredFields.length);
+    console.log("- Basic required fields count:", basicRequiredFields.length);
 
-    // Check if ALL records have all required fields filled
-    const allRecordsComplete = facilityEvents.every(event => {
+    // Check if ANY record has the basic required fields filled
+    const hasBasicData = facilityEvents.some(event => {
       if (!event.dataValues) {
         console.log(`- Event ${event.event}: No dataValues`);
         return false;
       }
       
       const missingFields = [];
-      const hasAllFields = requiredFields.every(fieldId => {
+      const hasBasicFields = basicRequiredFields.every(fieldId => {
         const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
         const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
         if (!isValid) {
@@ -234,12 +261,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return isValid;
       });
       
-      console.log(`- Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`, missingFields);
-      return hasAllFields;
+      console.log(`- Event ${event.event}: Has basic fields = ${hasBasicFields}, Missing fields:`, missingFields);
+      return hasBasicFields;
     });
     
-    console.log("- VALIDATION RESULT:", allRecordsComplete ? "TRUE (ALL records complete)" : "FALSE (Some records incomplete)");
-    return allRecordsComplete;
+    console.log("- VALIDATION RESULT:", hasBasicData ? "TRUE (Has basic data)" : "FALSE (No basic data)");
+    return hasBasicData;
   };
 
   // Function to validate employee registration completion
@@ -489,69 +516,148 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     });
   };
 
-  // New useEffect to determine overall registration status with new logic
+  // Constants for data element IDs to improve maintainability
+  const DATA_ELEMENTS = {
+    APPLICATION_SUBMITTED: "N3bVE3GRqdf",
+    PASSED_MOH_SCREENING: "NMTFfpLaGAy", 
+    COMPLIED_FOR_LICENSING: "SIq5ADQjCEM"
+  };
+
+  // Status configuration with better organization and color coding
+  const STATUS_CONFIG = {
+    COMPLETE_ADMIN_INFO: {
+      text: "Complete Administrative Information Below",
+      color: "#dc3545", // Red
+      bgColor: "#f8d7da",
+      borderColor: "#f5c6cb"
+    },
+    COMPLETE_FACILITY_OWNERSHIP: {
+      text: "Complete Facility Ownership Details",
+      color: "#dc3545", // Red
+      bgColor: "#f8d7da",
+      borderColor: "#f5c6cb"
+    },
+    SUBMIT_FOR_REVIEW: {
+      text: "Under Facility Ownership Complete and submit Documents for review",
+      color: "#ffc107", // Yellow
+      bgColor: "#fff3cd",
+      borderColor: "#ffeaa7"
+    },
+    UNDER_SCREENING_REVIEW: {
+      text: "Documents Under Screening Review",
+      color: "#17a2b8", // Blue
+      bgColor: "#d1ecf1",
+      borderColor: "#bee5eb"
+    },
+    UNDER_SCREENING_COMPLIANCE: {
+      text: "Documents Under Screening Compliance",
+      color: "#17a2b8", // Blue
+      bgColor: "#d1ecf1",
+      borderColor: "#bee5eb"
+    },
+    PERMISSION_GRANTED: {
+      text: "You Have Permission to Establish, Complete Steps 3 to 6 with required Documents",
+      color: "#28a745", // Green
+      bgColor: "#d4edda",
+      borderColor: "#c3e6cb"
+    },
+    COMPLETE_SELF_INSPECTION: {
+      text: "Complete a Self Inspection",
+      color: "#fd7e14", // Orange
+      bgColor: "#ffe8d1",
+      borderColor: "#ffd8a8"
+    },
+    SELECT_INSPECTION_DATE: {
+      text: "Select a date for Inspection",
+      color: "#6f42c1", // Purple
+      bgColor: "#e2d9f3",
+      borderColor: "#d1c7e5"
+    }
+  };
+
+
+
+  // Enhanced status determination logic
   useEffect(() => {
-    console.log("🔄 === STATUS LOGIC RUNNING ===");
+    console.log("🔄 === ENHANCED STATUS LOGIC RUNNING ===");
     console.log("- completeApplicationStatus:", completeApplicationStatus);
     console.log("- tabValidationStates.facilityOwnership:", tabValidationStates.facilityOwnership);
+    console.log("- events.length:", events?.length || 0);
+    console.log("- events data:", events);
     
-    // Check if Admin User & Facility Details has no event
+    try {
+              // Step 1: Check if Admin User & Facility Details is complete
     if (!completeApplicationStatus) {
       console.log("📝 Setting status: Complete Administrative Information Below");
-      setRegistrationStatus("Complete Administrative Information Below");
+          setRegistrationStatus(STATUS_CONFIG.COMPLETE_ADMIN_INFO.text);
       return;
     }
     
-    // Check if Facility Ownership has no event
+        // Step 2: Check if Facility Ownership has data
     if (!tabValidationStates.facilityOwnership) {
       console.log("📝 Setting status: Complete Facility Ownership Details");
-      setRegistrationStatus("Complete Facility Ownership Details");
+          setRegistrationStatus(STATUS_CONFIG.COMPLETE_FACILITY_OWNERSHIP.text);
       return;
     }
     
-    // Check if Application Submitted is not true
-    if (!hasFacilityOwnershipDataValue("N3bVE3GRqdf", "true")) {
-      console.log("📝 Setting status: Under Facility Ownership Complete and submit Documents for review");
-      setRegistrationStatus("Under Facility Ownership Complete and submit Documents for review");
+        // Step 3: Check if Application has been submitted
+        if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.APPLICATION_SUBMITTED, "true")) {
+          console.log("📝 Setting status: Submit for review");
+          setRegistrationStatus(STATUS_CONFIG.SUBMIT_FOR_REVIEW.text);
       return;
     }
     
-    // Check if Passed MOH Screening is not true
-    if (!hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
-      console.log("📝 Setting status: Documents Under Screening Review");
-      setRegistrationStatus("Documents Under Screening Review");
+        // Step 4: Check MOH Screening status
+        const passedMOH = hasFacilityOwnershipDataValue(DATA_ELEMENTS.PASSED_MOH_SCREENING, "true");
+        const compliedLicensing = hasFacilityOwnershipDataValue(DATA_ELEMENTS.COMPLIED_FOR_LICENSING, "true");
+        
+        if (!passedMOH) {
+          console.log("📝 Setting status: Under Screening Review");
+          setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_REVIEW.text);
       return;
     }
     
-    // Check if Complied for Licensing is not true
-    if (!hasFacilityOwnershipDataValue("SIq5ADQjCEM", "true")) {
-      console.log("📝 Setting status: Documents Under Screening Compliance");
-      setRegistrationStatus("Documents Under Screening Compliance");
+        if (!compliedLicensing) {
+          console.log("📝 Setting status: Under Screening Compliance");
+          setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_COMPLIANCE.text);
       return;
     }
     
-    // Check if Passed MOH Screening is true (this means we can proceed to next steps)
-    if (hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")) {
-      console.log("📝 Setting status: You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
-      setRegistrationStatus("You Have Permission to Establish ,Complete Steps 3 to 5 with required Documents");
+        // Step 5: Permission granted - check remaining steps
+        if (passedMOH && compliedLicensing) {
+          // Check if all required steps (3-5) are complete
+          const stepsComplete = tabValidationStates.employeeRegistration && 
+                               tabValidationStates.servicesOffered && 
+                               tabValidationStates.statutoryCompliance && 
+                               tabValidationStates.equipmentMachinery;
+          
+          if (!stepsComplete) {
+            console.log("📝 Setting status: Permission Granted - Complete Steps 3-5");
+            setRegistrationStatus(STATUS_CONFIG.PERMISSION_GRANTED.text);
       return;
     }
     
-    // Check if Inspection Schedule is not green (not completed)
+          // Step 6: Check inspection schedule
     if (!hasTabData('inspectionSchedule')) {
-      console.log("📝 Setting status: Complete a Self Inspection");
-      setRegistrationStatus("Complete a Self Inspection");
+            console.log("📝 Setting status: Complete Self Inspection");
+            setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
       return;
     }
     
-    // All conditions met
-    console.log("📝 Setting status: Select a date for Inspection");
-    setRegistrationStatus("Select a date for Inspection");
+          // Step 7: All conditions met
+          console.log("📝 Setting status: Select Inspection Date");
+          setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
+          return;
+        }
+      
+    } catch (error) {
+      console.error("❌ Error in status determination:", error);
+      setRegistrationStatus("Status determination error - please refresh");
+    }
   }, [
     completeApplicationStatus,
-    tabValidationStates.facilityOwnership,
+    tabValidationStates,
     events,
-    tabValidationStates.inspectionSchedule,
     inspectionEvents
   ]);
   
@@ -566,10 +672,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return; // Don't change tabs
     }
     
-    // Disable certain tabs unless application is submitted
+    // Disable certain tabs unless application is submitted OR permission is granted
     const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
-    if (!isApplicationSubmitted && restrictedTabs.includes(tabKey)) {
-      console.log("- Tab click blocked - application not submitted for review");
+    const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+    if (!isApplicationSubmitted && !hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
+      console.log("- Tab click blocked - application not submitted for review and no permission granted");
       return;
     }
     
@@ -593,6 +701,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("🏢 === FACILITY OWNERSHIP TAB CLICKED ===");
       console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      
+      // Always fetch fresh data from DHIS2 when Facility Ownership tab is clicked
+      console.log("🔄 Force refreshing Facility Ownership data from DHIS2");
+      fetchFacilityOwnershipData();
       
       // Directly fetch organization unit from API instead of localStorage
       const fetchOrgUnitAndTrackedEntity = async () => {
@@ -718,10 +830,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchFacilityOwnershipData = async (teiId, orgUnitId) => {
     console.log("🔄 === STARTING FACILITY OWNERSHIP DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-    console.log("- Called from dialog close/refresh");
+    console.log("- Force refresh from DHIS2");
     
-    // Use parameters if provided, otherwise fall back to props/localStorage
-    const effectiveTeiId = teiId || trackedEntityInstanceId;
+    // Use parameters if provided, otherwise use centralized function
+    const effectiveTeiId = teiId || getCurrentTrackedEntityInstanceId();
     const effectiveOrgUnitId = orgUnitId || localStorage.getItem('userOrgUnitId');
     
     console.log("- Using trackedEntityInstanceId:", effectiveTeiId);
@@ -749,11 +861,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoading(true);
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false`;
+      
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = new Date().getTime();
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false&_t=${timestamp}`;
       
       console.log("🚀 === FACILITY OWNERSHIP API REQUEST ===");
       console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
+      console.log("- Cache-busting timestamp:", timestamp);
       console.log("- URL Parts:");
       console.log("  • Base:", `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/`);
       console.log("  • trackedEntityInstanceId:", effectiveTeiId);
@@ -762,25 +878,31 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • programId: EE8yeLVo6cN");
       console.log("  • fields: enrollments[events]!programStage=MuJubgTzJrY");
       console.log("  • paging: false");
+      console.log("  • cache-busting: _t=${timestamp}");
       console.log("- Headers:");
       console.log("  • Authorization: Basic [credentials]");
       console.log("  • Content-Type: application/json");
+      console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log("📊 === FACILITY OWNERSHIP API RESPONSE ===");
       console.log("- Response status:", response.status);
+      console.log("- Response headers:", Object.fromEntries(response.headers.entries()));
       console.log("- Response data:", data);
 
       console.log("📊 === FACILITY OWNERSHIP DATA PROCESSING ===");
@@ -815,6 +937,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       // Update validation state after data is loaded
       const facilityOwnershipComplete = validateFacilityOwnership(allEvents);
+      console.log("🔍 === VALIDATION RESULT ===");
+      console.log("- Facility Ownership Complete:", facilityOwnershipComplete);
+      
       setTabValidationStates(prev => ({
         ...prev,
         facilityOwnership: facilityOwnershipComplete
@@ -831,9 +956,25 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       // Store events in localStorage for Dashboard component
       localStorage.setItem('facilityOwnershipEvents', JSON.stringify(allEvents));
+      
+      // Force status recalculation after data update
+      console.log("🔄 Triggering status recalculation after data update");
+      setTimeout(() => {
+        const event = new CustomEvent('forceStatusRecalculation');
+        window.dispatchEvent(event);
+      }, 100);
+      
     } catch (error) {
       console.error("❌ Error fetching facility ownership data:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       setIsLoading(false);
+      
+      // Show user-friendly error message
+      setRegistrationStatus("Error loading data - please refresh the page");
     }
   };
 
@@ -888,6 +1029,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       fetchEmployeeData();
     }
   }, [trackedEntityInstanceId]);
+
+  // Add event listener for force status recalculation
+  useEffect(() => {
+    const handleForceStatusRecalculation = () => {
+      console.log("🔄 Force status recalculation triggered");
+      // The status logic will automatically run due to the useEffect dependencies
+    };
+
+    window.addEventListener('forceStatusRecalculation', handleForceStatusRecalculation);
+    
+    return () => {
+      window.removeEventListener('forceStatusRecalculation', handleForceStatusRecalculation);
+    };
+  }, []);
 
   // Add a new effect for fetching service data
   useEffect(() => {
@@ -1016,7 +1171,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("🔄 === STARTING EMPLOYEE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     
-    if (!trackedEntityInstanceId) {
+    const currentTeiId = getCurrentTrackedEntityInstanceId();
+    if (!currentTeiId) {
+      console.log("❌ No trackedEntityInstanceId available for employee data fetch");
       setIsLoadingEmployees(false);
       return;
     }
@@ -1031,12 +1188,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingEmployees(true);
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${trackedEntityInstanceId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
+      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
       
       // Log the endpoint and parameters for debugging
       console.log("Employee Registration API Request:");
       console.log("- Full URL:", url);
-      console.log("- trackedEntityInstanceId:", trackedEntityInstanceId);
+      console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: xjhA4eEHyhw");
@@ -2383,8 +2540,61 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Helper to determine if a tab should be disabled
   const isTabDisabled = (tabKey) => {
     const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    
+    // Check if permission to establish is granted
+    const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+    // If permission is granted, tabs 3-6 should not be disabled
+    if (hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
+      return false;
+    }
+    
+    // Otherwise, apply the original logic
     if (restrictedTabs.includes(tabKey) && !isApplicationSubmitted) return true;
     return false;
+  };
+
+  // Calculate overall progress percentage
+  const calculateProgress = () => {
+    const totalSteps = 7;
+    let completedSteps = 0;
+    
+    if (completeApplicationStatus) completedSteps++;
+    if (tabValidationStates.facilityOwnership) completedSteps++;
+    if (tabValidationStates.employeeRegistration) completedSteps++;
+    if (tabValidationStates.servicesOffered) completedSteps++;
+    if (tabValidationStates.statutoryCompliance) completedSteps++;
+    if (tabValidationStates.equipmentMachinery) completedSteps++;
+    if (hasTabData('inspectionSchedule')) completedSteps++;
+    
+    return Math.round((completedSteps / totalSteps) * 100);
+  };
+
+  // Get next action required
+  const getNextAction = () => {
+    if (!completeApplicationStatus) {
+      return "Complete the Admin User & Facility Details form";
+    }
+    if (!tabValidationStates.facilityOwnership) {
+      return "Complete Facility Ownership information";
+    }
+    if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.APPLICATION_SUBMITTED, "true")) {
+      return "Submit application for review";
+    }
+    if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.PASSED_MOH_SCREENING, "true")) {
+      return "Wait for MOH screening review";
+    }
+    if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.COMPLIED_FOR_LICENSING, "true")) {
+      return "Wait for licensing compliance review";
+    }
+    if (!tabValidationStates.employeeRegistration || !tabValidationStates.servicesOffered || 
+        !tabValidationStates.statutoryCompliance || !tabValidationStates.equipmentMachinery) {
+      return "Complete remaining registration steps (3-6)";
+    }
+    if (!hasTabData('inspectionSchedule')) {
+      return "Complete self-inspection";
+    }
+    return "Select inspection date";
   };
 
   // Add a special effect to check for trackedEntityInstanceId in localStorage
@@ -2496,24 +2706,70 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
               Registration Details
             </Typography>
-            <span className={`status-indicator ${registrationStatus.toLowerCase().replace(/ /g, '-')}`} style={{ 
-              backgroundColor: '#007bff', 
-              color: 'white', 
-              padding: '8px 16px', 
-              borderRadius: '20px', 
+            {(() => {
+              // Find the status configuration based on current status text
+              const currentStatusConfig = Object.values(STATUS_CONFIG).find(
+                config => config.text === registrationStatus
+              ) || STATUS_CONFIG.COMPLETE_ADMIN_INFO;
+              
+              return (
+                <span 
+                  className="status-indicator" 
+                  style={{ 
+                    backgroundColor: currentStatusConfig.bgColor,
+                    color: currentStatusConfig.color,
+                    border: `2px solid ${currentStatusConfig.borderColor}`,
+                    padding: '10px 20px', 
+                    borderRadius: '25px', 
               fontSize: '14px', 
               fontWeight: 'bold',
               display: 'inline-block',
-              marginLeft: '20px'
-            }}>
-              Status: {registrationStatus}
+                    marginLeft: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  📋 Status: {registrationStatus}
             </span>
+              );
+            })()}
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
-            {/* Removed Preferred Inspection Date label and date picker UI */}
+            {/* Progress indicator */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                Progress: {calculateProgress()}%
+              </Typography>
+              <Box sx={{ 
+                width: 100, 
+                height: 8, 
+                backgroundColor: '#e0e0e0', 
+                borderRadius: 4,
+                overflow: 'hidden'
+              }}>
+                <Box sx={{ 
+                  width: `${calculateProgress()}%`, 
+                  height: '100%', 
+                  backgroundColor: '#28a745',
+                  transition: 'width 0.5s ease'
+                }} />
+              </Box>
+            </Box>
           </Box>
         </Box>
+        
+        {/* Next Action Card */}
+        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #dee2e6' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
+            🎯 Next Action Required:
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#6c757d' }}>
+            {getNextAction()}
+          </Typography>
+        </Box>
+        
+
         
         <StepContainer style={{ 
           justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
@@ -2544,15 +2800,25 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               // Center the Facility Ownership tab when only 2 tabs are visible
               const shouldCenter = !hasPermissionToEstablish && step.key === 'facilityOwnership';
               
+              // Make tabs 3-6 active and clickable when all tabs (3-7) are visible
+              const isTab3To6 = step.number >= 3 && step.number <= 6;
+              const shouldBeActive = hasPermissionToEstablish && isTab3To6;
+              const shouldBeClickable = hasPermissionToEstablish && isTab3To6;
+              
+              // Override disabled state for tabs 3-6 when permission is granted
+              const finalDisabled = shouldBeClickable ? false : (isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key));
+              
               return (
                 <React.Fragment key={step.number}>
                   <Tooltip
                     title={
                       step.key === 'inspectionSchedule'
                         ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
-                        : isTabDisabled(step.key)
-                          ? "Submit Application For review under Facility Ownership"
-                          : (isDisabled ? "Complete the Application details first" : "")
+                        : shouldBeClickable
+                          ? `Click to access ${step.title}`
+                          : isTabDisabled(step.key)
+                            ? "Submit Application For review under Facility Ownership"
+                            : (isDisabled ? "Complete the Application details first" : "")
                     }
                     arrow
                     placement="top"
@@ -2564,10 +2830,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       marginRight: shouldCenter ? '25%' : '0'
                     }}>
                       <Step
-                        active={activeTab === step.key}
+                        active={activeTab === step.key || shouldBeActive}
                         hasdata={hasTabData(step.key)}
-                        disabled={isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key)}
-                        onClick={() => step.key !== 'inspectionSchedule' && handleTabClick(step.key)}
+                        disabled={finalDisabled}
+                        onClick={() => {
+                          if (shouldBeClickable || (step.key !== 'inspectionSchedule' && !finalDisabled)) {
+                            handleTabClick(step.key);
+                          }
+                        }}
                       >
                       <span className="step-number">{step.number}</span>
                       <Typography
