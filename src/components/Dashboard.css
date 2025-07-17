@@ -423,4 +423,7 @@
 
 .cursor-pointer:hover {
   background-color: #f8f9fa;
-} 
+}
+.navmenu a {
+    text-decoration-line: none !important;
+}
