@@ -204,7 +204,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("Application updated successfully - fetching facility ownership data before switching tab");
     await fetchFacilityOwnershipData();
     setActiveTab('facilityOwnership');
-    setOpenAddDialog(true); // Automatically open the Add Facility Ownership dialog
   };
 
   // Function to validate facility ownership completion
@@ -1906,7 +1905,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 <button 
                   className="add-icon" 
                   onClick={() => {
-                    if (facilityOwnershipEvents.length === 0) setOpenAddDialog(true);
+                    
                   }}
                   style={{ 
                     background: 'none',
@@ -2721,7 +2720,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   useEffect(() => {
     if (activeTab === 'facilityOwnership' && events.length === 0) {
-      setOpenAddDialog(true);
+      
     }
   }, [activeTab, events.length]);
 
