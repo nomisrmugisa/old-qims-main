@@ -64,6 +64,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const [hasExistingData, setHasExistingData] = useState(false);
   const [registrationCode, setRegistrationCode] = useState('');
 
+  // Add state for success confirmation dialog
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
   // Function to set real user data when no event data is found
   const setUserDataOnly = async () => {
     console.log('Setting user data only (no event data found)');
@@ -1421,41 +1424,13 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           setOpenSnackbar(true);
           setProgress(95); // After email send
 
-          console.log('🔄 Step 11a: Preparing to reload data and switch to Facility Ownership tab...');
-          // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
+          console.log('🔄 Step 11: Showing success confirmation dialog...');
           setCurrentStep('Completing application...');
-          setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
-
-          // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
-          localStorage.setItem('autoSelectTab', 'facilityOwnership');
-          console.log('💾 Stored autoSelectTab flag in localStorage');
-
-          // Add a short delay before reloading to ensure user sees the success message
-          setTimeout(() => {
-            console.log('🚀 Step 11b: EXECUTING data refresh and tab switch...');
-            // Instead of reloading the page, trigger a data refresh from localStorage
-            // This will cause the parent component to re-fetch all data
-            const refreshEvent = new CustomEvent('refreshApplicationData', {
-              detail: {
-                action: 'refresh',
-                timestamp: new Date().toISOString()
-              }
-            });
-            window.dispatchEvent(refreshEvent);
-            console.log('📡 Data refresh event dispatched');
-
-            // Also trigger the tab switch
-            const tabSwitchEvent = new CustomEvent('switchToTab', {
-              detail: {
-                tab: 'facilityOwnership',
-                timestamp: new Date().toISOString()
-              }
-            });
-            window.dispatchEvent(tabSwitchEvent);
-            console.log('📡 Tab switch event dispatched');
-
-            console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
-          }, 1500);
+          setSuccessMessages(prev => [...prev, 'Profile update completed successfully']);
+          
+          // Show the success confirmation dialog
+          setShowSuccessDialog(true);
+          console.log('✅ Step 11 COMPLETED: Success dialog displayed');
 
         } else {
           console.error('❌ Step 10 FAILED: Email notification failed');
@@ -1498,6 +1473,38 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   // Handle snackbar close
   const handleSnackbarClose = () => {
     setUpdateSuccess(false);
+  };
+
+  // Handle success dialog confirmation
+  const handleSuccessDialogConfirm = () => {
+    setShowSuccessDialog(false);
+    console.log('🚀 Step 12: User confirmed success, proceeding with data refresh and tab switch...');
+    
+    // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
+    localStorage.setItem('autoSelectTab', 'facilityOwnership');
+    console.log('💾 Stored autoSelectTab flag in localStorage');
+
+    // Trigger data refresh and tab switch
+    const refreshEvent = new CustomEvent('refreshApplicationData', {
+      detail: {
+        action: 'refresh',
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(refreshEvent);
+    console.log('📡 Data refresh event dispatched');
+
+    // Also trigger the tab switch
+    const tabSwitchEvent = new CustomEvent('switchToTab', {
+      detail: {
+        tab: 'facilityOwnership',
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(tabSwitchEvent);
+    console.log('📡 Tab switch event dispatched');
+
+    console.log('✅ Step 12 COMPLETED: Data refresh and tab switch events dispatched');
   };
 
   if (loading) {
