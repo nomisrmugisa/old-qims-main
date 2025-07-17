@@ -148,10 +148,26 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
 
           <nav id="navmenu" className="navmenu">
             <ul>
-              {/*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
+              {
+
                   <li>
+                      <a
+                          href="javascript:void(0);"
+                          className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
+                          onClick={(e) => {
+                              const _route = (isLoggedIn) ? '/dashboards/facility-ownership':'/';
+                              navigate(_route);
+                          }}
+                      >
+                          Home
+                      </a>
+                  </li>
+
+
+                  /*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
+                  {/*<li>
                     <a 
-                      href="#home"
+                      href="javascript:void(0);"
                       className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
                       onClick={(e) => {
                         if (isLoggedIn && isSituationalAnalysisGreen()) {
@@ -237,7 +253,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                       <li><a href="#">Dropdown 3</a></li>
                       <li><a href="#">Dropdown 4</a></li>
                     </ul>
-                  </li>
+                  </li>*/}
               {/*<li>*/}
               {/*  {isLoggedIn ? (*/}
               {/*    <button className="login-button" onClick={onLogout}>*/}

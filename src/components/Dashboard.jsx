@@ -7,6 +7,7 @@ import UserTable from './User/Management/Table';
 import useUserManagement from './hooks/useUserManagement';
 import UserRoleManagement from './User/Management/UserRoleManagement';
 import UserGroupManagement from './User/Management/UserGroupManagement';
+import EnrolmentApplicationReview from "./Enrolment/Application/Review";
 import {StorageService} from '../services';
 import { Link, useNavigate } from 'react-router-dom';
 import { safeFetch, showErrorMessage, logAPICall, logAPIResponse, API_ERROR_CODES } from '../utils/apiErrorHandler';
@@ -19,7 +20,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     const [_facilityOwnershipComplete, setFacilityOwnershipComplete] = useState(false);
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
-    const [activeUserTab, setActiveUserTab] = useState('users');
+    const [activeUserTab, setActiveUserTab] = useState('enrolment_applications');
 
     const navigate = useNavigate();
     const [error, setError] = useState(null);
@@ -413,6 +414,13 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     <div className="dashboard-section">
                         <div className="mb-4 d-flex gap-2 border-bottom pb-2">
                             <Button
+                                variant={activeUserTab === 'enrolment_applications' ? 'primary' : 'light'}
+                                className={activeUserTab === 'enrolment_applications' ? '' : 'text-primary'}
+                                onClick={() => setActiveUserTab('enrolment_applications')}
+                            >
+                                Enrolment Application
+                            </Button>
+                            <Button
                                 variant={activeUserTab === 'users' ? 'primary' : 'light'}
                                 className={activeUserTab === 'users' ? '' : 'text-primary'}
                                 onClick={() => setActiveUserTab('users')}
@@ -434,6 +442,14 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                 User group
                             </Button>
                         </div>
+
+
+                        {activeUserTab === 'enrolment_applications' && (
+                            <>
+                            <EnrolmentApplicationReview />
+                            </>
+                        )}
+
                         {activeUserTab === 'users' && (
                             <>
                                 <h2>Facility User Management</h2>
