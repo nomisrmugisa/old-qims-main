@@ -694,10 +694,13 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           name: formValues['PdtizqOqE6Q'],
           shortName: shortName,
           openingDate: new Date().toISOString().split('T')[0],
-          email: formValues['NVlLoMZbXIW']
+          email: formValues['NVlLoMZbXIW'],
+          parent: {
+            id: parentOrgUnitId
+          }
         };
 
-        const updateResponse = await fetch(`/api/29/organisationUnits/${orgUnitId}`, {
+        const updateResponse = await fetch(`/api/29/organisationUnits/${orgUnitId}?mergeMode=REPLACE`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

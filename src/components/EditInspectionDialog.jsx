@@ -156,7 +156,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
               {programStageMetadata && programStageMetadata.programStageSections.map(section => {
                 // Override display name for specific sections
                 const getDisplayName = (sectionName) => {
-                  if (sectionName === "Inspection Schedule Details") {
+                  if (sectionName === "Self Assessment Details") {
                     return "Date and Time";
                   }
                   return sectionName;
@@ -180,7 +180,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
               <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
-                  {isSubmitting ? 'Updating...' : 'Update Inspection'}
+                  {isSubmitting ? 'Updating...' : 'Update Self Assessment'}
               </button>
             </div>
           </form>

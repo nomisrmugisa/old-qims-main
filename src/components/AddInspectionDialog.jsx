@@ -174,7 +174,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
               {programStageMetadata && programStageMetadata.programStageSections.map(section => {
                 // Override display name for specific sections
                 const getDisplayName = (sectionName) => {
-                  if (sectionName === "Inspection Schedule Details") {
+                  if (sectionName === "Self Assessment Details") {
                     return "Date and Time";
                   }
                   return sectionName;
@@ -198,7 +198,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
             <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
-                  {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
+                  {isSubmitting ? 'Submitting...' : 'Submit Self Assessment'}
               </button>
             </div>
           </form>

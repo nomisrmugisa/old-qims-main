@@ -568,14 +568,18 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     </button>
                     <button
                         onClick={() => setActiveSection('inspections')}
-                        className={activeSection === 'inspections' ? 'active' : ''}
+                        className={`${activeSection === 'inspections' ? 'active' : ''} disabled`}
+                        disabled
+                        style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
                         <ClipboardCheck size={18} />
                         View Inspection Results
                     </button>
                     <button
                         onClick={() => setActiveSection('reports')}
-                        className={activeSection === 'reports' ? 'active' : ''}
+                        className={`${activeSection === 'reports' ? 'active' : ''} disabled`}
+                        disabled
+                        style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
                         <FileEarmarkText size={18} />
                         Reports
@@ -589,7 +593,9 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                     </button>
                     <button
                         onClick={() => setActiveSection('tasks')}
-                        className={activeSection === 'tasks' ? 'active' : ''}
+                        className={`${activeSection === 'tasks' ? 'active' : ''} disabled`}
+                        disabled
+                        style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
                         <ListCheck size={18} />
                         Tasks

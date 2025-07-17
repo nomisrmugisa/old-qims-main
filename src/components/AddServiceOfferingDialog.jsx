@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AddServiceOfferingDialog.css';
 import ModalPortal from './ModalPortal';
 import {StorageService} from '../services';
@@ -25,18 +25,23 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
     additionalCounseling: false,
     additionalCommunityBased: false
   });
-  
+
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleInputChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: checked,
-    }));
-  };
-  
+  // Prevent scrolling on the main body when the modal is open
+  useEffect(() => {
+    if (open) {
+      // Disable scrolling on the body when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Re-enable scrolling when component is unmounted or closed
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
+  }, [open]);
+
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
     const credentials = await StorageService.get('userCredentials');
@@ -46,7 +51,7 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
     }
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me.json`, {
+      const response = await fetch(`/api/me.json`, {
         headers: {
           Authorization: `Basic ${credentials}`,
         },
@@ -116,14 +121,28 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
     console.log("Found enrollment for program:", programEnrollment);
     return programEnrollment.enrollment;
   };
-  
+
+  const handleInputChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: checked,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setIsSubmitting(true);
-    
+
     try {
       const credentials = await StorageService.get('userCredentials');
+      console.log("🔐 === CREDENTIALS DEBUG ===");
+      console.log("- Credentials retrieved:", !!credentials);
+      console.log("- Credentials type:", typeof credentials);
+      console.log("- Credentials length:", credentials ? credentials.length : 0);
+      console.log("- Credentials preview:", credentials ? credentials.substring(0, 20) + "..." : "null");
+      
       if (!credentials) {
         throw new Error("Authentication required. Please log in again.");
       }
@@ -138,8 +157,6 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       const enrollmentId = await getEnrollmentIdForProgram(trackedEntityInstanceId);
       console.log("Retrieved enrollment ID:", enrollmentId);
 
-      const today = new Date().toISOString().split('T')[0];
-      
       // Create data values array based on form data
       const dataValues = [];
       
@@ -163,7 +180,9 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       if (formData.supportPharmacy) dataValues.push({ dataElement: "yecnkdC7HtM", value: "true" });
       if (formData.additionalCounseling) dataValues.push({ dataElement: "i0QXYWMOUjy", value: "true" });
       if (formData.additionalCommunityBased) dataValues.push({ dataElement: "e48W7983nBs", value: "true" });
-      
+
+      const today = new Date().toISOString().split('T')[0];
+
       const payload = {
         trackedEntityInstance: trackedEntityInstanceId,
         eventDate: today,
@@ -172,10 +191,12 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
         programStage: "uL262bA2IP3", // Services Offered program stage
         enrollment: enrollmentId,
         status: "COMPLETED",
-        dataValues: dataValues
+        dataValues: dataValues,
       };
-      
-      const eventRes = await fetch(`${import.meta.env.VITE_DHIS2_URL}/api/events`, {
+
+      console.log("Services Offered Payload:", payload);
+
+      const eventRes = await fetch(`/api/events`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
@@ -183,13 +204,13 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
         },
         body: JSON.stringify(payload),
       });
-      
+
       if (!eventRes.ok) {
         const errorText = await eventRes.text();
         throw new Error(`Event creation failed: ${eventRes.status} - ${errorText}`);
       }
-      
-      console.log("Service offering added successfully!");
+
+      console.log("Services offered event created successfully!");
       
       // Call success callback to reload data in parent
       // Support both onSuccess (from RegistrationDetails) and onAddSuccess (for backward compatibility)
@@ -200,26 +221,35 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
       }
       
       onClose(); // Close modal on successful addition
+
     } catch (error) {
-      console.error("Error adding service offering:", error);
+      console.error("Error creating new service offering:", error);
       setErrorMessage(`Failed to add service offering: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
+
+
+  const handleCancel = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
   // Form is always valid since all fields are optional checkboxes
   const isFormValid = true;
-  
+
   return (
     <ModalPortal open={open} onClose={onClose}>
-      <div className="modal-content" style={{ padding: '0', maxWidth: '1200px' }}>
+      <div className="modal-content" style={{ padding: '0', maxWidth: '800px' }}>
         <div className="modal-header">
           <h5 className="modal-title">Add Services Offered</h5>
           <button 
             type="button" 
             className="close-btn" 
-            onClick={onClose}
+            onClick={handleCancel}
             disabled={isSubmitting}
           >
             &times;
@@ -457,7 +487,7 @@ const AddServiceOfferingDialog = ({ open, onClose, onSuccess, onAddSuccess, trac
               <button 
                 type="button" 
                 className="btn-secondary" 
-                onClick={onClose}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel
