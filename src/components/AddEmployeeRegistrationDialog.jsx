@@ -14,6 +14,9 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [positionOptions, setPositionOptions] = useState([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [positionOptionsError, setPositionOptionsError] = useState("");
   
   // Prevent scrolling on the main body when the modal is open
   useEffect(() => {
@@ -21,12 +24,69 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
       // Disable scrolling on the body when modal is open
       document.body.style.overflow = 'hidden';
       
+      // Load position options when modal opens
+      loadPositionOptions();
+      
       // Re-enable scrolling when component is unmounted or closed
       return () => {
         document.body.style.overflow = 'auto';
       };
     }
   }, [open]);
+
+  // Function to load position options from DHIS2 option set
+  const loadPositionOptions = async () => {
+    setIsLoadingOptions(true);
+    setPositionOptionsError("");
+    try {
+      const credentials = await StorageService.get('userCredentials');
+      if (!credentials) {
+        throw new Error("Authentication required");
+      }
+
+      // Fetch the option set metadata for position field (n9MPSCoty7L)
+      const response = await fetch('/api/optionSets/n9MPSCoty7L?fields=options[id,displayName,code]', {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch position options: ${response.status}`);
+      }
+
+      const optionSetData = await response.json();
+      console.log('Position option set data:', optionSetData);
+
+      if (optionSetData.options && Array.isArray(optionSetData.options)) {
+        setPositionOptions(optionSetData.options);
+      } else {
+        // Fallback options if API fails
+        setPositionOptions([
+          { id: 'head_medical', displayName: 'Head of Medical Services', code: 'head_medical' },
+          { id: 'dentist', displayName: 'Medical/Dental Personnel: Dentist', code: 'dentist' },
+          { id: 'facility_manager', displayName: 'Facility Manager', code: 'facility_manager' },
+          { id: 'nurse', displayName: 'Nurse', code: 'nurse' },
+          { id: 'pharmacist', displayName: 'Pharmacist', code: 'pharmacist' },
+          { id: 'lab_tech', displayName: 'Laboratory Technician', code: 'lab_tech' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading position options:', error);
+      setPositionOptionsError(`Failed to load position options: ${error.message}`);
+      // Set fallback options
+      setPositionOptions([
+        { id: 'head_medical', displayName: 'Head of Medical Services', code: 'head_medical' },
+        { id: 'dentist', displayName: 'Medical/Dental Personnel: Dentist', code: 'dentist' },
+        { id: 'facility_manager', displayName: 'Facility Manager', code: 'facility_manager' },
+        { id: 'nurse', displayName: 'Nurse', code: 'nurse' },
+        { id: 'pharmacist', displayName: 'Pharmacist', code: 'pharmacist' },
+        { id: 'lab_tech', displayName: 'Laboratory Technician', code: 'lab_tech' }
+      ]);
+    } finally {
+      setIsLoadingOptions(false);
+    }
+  };
 
   // Function to get the current user's organization unit
   const getCurrentUserOrgUnit = async () => {
@@ -227,6 +287,23 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
         </div>
         <div className="modal-body">
           {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
+          {isLoadingOptions && (
+            <div className="alert alert-info">
+              Loading position options from DHIS2...
+            </div>
+          )}
+          {positionOptionsError && (
+            <div className="alert alert-danger">
+              {positionOptionsError}
+              <button 
+                onClick={loadPositionOptions}
+                className="btn btn-sm btn-outline-primary ml-2"
+                disabled={isLoadingOptions}
+              >
+                {isLoadingOptions ? "Retrying..." : "Retry"}
+              </button>
+            </div>
+          )}
           <form onSubmit={handleAddSubmit} className="employee-registration-form">
             <div className="form-group">
               <label>First Name:</label>
@@ -272,15 +349,16 @@ const AddEmployeeRegistrationDialog = ({ open, onClose, onSuccess, onAddSuccess,
                 onChange={handleInputChange}
                 className="form-control"
                 required
-                disabled={isLoading}
+                disabled={isLoading || isLoadingOptions}
               >
-                <option value="">Select Position</option>
-                <option value="Head of Medical Services">Head of Medical Services</option>
-                <option value="Medical/Dental Personnel: Dentist">Medical/Dental Personnel: Dentist</option>
-                <option value="Facility Manager">Facility Manager</option>
-                <option value="Nurse">Nurse</option>
-                <option value="Pharmacist">Pharmacist</option>
-                <option value="Laboratory Technician">Laboratory Technician</option>
+                <option value="">
+                  {isLoadingOptions ? "Loading positions..." : "Select Position"}
+                </option>
+                {positionOptions.map((option) => (
+                  <option key={option.id} value={option.code}>
+                    {option.displayName}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="form-group">

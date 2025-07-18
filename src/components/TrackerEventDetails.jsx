@@ -19,6 +19,7 @@ import {
   Backdrop,
   Box as MuiBox
 } from '@mui/material';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import debounce from 'lodash/debounce';
 import {StorageService} from '../services';
 import { getCredentials, setCredentials } from '../utils/credentialHelper';
@@ -63,6 +64,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const [showProgress, setShowProgress] = useState(false);
   const [hasExistingData, setHasExistingData] = useState(false);
   const [registrationCode, setRegistrationCode] = useState('');
+
+  // Add state for success confirmation dialog
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // Function to set real user data when no event data is found
   const setUserDataOnly = async () => {
@@ -1421,41 +1425,13 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           setOpenSnackbar(true);
           setProgress(95); // After email send
 
-          console.log('🔄 Step 11a: Preparing to reload data and switch to Facility Ownership tab...');
-          // Step 11: Reload data and switch to Facility Ownership tab (only after simulated email success)
+          console.log('🔄 Step 11: Showing success confirmation dialog...');
           setCurrentStep('Completing application...');
-          setSuccessMessages(prev => [...prev, 'Reloading and switching to Facility Ownership']);
-
-          // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
-          localStorage.setItem('autoSelectTab', 'facilityOwnership');
-          console.log('💾 Stored autoSelectTab flag in localStorage');
-
-          // Add a short delay before reloading to ensure user sees the success message
-          setTimeout(() => {
-            console.log('🚀 Step 11b: EXECUTING data refresh and tab switch...');
-            // Instead of reloading the page, trigger a data refresh from localStorage
-            // This will cause the parent component to re-fetch all data
-            const refreshEvent = new CustomEvent('refreshApplicationData', {
-              detail: {
-                action: 'refresh',
-                timestamp: new Date().toISOString()
-              }
-            });
-            window.dispatchEvent(refreshEvent);
-            console.log('📡 Data refresh event dispatched');
-
-            // Also trigger the tab switch
-            const tabSwitchEvent = new CustomEvent('switchToTab', {
-              detail: {
-                tab: 'facilityOwnership',
-                timestamp: new Date().toISOString()
-              }
-            });
-            window.dispatchEvent(tabSwitchEvent);
-            console.log('📡 Tab switch event dispatched');
-
-            console.log('✅ Step 11 COMPLETED: Data refresh and tab switch events dispatched');
-          }, 1500);
+          setSuccessMessages(prev => [...prev, 'Profile update completed successfully']);
+          
+          // Show the success confirmation dialog
+          setShowSuccessDialog(true);
+          console.log('✅ Step 11 COMPLETED: Success dialog displayed');
 
         } else {
           console.error('❌ Step 10 FAILED: Email notification failed');
@@ -1498,6 +1474,38 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   // Handle snackbar close
   const handleSnackbarClose = () => {
     setUpdateSuccess(false);
+  };
+
+  // Handle success dialog confirmation
+  const handleSuccessDialogConfirm = () => {
+    setShowSuccessDialog(false);
+    console.log('🚀 Step 12: User confirmed success, proceeding with data refresh and tab switch...');
+    
+    // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
+    localStorage.setItem('autoSelectTab', 'facilityOwnership');
+    console.log('💾 Stored autoSelectTab flag in localStorage');
+
+    // Trigger data refresh and tab switch
+    const refreshEvent = new CustomEvent('refreshApplicationData', {
+      detail: {
+        action: 'refresh',
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(refreshEvent);
+    console.log('📡 Data refresh event dispatched');
+
+    // Also trigger the tab switch
+    const tabSwitchEvent = new CustomEvent('switchToTab', {
+      detail: {
+        tab: 'facilityOwnership',
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(tabSwitchEvent);
+    console.log('📡 Tab switch event dispatched');
+
+    console.log('✅ Step 12 COMPLETED: Data refresh and tab switch events dispatched');
   };
 
   if (loading) {
@@ -1571,6 +1579,48 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         <MuiBox sx={{ width: 300, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <LinearProgress variant="determinate" value={progress} sx={{ width: '100%', height: 8 }} />
           <Typography align="center" sx={{ mt: 2 }}>{progress}% Complete</Typography>
+        </MuiBox>
+      </Modal>
+
+      {/* Success Confirmation Dialog */}
+      <Modal
+        open={showSuccessDialog}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{ backdrop: { timeout: 500 } }}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+      >
+        <MuiBox sx={{ 
+          width: 400, 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
+          p: 4, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <CheckCircleIcon sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'success.main' }}>
+            Profile Update Completed Successfully!
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
+            Your profile has been updated successfully. Please proceed to the Facility Ownership tab to continue with your application.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSuccessDialogConfirm}
+            sx={{ 
+              px: 4, 
+              py: 1.5, 
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
+            }}
+          >
+            OK, Proceed to Facility Ownership
+          </Button>
         </MuiBox>
       </Modal>
 
