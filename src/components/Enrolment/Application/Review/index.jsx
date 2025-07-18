@@ -38,10 +38,29 @@ const EnrolmentApplicationReview = () => {
     const [removingApp, setRemovingApp] = useState(null);
     const [statusFilter, setStatusFilter] = useState('all');
 
+
+
+    const processApplicationList = async(data) => {
+        if(!data)
+            return [];
+
+        return data.filter(function(item) {
+            return typeof item.email !== "undefined";
+        });
+    };
+
+    const initApplicationList = async(data) => {
+        data = await processApplicationList(data);
+        setApplications(data);
+        setFilteredApplications(data);
+    };
+
     const getEnrolmentListApplications = async() => {
         setLoading(true);
         try {
             const response = await FacilityService.listEnrolmentRequest();
+            window.console.log("applicationLists", response);
+            await initApplicationList(response);
         }
         catch(err) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
@@ -60,11 +79,11 @@ const EnrolmentApplicationReview = () => {
     useEffect(() => {
         // Simulate API loading
         getEnrolmentListApplications();
-        setTimeout(() => {
+        /*setTimeout(() => {
             setApplications(enrolmentApplicationData);
             setFilteredApplications(enrolmentApplicationData);
             setLoading(false);
-        }, 1000);
+        }, 1000);*/
     }, []);
 
     // Filter applications by status
@@ -157,7 +176,7 @@ const EnrolmentApplicationReview = () => {
             case 'rejected':
                 return <Badge bg="danger" className="ms-2">Rejected</Badge>;
             default:
-                return <Badge bg="secondary" className="ms-2">Unknown</Badge>;
+                return <Badge bg="info" className="ms-2">Pending</Badge>;
         }
     };
 
@@ -201,7 +220,53 @@ const EnrolmentApplicationReview = () => {
                         <>
                         <ListGroup variant="flush">
                             {currentApplications.map((app) => (
+                                <>
                                 <ListGroup.Item
+                                    key={app.id}
+                                    className={`py-3 px-4 ${removingApp === app.id ? 'slide-out' : ''}`}
+                                >
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <div className="d-flex align-items-center">
+                                            <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '48px', height: '48px' }}>
+                                                <Building size={24} />
+                                            </div>
+                                            <div>
+                                                <div className="d-flex align-items-center mb-2">
+                                                    <h5 className="mb-0">{app.organisationUnits[0].name}</h5>
+
+                                                    {getStatusBadge(app.status)}
+                                                </div>
+                                                <div className="text-muted small mt-1">
+                                                    {app.username !== app.email && (
+                                                        <div className="mb-2">
+                                                            <h6 className="mb-1">#{app.username}</h6>
+                                                        </div>
+                                                    )}
+                                                    <span className="me-3"><Person className="me-1" /> {app.email}</span>
+                                                    <span><Clock className="me-1" /> {formatDate(app.createdAt)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Button
+                                                variant="outline-success"
+                                                className="me-2"
+                                                size="sm"
+                                                onClick={() => handleAction(app, 'approve')}
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={() => handleAction(app, 'reject')}
+                                            >
+                                                Reject
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </ListGroup.Item>
+                                {/*<ListGroup.Item
                                     key={app.id}
                                     className={`py-3 px-4 ${removingApp === app.id ? 'slide-out' : ''}`}
                                 >
@@ -243,7 +308,8 @@ const EnrolmentApplicationReview = () => {
                                             </Button>
                                         </div>
                                     </div>
-                                </ListGroup.Item>
+                                </ListGroup.Item>*/}
+                                </>
                             ))}
                         </ListGroup>
 
