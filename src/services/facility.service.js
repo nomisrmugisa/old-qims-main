@@ -45,13 +45,13 @@ const FacilityService = {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
             let token = await getAuthToken('Basic');
-            const response = await httpService.get(`/users?filter=userRoles.id:eq:${import.meta.env.VITE_FACILITY_USER_TYPE_ENROLMENT_REQUEST}&fields=id,email,organisationUnits[id,name]&paging=false`, {
+            const response = await httpService.get(`/users?filter=userRoles.id:eq:${import.meta.env.VITE_FACILITY_USER_TYPE_ENROLMENT_REQUEST}&fields=id,email,displayName,username,organisationUnits[id,name]&paging=false`, {
                     headers: {
                         'Authorization': `Basic ${token}`
                     }
                 });
             window.console.log(response);
-            return response;
+            return response.users;
         } catch (error) {
             throw error;
         }
