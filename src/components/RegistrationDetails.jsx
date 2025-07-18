@@ -14,7 +14,9 @@ import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/materi
 import CustomDateRangePicker from './CustomDateRangePicker';
 import {StorageService} from '../services';
 import { getCredentials } from '../utils/credentialHelper';
-// import { useTheme } from '@mui/material/styles';
+import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 // Inside your component:
 
@@ -63,6 +65,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState("Unknown"); // New state for overall status
   
+  // Date range picker state
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [datePickerEnabled, setDatePickerEnabled] = useState(false);
+  
   // Tab validation states
   const [tabValidationStates, setTabValidationStates] = useState({
     facilityOwnership: false,
@@ -71,6 +77,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     statutoryCompliance: false,
     equipmentMachinery: false,
     inspectionSchedule: false
+  });
+
+  // Validation details for debugging
+  const [validationDetails, setValidationDetails] = useState({
+    servicesOffered: null,
+    statutoryCompliance: null,
+    equipmentMachinery: null
   });
 
   // Track if application has been submitted for review
@@ -210,62 +223,41 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const validateFacilityOwnership = (facilityEvents) => {
     console.log("🔍 === FACILITY OWNERSHIP VALIDATION ===");
     console.log("- Events to validate:", facilityEvents?.length || 0);
+    console.log("- All facility events:", facilityEvents);
     
     if (!facilityEvents || facilityEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No records exist)");
       return false; // No records exist
     }
 
-    // First, check if application is submitted
-    const applicationSubmitted = facilityEvents.some(event => {
-      if (!event.dataValues) return false;
-      const dataValue = event.dataValues.find(dv => dv.dataElement === DATA_ELEMENTS.APPLICATION_SUBMITTED);
-      return dataValue && dataValue.value === "true";
-    });
-
-    console.log("- Application Submitted:", applicationSubmitted);
-
-    // If application is submitted, consider facility ownership complete
-    if (applicationSubmitted) {
-      console.log("- VALIDATION RESULT: TRUE (Application submitted)");
-      return true;
-    }
-
-    // If application is not submitted, check for basic required fields
-    const basicRequiredFields = [
-      "HMk4LZ9ESOq", // firstName
-      "ykwhsQQPVH0", // surname
-      "zVmmto7HwOc", // citizen
-      "vAHHXaW0Pna", // ownershipType
-      "FLcrCfTNcQi", // idType
-      "aUGSyyfbUVI"  // id
+    // Check compliance variables instead of basic required fields
+    const complianceFields = [
+      DATA_ELEMENTS.APPLICATION_SUBMITTED,    // "N3bVE3GRqdf"
+      DATA_ELEMENTS.PASSED_MOH_SCREENING,     // "NMTFfpLaGAy"
+      DATA_ELEMENTS.COMPLIED_FOR_LICENSING    // "SIq5ADQjCEM"
     ];
 
-    console.log("- Basic required fields count:", basicRequiredFields.length);
+    console.log("- Compliance fields to check:", complianceFields);
 
-    // Check if ANY record has the basic required fields filled
-    const hasBasicData = facilityEvents.some(event => {
-      if (!event.dataValues) {
-        console.log(`- Event ${event.event}: No dataValues`);
-        return false;
-      }
-      
-      const missingFields = [];
-      const hasBasicFields = basicRequiredFields.every(fieldId => {
-        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
-        const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
-        if (!isValid) {
-          missingFields.push(fieldId);
+    // Check if ALL compliance fields are true
+    const allComplianceMet = complianceFields.every(fieldId => {
+      const hasCompliance = facilityEvents.some(event => {
+        if (!event.dataValues) {
+          console.log(`- Event ${event.event}: No dataValues`);
+          return false;
         }
-        return isValid;
+        
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
+        console.log(`- Event ${event.event}, Field ${fieldId}:`, dataValue);
+        return dataValue && dataValue.value === "true";
       });
       
-      console.log(`- Event ${event.event}: Has basic fields = ${hasBasicFields}, Missing fields:`, missingFields);
-      return hasBasicFields;
+      console.log(`- Field ${fieldId}: ${hasCompliance ? 'TRUE' : 'FALSE'}`);
+      return hasCompliance;
     });
     
-    console.log("- VALIDATION RESULT:", hasBasicData ? "TRUE (Has basic data)" : "FALSE (No basic data)");
-    return hasBasicData;
+    console.log("- VALIDATION RESULT:", allComplianceMet ? "TRUE (All compliance met)" : "FALSE (Compliance not met)");
+    return allComplianceMet;
   };
 
   // Function to validate employee registration completion
@@ -321,7 +313,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     
     if (!serviceEvents || serviceEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No service records exist)");
-      return false; // No records exist
+      return { isValid: false, reason: "No service records exist", details: [] };
     }
 
     // All available service data elements from AddServiceOfferingDialog
@@ -349,11 +341,22 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     console.log("- Available service data elements count:", serviceDataElements.length);
 
+    const validationDetails = [];
+    let allServiceRecordsComplete = true;
+
     // Check if ALL service records have at least one service selected
-    const allServiceRecordsComplete = serviceEvents.every(event => {
+    serviceEvents.forEach((event, index) => {
       if (!event.dataValues) {
         console.log(`- Service Event ${event.event}: No dataValues`);
-        return false;
+        validationDetails.push({
+          eventId: event.event || `Event ${index + 1}`,
+          status: "FAILED",
+          reason: "No data values found",
+          selectedServices: 0,
+          totalServices: 0
+        });
+        allServiceRecordsComplete = false;
+        return;
       }
       
       // Count how many services are selected (value = "true")
@@ -366,15 +369,34 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       
       if (!hasServices) {
         console.log(`- Service Event ${event.event}: No services selected`);
+        validationDetails.push({
+          eventId: event.event || `Event ${index + 1}`,
+          status: "FAILED",
+          reason: "No services selected",
+          selectedServices: 0,
+          totalServices: serviceDataElements.length,
+          availableServices: serviceDataElements
+        });
+        allServiceRecordsComplete = false;
       } else {
         console.log(`- Service Event ${event.event}: Selected services:`, selectedServices.map(s => s.dataElement));
+        validationDetails.push({
+          eventId: event.event || `Event ${index + 1}`,
+          status: "PASSED",
+          reason: `${selectedServices.length} service(s) selected`,
+          selectedServices: selectedServices.length,
+          totalServices: serviceDataElements.length,
+          selectedServiceIds: selectedServices.map(s => s.dataElement)
+        });
       }
-      
-      return hasServices;
     });
     
     console.log("- SERVICES VALIDATION RESULT:", allServiceRecordsComplete ? "TRUE (ALL service records have at least one service)" : "FALSE (Some service records have no services selected)");
-    return allServiceRecordsComplete;
+    return { 
+      isValid: allServiceRecordsComplete, 
+      reason: allServiceRecordsComplete ? "All service records have at least one service selected" : "Some service records have no services selected",
+      details: validationDetails
+    };
   };
 
   // Function to validate statutory compliance completion
@@ -567,10 +589,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       borderColor: "#ffd8a8"
     },
     SELECT_INSPECTION_DATE: {
-      text: "Select a date for Self Assessment",
+      text: "Please Conduct a self assessment",
       color: "#6f42c1", // Purple
       bgColor: "#e2d9f3",
       borderColor: "#d1c7e5"
+    },
+    INSPECTIONS_UNDERWAY: {
+      text: "Inspections Underway",
+      color: "#20c997", // Teal
+      bgColor: "#d1f2eb",
+      borderColor: "#a8e6cf"
     }
   };
 
@@ -643,8 +671,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
     
-          // Step 7: All conditions met
-          console.log("📝 Setting status: Select Self Assessment Date");
+          // Step 7: Check if preferred facility inspection date is set
+          const isDateRangeSet = dateRange && dateRange[0] && dateRange[1];
+          if (isDateRangeSet) {
+            console.log("📝 Setting status: Inspections Underway");
+            setRegistrationStatus(STATUS_CONFIG.INSPECTIONS_UNDERWAY.text);
+            return;
+          }
+    
+          // Step 8: All conditions met but no date set
+          console.log("📝 Setting status: Please Conduct a self assessment");
           setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
           return;
         }
@@ -657,7 +693,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     completeApplicationStatus,
     tabValidationStates,
     events,
-    inspectionEvents
+    inspectionEvents,
+    dateRange
   ]);
   
   // Handle tab click with validation
@@ -1059,30 +1096,45 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = StorageService.get('userCredentials');
+    const credentials = await StorageService.get('userCredentials');
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
+      console.log("❌ Missing credentials or userOrgUnitId for service data fetch");
+      console.log("  - credentials:", !!credentials);
+      console.log("  - userOrgUnitId:", !!userOrgUnitId);
       setIsLoadingServices(false);
       return;
     }
 
     try {
       setIsLoadingServices(true);
-      // Use the correct program stage ID for Services Offered
-      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false`;
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = new Date().getTime();
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false&_t=${timestamp}`;
       
-      console.log("Services Offered API Request:");
+      console.log("🚀 === SERVICES OFFERED API REQUEST ===");
+      console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
+      console.log("- Cache-busting timestamp:", timestamp);
       console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: uL262bA2IP3");
+      console.log("- Headers:");
+      console.log("  • Authorization: Basic [credentials]");
+      console.log("  • Content-Type: application/json");
+      console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          Authorization: `Basic ${credentials}`,
-        },
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -1119,9 +1171,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setIsLoadingServices(false);
       
       // Update services validation state after data is loaded
+      const validationResult = validateServicesOffered(fetchedEvents);
       setTabValidationStates(prev => ({
         ...prev,
-        servicesOffered: validateServicesOffered(fetchedEvents)
+        servicesOffered: validationResult.isValid
+      }));
+      
+      // Store validation details for debugging
+      setValidationDetails(prev => ({
+        ...prev,
+        servicesOffered: validationResult
       }));
 
     } catch (error) {
@@ -1680,26 +1739,41 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
+      console.log("❌ Missing credentials or userOrgUnitId for statutory compliance data fetch");
+      console.log("  - credentials:", !!credentials);
+      console.log("  - userOrgUnitId:", !!userOrgUnitId);
       setIsLoadingStatutoryCompliance(false);
       return;
     }
 
     try {
       setIsLoadingStatutoryCompliance(true);
-      // Fetch all events and filter by program stage in JavaScript
-      const url = `${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = new Date().getTime();
+      const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=vyv7zncjCmV&paging=false&_t=${timestamp}`;
       
-      console.log("Statutory Compliance API Request:");
+      console.log("🚀 === STATUTORY COMPLIANCE API REQUEST ===");
+      console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
+      console.log("- Cache-busting timestamp:", timestamp);
       console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
       console.log("- programId: EE8yeLVo6cN");
       console.log("- programStage: vyv7zncjCmV");
+      console.log("- Headers:");
+      console.log("  • Authorization: Basic [credentials]");
+      console.log("  • Content-Type: application/json");
+      console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          Authorization: `Basic ${credentials}`,
-        },
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -2005,34 +2079,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       Retry Loading
                     </button>
                   </div>
-                  <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
-                    Debug: isLoading={isLoading.toString()}, 
-                    events.length={facilityOwnershipEvents.length}, 
-                    trackedEntityInstanceId={trackedEntityInstanceId || 'null'}
-                  </p>
                 </div>
-              ) : showReviewDialog && facilityOwnershipEvents.length === 0 ? (
-                <p className="error-message">Error loading data. Please try again or contact support.</p>
               ) : facilityOwnershipEvents.length === 0 ? (
                 <div>
                   <p>No facility ownership records found.</p>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {facilityOwnershipEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    isLoading: {isLoading.toString()}<br/>
-                    showReviewDialog: {showReviewDialog.toString()}
-                  </div>
                 </div>
-              ) : (
-                <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                  <strong>Debug Info:</strong><br/>
-                  Events: {facilityOwnershipEvents.length}<br/>
-                  TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                  Event IDs: {facilityOwnershipEvents.map(e => e.event).join(', ') || 'none'}<br/>
-                  Program Stage IDs: {facilityOwnershipEvents.map(e => e.programStage).join(', ') || 'none'}
-                </div>
-              )}
+              ) : null}
 
             </div>
           </div>
@@ -2064,22 +2116,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : employeeEvents.length === 0 ? (
                 <div>
                   <p>No employee records found.</p>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {employeeEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    isLoadingEmployees: {isLoadingEmployees.toString()}
-                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {employeeEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    Event IDs: {employeeEvents.map(e => e.event).join(', ') || 'none'}<br/>
-                    Program Stage IDs: {employeeEvents.map(e => e.programStage).join(', ') || 'none'}
-                  </div>
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
@@ -2144,27 +2183,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   +
                 </button>
               </h2>
+              
+
               {isLoadingServices ? (
                 <p>Loading services data...</p>
               ) : serviceEvents.length === 0 ? (
                 <div>
                   <p>No service offering records found.</p>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {serviceEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    isLoadingServices: {isLoadingServices.toString()}
-                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {serviceEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    Event IDs: {serviceEvents.map(e => e.event).join(', ') || 'none'}<br/>
-                    Program Stage IDs: {serviceEvents.map(e => e.programStage).join(', ') || 'none'}
-                  </div>
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
@@ -2276,22 +2304,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : equipmentEvents.length === 0 ? (
                 <div>
                   <p>No equipment records found.</p>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {equipmentEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    isLoadingEquipment: {isLoadingEquipment.toString()}
-                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {equipmentEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    Event IDs: {equipmentEvents.map(e => e.event).join(', ') || 'none'}<br/>
-                    Program Stage IDs: {equipmentEvents.map(e => e.programStage).join(', ') || 'none'}
-                  </div>
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
@@ -2413,22 +2428,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : inspectionEvents.length === 0 ? (
                 <div>
                   <p>No self assessment records found.</p>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {inspectionEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    isLoadingInspections: {isLoadingInspections.toString()}
-                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{fontSize: '12px', color: '#666', marginTop: '10px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '10px'}}>
-                    <strong>Debug Info:</strong><br/>
-                    Events: {inspectionEvents.length}<br/>
-                    TrackedEntityInstanceId: {getCurrentTrackedEntityInstanceId() || 'null'}<br/>
-                    Event IDs: {inspectionEvents.map(e => e.event).join(', ') || 'none'}<br/>
-                    Program Stage IDs: {inspectionEvents.map(e => e.programStage).join(', ') || 'none'}
-                  </div>
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
@@ -2776,6 +2778,59 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     });
   }, [trackedEntityInstanceId, events.length, isLoading, showReviewDialog]); // Removed localTrackedEntityInstanceId and effectiveTrackedEntityInstanceId from dependencies
 
+  // Force re-validation of ALL program stages when events change
+  useEffect(() => {
+    if (events.length > 0) {
+      console.log("🔄 === FORCING ALL PROGRAM STAGES RE-VALIDATION ===");
+      console.log("- Total events loaded:", events.length);
+      
+      // Filter events by program stage
+      const facilityOwnershipEvents = events.filter(e => e.programStage === 'MuJubgTzJrY');
+      const employeeEvents = events.filter(e => e.programStage === 'xjhA4eEHyhw');
+      const serviceEvents = events.filter(e => e.programStage === 'uL262bA2IP3');
+      const statutoryComplianceEvents = events.filter(e => e.programStage === 'vyv7zncjCmV');
+      const equipmentEvents = events.filter(e => e.programStage === 'chlbXjBiIup');
+      const inspectionEvents = events.filter(e => e.programStage === 'Eupjm3J0dt2');
+      
+      console.log("- Events by program stage:");
+      console.log("  • Facility Ownership:", facilityOwnershipEvents.length);
+      console.log("  • Employee Registration:", employeeEvents.length);
+      console.log("  • Services Offered:", serviceEvents.length);
+      console.log("  • Statutory Compliance:", statutoryComplianceEvents.length);
+      console.log("  • Equipment & Machinery:", equipmentEvents.length);
+      console.log("  • Self Assessment:", inspectionEvents.length);
+      
+      // Validate all program stages
+      const facilityOwnershipComplete = validateFacilityOwnership(facilityOwnershipEvents);
+      const employeeRegistrationComplete = validateEmployeeRegistration(employeeEvents);
+      const servicesOfferedComplete = validateServicesOffered(serviceEvents);
+      const statutoryComplianceComplete = validateStatutoryCompliance(statutoryComplianceEvents);
+      const equipmentMachineryComplete = validateEquipmentMachinery(equipmentEvents);
+      const inspectionScheduleComplete = inspectionEvents.length > 0;
+      
+      console.log("- Validation results:");
+      console.log("  • Facility Ownership:", facilityOwnershipComplete);
+      console.log("  • Employee Registration:", employeeRegistrationComplete);
+      console.log("  • Services Offered:", servicesOfferedComplete);
+      console.log("  • Statutory Compliance:", statutoryComplianceComplete);
+      console.log("  • Equipment & Machinery:", equipmentMachineryComplete);
+      console.log("  • Self Assessment:", inspectionScheduleComplete);
+      
+      // Update all validation states
+      setTabValidationStates({
+        facilityOwnership: facilityOwnershipComplete,
+        employeeRegistration: employeeRegistrationComplete,
+        servicesOffered: servicesOfferedComplete,
+        statutoryCompliance: statutoryComplianceComplete,
+        equipmentMachinery: equipmentMachineryComplete,
+        inspectionSchedule: inspectionScheduleComplete
+      });
+      
+      // Store facility ownership status in localStorage for Header component access
+      localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
+    }
+  }, [events]);
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
@@ -2811,6 +2866,34 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </span>
               );
             })()}
+            
+            {/* Date Range Picker - Only show when Self Assessment has events */}
+            {inspectionEvents.length > 0 && (
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 3 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                    Preferred Facility Inspection Date:
+                  </Typography>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={(newValue) => setDateRange(newValue)}
+                    disabled={!datePickerEnabled}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { 
+                          width: '280px',
+                          '& .MuiInputBase-input': {
+                            fontSize: '12px',
+                            padding: '8px 12px'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+              </LocalizationProvider>
+            )}
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
@@ -2866,6 +2949,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             // Check if "Passed MOH Screening" is true (status shows permission message)
             const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
             
+            // Check if tabs 3-6 are all green (validated)
+            const tabs3To6Validated = tabValidationStates.employeeRegistration && 
+                                     tabValidationStates.servicesOffered && 
+                                     tabValidationStates.statutoryCompliance && 
+                                     tabValidationStates.equipmentMachinery;
+            
             // Filter steps based on permission
             const visibleSteps = hasPermissionToEstablish 
               ? allSteps 
@@ -2883,15 +2972,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               const shouldBeActive = hasPermissionToEstablish && isTab3To6;
               const shouldBeClickable = hasPermissionToEstablish && isTab3To6;
               
-              // Override disabled state for tabs 3-6 when permission is granted
-              const finalDisabled = shouldBeClickable ? false : (isDisabled || step.key === 'inspectionSchedule' || isTabDisabled(step.key));
+              // Enable Situational Analysis tab when tabs 3-6 are all validated
+              const isSituationalAnalysisEnabled = step.key === 'inspectionSchedule' && tabs3To6Validated;
+              
+              // Override disabled state for tabs 3-6 when permission is granted, and Situational Analysis when tabs 3-6 are validated
+              const finalDisabled = shouldBeClickable ? false : (isDisabled || (!isSituationalAnalysisEnabled && step.key === 'inspectionSchedule') || isTabDisabled(step.key));
               
               return (
                 <React.Fragment key={step.number}>
                   <Tooltip
                     title={
                       step.key === 'inspectionSchedule'
-                        ? "Situational Analysis available for Facilities that submitted Application Letters that have been accepted"
+                        ? tabs3To6Validated 
+                          ? "Click to access Situational Analysis"
+                          : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Situational Analysis"
                         : shouldBeClickable
                           ? `Click to access ${step.title}`
                           : isTabDisabled(step.key)
@@ -2912,7 +3006,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         hasdata={hasTabData(step.key)}
                         disabled={finalDisabled}
                         onClick={() => {
-                          if (shouldBeClickable || (step.key !== 'inspectionSchedule' && !finalDisabled)) {
+                          if (shouldBeClickable || isSituationalAnalysisEnabled || (step.key !== 'inspectionSchedule' && !finalDisabled)) {
                             handleTabClick(step.key);
                           }
                         }}

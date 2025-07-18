@@ -22,6 +22,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
     const [activeUserTab, setActiveUserTab] = useState('enrolment_applications');
 
+
     const navigate = useNavigate();
     const [error, setError] = useState(null);
     const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
@@ -286,6 +287,8 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     // Listen for auto-navigation to inspections tab
     useEffect(() => {
         const handleSwitchToTab = (event) => {
+            console.log('Received switchToTab event:', event.detail);
+            
             if (event.detail === 'inspections') {
                 setActiveSection('inspections');
             }
@@ -393,22 +396,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         />
                     </div>
                 );
-            case 'reports':
-                return (
-                    <div className="dashboard-section">
-                        <h2>Recent Reports</h2>
-                        <div className="reports-list">
-                            <div className="report-item">
-                                <h4>Monthly Inspection Report</h4>
-                                <p>Last updated: 2024-03-15</p>
-                            </div>
-                            <div className="report-item">
-                                <h4>Safety Compliance Review</h4>
-                                <p>Last updated: 2024-03-10</p>
-                            </div>
-                        </div>
-                    </div>
-                );
+
             case 'users':
                 return (
                     <div className="dashboard-section">
@@ -485,6 +473,22 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         )}
                     </div>
                 );
+            case 'reports':
+                return (
+                    <div className="dashboard-section">
+                        <h2>Recent Reports</h2>
+                        <div className="reports-list">
+                            <div className="report-item">
+                                <h4>Monthly Inspection Report</h4>
+                                <p>Last updated: 2024-03-15</p>
+                            </div>
+                            <div className="report-item">
+                                <h4>Safety Compliance Review</h4>
+                                <p>Last updated: 2024-03-10</p>
+                            </div>
+                        </div>
+                    </div>
+                );
             case 'tasks':
                 return (
                     <div className="dashboard-section">
@@ -529,7 +533,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                                     <td>{event.status || 'N/A'}</td>
                                                     <td>{getValue('inspector') || 'N/A'}</td>
                                                     <td>{getValue('findings') || 'N/A'}</td>
-                                        </tr>
+                                                </tr>
                                             );
                                         })}
                                     </tbody>
@@ -538,6 +542,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         )}
                     </div>
                 );
+            
             default:
                 return null;
         }
@@ -566,6 +571,14 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         <Building size={18} />
                         Registration & Permission to Establish
                     </button>
+
+                    <button
+                        onClick={() => setActiveSection('users')}
+                        className={activeSection === 'users' ? 'active' : ''}
+                    >
+                        <Person size={18} />
+                        Users
+                    </button>
                     <button
                         onClick={() => setActiveSection('inspections')}
                         className={`${activeSection === 'inspections' ? 'active' : ''} disabled`}
@@ -585,13 +598,6 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         Reports
                     </button>
                     <button
-                        onClick={() => setActiveSection('users')}
-                        className={activeSection === 'users' ? 'active' : ''}
-                    >
-                        <Person size={18} />
-                        Users
-                    </button>
-                    <button
                         onClick={() => setActiveSection('tasks')}
                         className={`${activeSection === 'tasks' ? 'active' : ''} disabled`}
                         disabled
@@ -600,6 +606,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         <ListCheck size={18} />
                         Tasks
                     </button>
+
                 </div>
                 <div className="dashboard-content">
                     {dashboardLoading ? (
