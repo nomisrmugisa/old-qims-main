@@ -38,9 +38,28 @@ const EnrolmentApplicationReview = () => {
     const [removingApp, setRemovingApp] = useState(null);
     const [statusFilter, setStatusFilter] = useState('all');
 
+    const getEnrolmentListApplications = async() => {
+        setLoading(true);
+        try {
+            const response = await FacilityService.listEnrolmentRequest();
+        }
+        catch(err) {
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                title: 'Error',
+                message: err.message || 'Operation failed. Please try again.',
+                type: 'error'
+            });
+        }
+        finally {
+
+            setLoading(false);
+        }
+    };
+
     // Sample data - in a real app this would come from an API
     useEffect(() => {
         // Simulate API loading
+        getEnrolmentListApplications();
         setTimeout(() => {
             setApplications(enrolmentApplicationData);
             setFilteredApplications(enrolmentApplicationData);

@@ -121,7 +121,7 @@ const UserService = {
 
             let token = await getAuthToken('Basic');
             let userData = await StorageService.getUserData();
-            const response = await httpService.delete(`/40/userSettings/keyDbLocale?user=${userData.id}`,
+            const response = await httpService.delete(`/40/userSettings/keyDbLocale?user=${userData.email}`,
                 {
                     headers: {
                         'Authorization': `Basic ${token}`
@@ -158,7 +158,30 @@ const UserService = {
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
-    }
+    },
+    refreshMe: async() => {
+        const method = "refreshMe";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        try {
+
+            let token = await getAuthToken('Basic');
+            const response = await httpService.get('/me', {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            window.console.log(response);
+            await StorageService.setUserData(response);
+
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
 };
 
 export default UserService;

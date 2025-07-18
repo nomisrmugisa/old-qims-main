@@ -15,18 +15,42 @@ const FacilityService = {
             let token = await getAuthToken('Basic');
             let userData = await StorageService.getUserData();
             window.console.log('userData', userData);
-            const response = await httpService.patch(`/40/users/${userData.id}`, {
-                    op:"add",
-                    path:"/organisationUnits",
-                        value:{
-                            id:data.id
-                        }
+            const response = await httpService.put(`/40/users/${userData.id}`, {
+                id: userData.id,
+                email: userData.email,
+                firstName: userData.firstName,
+                surname: userData.surname,
+                username: userData.username,
+                organisationUnits: [{id: `${data.id}`}],
+                dataViewOrganisationUnits: [{id: `${data.id}`}],
+                teiSearchOrganisationUnits: [{id: `${data.id}`}],
+                userRoles: [{id: `${import.meta.env.VITE_FACILITY_USER_TYPE_ENROLMENT_REQUEST}`}],
                     },
                 {
                     headers: {
                         'Authorization': `Basic ${token}`
                     }
                 });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    listEnrolmentRequest: async (data) => {
+        const method = "listEnrolmentRequest";
+        window.console.log(method, data);
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let token = await getAuthToken('Basic');
+            const response = await httpService.get(`/users?filter=userRoles.id:eq:${import.meta.env.VITE_FACILITY_USER_TYPE_ENROLMENT_REQUEST}&fields=id,email,organisationUnits[id,name]&paging=false`, {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            window.console.log(response);
             return response;
         } catch (error) {
             throw error;
@@ -135,6 +159,7 @@ const FacilityService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
+
 
 };
 
