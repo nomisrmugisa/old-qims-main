@@ -83,6 +83,9 @@ const EnrolmentBasic = () => {
             response = await UserService.deleteOldSettings();
             window.console.log("deleteOldSettings", response);
 
+            response = await UserService.refreshMe();
+            window.console.log("refreshMe", response);
+
             setCanApply(false);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Success',
