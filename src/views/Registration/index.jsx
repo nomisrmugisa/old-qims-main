@@ -1,7 +1,7 @@
 /**
  * Created by fulle on 2025/07/05.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { TextField } from '@mui/material';
 import { eventBus, EVENTS } from '../../events';
@@ -65,11 +65,8 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            const response = await AuthService.registerEmail({
-                email: formData.email,
-                username: formData.email,
-                password: formData.password,
-                otp: formData.otp
+            const response = await OTPApiService.requestOtp({
+                emails: [formData.email],
             });
 
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
@@ -107,9 +104,13 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            const response = await AuthService.registerComplete(formData);
-            
-            // Show success message
+
+            let response = await OTPApiService.verifyOtp({
+                email: formData.email,
+                otp: formData.otp
+            });
+            window.console.log("otp verification", response);
+            response = await AuthService.registrationDHISDev(formData);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Registration Complete',
                 message: 'Your account has been created successfully',
