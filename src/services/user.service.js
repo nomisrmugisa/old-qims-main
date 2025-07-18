@@ -2,8 +2,7 @@
  * Created by fulle on 2025/07/04.
  */
 import httpService from './http.service';
-//import StorageService from './storage.service';
-//import { STORAGE_KEYS } from './constants';
+import StorageService from './storage.service';
 import {getAuthToken} from './http.service';
 import {eventBus, EVENTS } from '../events';
 const svc_name = "user_service";
@@ -114,6 +113,52 @@ const UserService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: "searchGroupUsers"});
         }
     },
+    deleteOldSettings: async() => {
+        const method = "enrolmentRequest";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        try {
+
+            let token = await getAuthToken('Basic');
+            let userData = await StorageService.getUserData();
+            const response = await httpService.delete(`/40/userSettings/keyDbLocale?user=${userData.id}`,
+                {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+
+            return response.response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    getFacilities: async() => {
+        const method = "getFacilities";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        try {
+
+            let token = await getAuthToken('Basic');
+            let userData = await StorageService.getUserData();
+            const response = await httpService.get(`/users/${userData.id}?fields=userRoles,organisationUnits`,
+                {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+
+            return response.organisationUnits;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    }
 };
 
 export default UserService;
