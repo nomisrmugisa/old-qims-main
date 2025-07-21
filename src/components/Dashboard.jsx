@@ -309,6 +309,246 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
 
   // Removed unused effect for checking facility ownership events
 
+    // const renderContent = () => {
+    //     switch (activeSection) {
+    //         case 'overview':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <h2>Facility Dashboard</h2>
+    //                     <Card className="mb-4">
+    //                         <Card.Body>
+    //                             <Row className="g-4">
+    //                                 <Col md={6}>
+    //                                     <Card className="h-100 shadow-sm">
+    //                                         <Card.Body className="text-center py-5">
+    //                                             <Building size={48} className="text-primary mb-3" />
+    //                                             <Card.Title>Register New Facility</Card.Title>
+    //                                             <Card.Text className="text-muted mb-4">
+    //                                                 Start the registration process for a new healthcare facility
+    //                                             </Card.Text>
+    //                                             <Button variant="primary" onClick={() => setActiveSection('registration')}>
+    //                                                 Begin Registration
+    //                                             </Button>
+    //                                         </Card.Body>
+    //                                     </Card>
+    //                                 </Col>
+
+    //                                 <Col md={6}>
+    //                                     <Card className="h-100 shadow-sm">
+    //                                         <Card.Body className="text-center py-5">
+    //                                             <ClipboardCheck size={48} className="text-success mb-3" />
+    //                                             <Card.Title>Enrol with a Facility</Card.Title>
+    //                                             <Card.Text className="text-muted mb-4">
+    //                                                 Enrol with an existing facility
+    //                                             </Card.Text>
+    //                                             <Button
+    //                                                 variant="outline-primary"
+    //                                                 onClick={() => navigate('/facility/user/enrolment/application')}
+    //                                             >
+    //                                                 <PlusCircle className="me-1" /> Enroll in New Facility
+    //                                             </Button>
+    //                                         </Card.Body>
+    //                                     </Card>
+    //                                 </Col>
+
+    //                                 <Col md={6}>
+    //                                     <Card className="h-100 shadow-sm">
+    //                                         <Card.Body className="text-center py-5">
+    //                                             <ClipboardCheck size={48} className="text-success mb-3" />
+    //                                             <Card.Title>Renew Facility License</Card.Title>
+    //                                             <Card.Text className="text-muted mb-4">
+    //                                                 Renew the license for an existing healthcare facility
+    //                                             </Card.Text>
+    //                                             <Button variant="success">Start Renewal</Button>
+    //                                         </Card.Body>
+    //                                     </Card>
+    //                                 </Col>
+
+    //                             </Row>
+    //                         </Card.Body>
+    //                     </Card>
+    //                     {/*<div className="stats-grid">*/}
+    //                     {/*    <div className="stat-card">*/}
+    //                     {/*        <h3>Active Inspections</h3>*/}
+    //                     {/*        <p className="stat-number">3</p>*/}
+    //                     {/*    </div>*/}
+    //                     {/*    <div className="stat-card">*/}
+    //                     {/*        <h3>Pending Tasks</h3>*/}
+    //                     {/*        <p className="stat-number">5</p>*/}
+    //                     {/*    </div>*/}
+    //                     {/*    <div className="stat-card">*/}
+    //                     {/*        <h3>Completed Reports</h3>*/}
+    //                     {/*        <p className="stat-number">12</p>*/}
+    //                     {/*    </div>*/}
+    //                     {/*    <div className="stat-card">*/}
+    //                     {/*        <h3>Upcoming Deadlines</h3>*/}
+    //                     {/*        <p className="stat-number">2</p>*/}
+    //                     {/*    </div>*/}
+    //                     {/*</div>*/}
+    //                 </div>
+    //             );
+    //         case 'registration':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <RegistrationDetails 
+    //                         trackedEntityInstanceId={trackedEntityInstanceId} 
+    //                         showReviewDialog={showFacilityReviewDialog}
+    //                     />
+    //                 </div>
+    //             );
+
+    //         case 'users':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <div className="mb-4 d-flex gap-2 border-bottom pb-2">
+    //                         <Button
+    //                             variant={activeUserTab === 'enrolment_applications' ? 'primary' : 'light'}
+    //                             className={activeUserTab === 'enrolment_applications' ? '' : 'text-primary'}
+    //                             onClick={() => setActiveUserTab('enrolment_applications')}
+    //                         >
+    //                             Enrolment Application
+    //                         </Button>
+    //                         <Button
+    //                             variant={activeUserTab === 'users' ? 'primary' : 'light'}
+    //                             className={activeUserTab === 'users' ? '' : 'text-primary'}
+    //                             onClick={() => setActiveUserTab('users')}
+    //                         >
+    //                             Users
+    //                         </Button>
+    //                         <Button
+    //                             variant={activeUserTab === 'roles' ? 'primary' : 'light'}
+    //                             className={activeUserTab === 'roles' ? '' : 'text-primary'}
+    //                             onClick={() => setActiveUserTab('roles')}
+    //                         >
+    //                             User role
+    //                         </Button>
+    //                         <Button
+    //                             variant={activeUserTab === 'groups' ? 'primary' : 'light'}
+    //                             className={activeUserTab === 'groups' ? '' : 'text-primary'}
+    //                             onClick={() => setActiveUserTab('groups')}
+    //                         >
+    //                             User group
+    //                         </Button>
+    //                     </div>
+
+
+    //                     {activeUserTab === 'enrolment_applications' && (
+    //                         <>
+    //                         <EnrolmentApplicationReview />
+    //                         </>
+    //                     )}
+
+    //                     {activeUserTab === 'users' && (
+    //                         <>
+    //                             <h2>Facility User Management</h2>
+    //                             {usersError && (
+    //                                 <div className="alert alert-danger mb-4">
+    //                                     {usersError}
+    //                                 </div>
+    //                             )}
+    //                             <UserTable
+    //                                 users={users}
+    //                                 loading={usersLoading}
+    //                                 totalPages={pagination.totalPages}
+    //                                 currentPage={pagination.currentPage}
+    //                                 onPageChange={handlePageChange}
+    //                                 onSearch={handleSearch}
+    //                                 onDelete={handleDeleteUser}
+    //                                 onUpdate={handleUpdateUser}
+    //                                 onCreate={handleCreateUser}
+    //                             />
+    //                         </>
+    //                     )}
+    //                     {activeUserTab === 'roles' && (
+    //                         <>
+    //                             <h2>User Role Management</h2>
+    //                             <UserRoleManagement />
+    //                         </>
+    //                     )}
+    //                     {activeUserTab === 'groups' && (
+    //                         <>
+    //                             <h2>User Group Management</h2>
+    //                             <UserGroupManagement />
+    //                         </>
+    //                     )}
+    //                 </div>
+    //             );
+    //         case 'reports':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <h2>Recent Reports</h2>
+    //                     <div className="reports-list">
+    //                         <div className="report-item">
+    //                             <h4>Monthly Inspection Report</h4>
+    //                             <p>Last updated: 2024-03-15</p>
+    //                         </div>
+    //                         <div className="report-item">
+    //                             <h4>Safety Compliance Review</h4>
+    //                             <p>Last updated: 2024-03-10</p>
+    //                         </div>
+    //                     </div>
+    //                 </div>
+    //             );
+    //         case 'tasks':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <h2>Pending Tasks</h2>
+    //                     <div className="tasks-list">
+    //                         <div className="task-item">
+    //                             <h4>Complete Facility Inspection</h4>
+    //                             <p>Due: 2024-03-25</p>
+    //                         </div>
+    //                         <div className="task-item">
+    //                             <h4>Update Safety Protocols</h4>
+    //                             <p>Due: 2024-03-28</p>
+    //                         </div>
+    //                     </div>
+    //                 </div>
+    //             );
+    //         case 'inspections':
+    //             return (
+    //                 <div className="dashboard-section">
+    //                     <h2>View Inspection Results</h2>
+    //                     {isLoadingInspections ? (
+    //                         <p>Loading inspection results...</p>
+    //                     ) : inspectionEvents.length === 0 ? (
+    //                         <p>No inspection results found for this facility.</p>
+    //                     ) : (
+    //                         <div className="inspections-table-container">
+    //                             <table className="table table-striped table-hover">
+    //                                 <thead>
+    //                                     <tr>
+    //                                         <th>Inspection Date</th>
+    //                                         <th>Status</th>
+    //                                         <th>Inspector</th>
+    //                                         <th>Findings</th>
+    //                                     </tr>
+    //                                 </thead>
+    //                                 <tbody>
+    //                                     {inspectionEvents.map((event, idx) => {
+    //                                         const getValue = (id) => (event.dataValues || []).find(dv => dv.dataElement === id)?.value || '';
+    //                                         return (
+    //                                             <tr key={event.event || idx}>
+    //                                                 <td>{event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'N/A'}</td>
+    //                                                 <td>{event.status || 'N/A'}</td>
+    //                                                 <td>{getValue('inspector') || 'N/A'}</td>
+    //                                                 <td>{getValue('findings') || 'N/A'}</td>
+    //                                             </tr>
+    //                                         );
+    //                                     })}
+    //                                 </tbody>
+    //                             </table>
+    //                         </div>
+    //                     )}
+    //                 </div>
+    //             );
+
+            
+            
+    //         default:
+    //             return null;
+    //     }
+    // };
     const renderContent = () => {
         switch (activeSection) {
             case 'overview':
@@ -332,7 +572,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                             </Card.Body>
                                         </Card>
                                     </Col>
-
+    
                                     <Col md={6}>
                                         <Card className="h-100 shadow-sm">
                                             <Card.Body className="text-center py-5">
@@ -350,7 +590,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                             </Card.Body>
                                         </Card>
                                     </Col>
-
+    
                                     <Col md={6}>
                                         <Card className="h-100 shadow-sm">
                                             <Card.Body className="text-center py-5">
@@ -363,28 +603,33 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                             </Card.Body>
                                         </Card>
                                     </Col>
-
+    
+                                    <Col md={6}>
+                                        <Card className="h-100 shadow-sm">
+                                            <Card.Body className="text-center py-5">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#0d6efd" className="bi bi-credit-card mb-3" viewBox="0 0 16 16">
+                                                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
+                                                    <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/>
+                                                </svg>
+                                                <Card.Title>Payments</Card.Title>
+                                                <Card.Text className="text-muted mb-4">
+                                                    Manage facility payments and subscriptions
+                                                </Card.Text>
+                                                <div className="payment-options d-flex justify-content-around mb-3">
+                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" height="30" />
+                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" height="30" />
+                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="VISA" height="20" />
+                                                    <span className="badge bg-primary">Mobile Money</span>
+                                                </div>
+                                                <Button variant="info" onClick={() => setActiveSection('payments')}>
+                                                    View Payment Options
+                                                </Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
                                 </Row>
                             </Card.Body>
                         </Card>
-                        {/*<div className="stats-grid">*/}
-                        {/*    <div className="stat-card">*/}
-                        {/*        <h3>Active Inspections</h3>*/}
-                        {/*        <p className="stat-number">3</p>*/}
-                        {/*    </div>*/}
-                        {/*    <div className="stat-card">*/}
-                        {/*        <h3>Pending Tasks</h3>*/}
-                        {/*        <p className="stat-number">5</p>*/}
-                        {/*    </div>*/}
-                        {/*    <div className="stat-card">*/}
-                        {/*        <h3>Completed Reports</h3>*/}
-                        {/*        <p className="stat-number">12</p>*/}
-                        {/*    </div>*/}
-                        {/*    <div className="stat-card">*/}
-                        {/*        <h3>Upcoming Deadlines</h3>*/}
-                        {/*        <p className="stat-number">2</p>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
                     </div>
                 );
             case 'registration':
@@ -396,7 +641,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         />
                     </div>
                 );
-
+    
             case 'users':
                 return (
                     <div className="dashboard-section">
@@ -430,14 +675,13 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                                 User group
                             </Button>
                         </div>
-
-
+    
                         {activeUserTab === 'enrolment_applications' && (
                             <>
                             <EnrolmentApplicationReview />
                             </>
                         )}
-
+    
                         {activeUserTab === 'users' && (
                             <>
                                 <h2>Facility User Management</h2>
@@ -542,7 +786,99 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         )}
                     </div>
                 );
-            
+            case 'payments':
+                return (
+                    <div className="dashboard-section">
+                        <h2>Payment Management</h2>
+                        <Card className="mb-4">
+                            <Card.Body>
+                                <h4 className="mb-4">Payment Methods</h4>
+                                <Row className="g-3 mb-4">
+                                    <Col md={3}>
+                                        <Card className="h-100 text-center p-3">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="img-fluid mb-2" style={{height: '30px'}} />
+                                            <Button variant="outline-primary" size="sm">
+                                                Select Stripe
+                                            </Button>
+                                        </Card>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Card className="h-100 text-center p-3">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="img-fluid mb-2" style={{height: '30px'}} />
+                                            <Button variant="outline-primary" size="sm">
+                                                Select PayPal
+                                            </Button>
+                                        </Card>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Card className="h-100 text-center p-3">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="VISA" className="img-fluid mb-2" style={{height: '20px'}} />
+                                            <div className="mt-2"></div>
+                                            <Button variant="outline-primary" size="sm">
+                                                Select Bank
+                                            </Button>
+                                        </Card>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Card className="h-100 text-center p-3">
+                                            <div className="mb-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#0d6efd" className="bi bi-phone" viewBox="0 0 16 16">
+                                                    <path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                                                    <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+                                                </svg>
+                                            </div>
+                                            <Button variant="outline-primary" size="sm">
+                                                Mobile Money
+                                            </Button>
+                                        </Card>
+                                    </Col>
+                                </Row>
+    
+                                <h4 className="mb-3">Payment History</h4>
+                                <div className="table-responsive">
+                                    <table className="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Description</th>
+                                                <th>Amount (BWP)</th>
+                                                <th>Method</th>
+                                                <th>Status</th>
+                                                <th>Receipt</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>2023-11-15</td>
+                                                <td>Facility Registration</td>
+                                                <td>500.00</td>
+                                                <td>Mobile Money</td>
+                                                <td><span className="badge bg-success">Completed</span></td>
+                                                <td><Button variant="link" size="sm">Download</Button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>2023-08-22</td>
+                                                <td>License Renewal</td>
+                                                <td>1200.00</td>
+                                                <td>Bank Transfer</td>
+                                                <td><span className="badge bg-success">Completed</span></td>
+                                                <td><Button variant="link" size="sm">Download</Button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>2023-05-10</td>
+                                                <td>Inspection Fee</td>
+                                                <td>750.00</td>
+                                                <td>Stripe</td>
+                                                <td><span className="badge bg-warning text-dark">Pending</span></td>
+                                                <td><Button variant="link" size="sm" disabled>N/A</Button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -606,6 +942,16 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         <ListCheck size={18} />
                         Tasks
                     </button>
+
+                    <Button
+                        variant={activeUserTab === 'payments' ? 'primary' : 'light'}
+                        className={activeUserTab === 'payments' ? '' : 'text-primary'}
+                        onClick={() => setActiveUserTab('payments')}
+                    >
+                        Payment Methods
+                    </Button>
+
+
 
                 </div>
                 <div className="dashboard-content">

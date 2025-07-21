@@ -47,7 +47,7 @@ const OTPApiService = {
         const method = "requestOtp";
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
-            const response = await otpService.post(`/request-otp`, data);
+            const response = await otpService.post(`/api/request-otp`, data);
             window.console.log(response);
             return response;
         } catch (error) {
@@ -61,7 +61,7 @@ const OTPApiService = {
         const method = "verifyOtp";
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
-            const response = await otpService.post(`/verify-otp`, data);
+            const response = await otpService.post(`/api/verify-otp`, data);
             window.console.log(response);
             return response;
         } catch (error) {

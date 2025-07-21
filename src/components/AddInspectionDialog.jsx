@@ -14,6 +14,14 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventId, setEventId] = useState(null);
 
+  const ALLOWED_SECTION_IDS = new Set([
+    "GjvSxtEd4JA",
+    "sj3t0fYKfax",
+    "qCEoj588vmU",
+    "SZwV0c855QB"
+  ]);
+  
+
   // Fetch Program Stage Metadata
   const fetchProgramStageMetadata = useCallback(async () => {
     const credentials = await StorageService.get('userCredentials');
@@ -36,12 +44,19 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
       }
 
       const metadata = await response.json();
-      setProgramStageMetadata(metadata);
-      
+
+      // Filter sections by allowed IDs
+      const filteredSections = metadata.programStageSections?.filter(section =>
+        ALLOWED_SECTION_IDS.has(section.id)
+      ) || [];
+
+      setProgramStageMetadata({ ...metadata, programStageSections: filteredSections });
+
       // Set the first section as active by default
-      if (metadata.programStageSections && metadata.programStageSections.length > 0) {
-        setActiveSection(metadata.programStageSections[0].id);
+      if (filteredSections.length > 0) {
+        setActiveSection(filteredSections[0].id);
       }
+
       
     } catch (error) {
       setErrorMessage(error.message);
