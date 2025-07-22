@@ -40,6 +40,7 @@
     "react-router-dom": "^7.6.2",
     "react-sweetalert2": "^0.6.0",
     "swiper": "^11.2.8",
+    "xlsx": "^0.18.5",
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {

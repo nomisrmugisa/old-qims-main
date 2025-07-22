@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
-import {StorageService} from '../services';
+import { StorageService } from '../services';
+import { FACILITY_TYPE_FIELD_ID, shouldShowDataElement, getFacilityTypeMapping, getOrderedDocumentIds } from '../utils/facilityTypeMapping';
 
-const EditFacilityOwnershipDialog = ({ 
-  open, 
-  onClose, 
-  onUpdateSuccess, 
-  onAddSuccess, 
-  event, 
-  trackedEntityInstanceId, 
+
+const EditFacilityOwnershipDialog = ({
+  open,
+  onClose,
+  onUpdateSuccess,
+  onAddSuccess,
+  event,
+  trackedEntityInstanceId,
   isEditMode = true,
   // facilityName
 }) => {
@@ -28,50 +30,69 @@ const EditFacilityOwnershipDialog = ({
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  const [emailStatus, setEmailStatus] = useState(null); // null, 'sending', 'sent', or 'failed'
+
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [facilityTypeMapping, setFacilityTypeMapping] = useState({});
+  const [orderedDocumentIds, setOrderedDocumentIds] = useState([]);
+
+  // Load the mapping and ordered IDs when the component mounts
+  useEffect(() => {
+    const mapping = getFacilityTypeMapping();
+    setFacilityTypeMapping(mapping);
+    const orderedIds = getOrderedDocumentIds();
+    setOrderedDocumentIds(orderedIds);
+  }, []);
+
+  useEffect(() => {
+    console.log("DEBUG:", { open, showEmailConfirmation });
+  }, [open, showEmailConfirmation]);
+  
+
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
     console.log("🛠 FACILITY OWNERSHIP: Starting to fetch program stage metadata...");
 
     let credentials = await StorageService.get('userCredentials');
-  
+
     if (!credentials) {
       console.warn("⚠️ FACILITY OWNERSHIP: StorageService returned no credentials. Falling back to localStorage.");
       credentials = localStorage.getItem('userCredentials');
     }
-  
+
     if (!credentials) {
       console.error("❌ FACILITY OWNERSHIP: No credentials found in either StorageService or localStorage");
       setErrorMessage("Authentication required. Please log in again.");
       setIsLoading(false);
       return;
     }
-    
+
     console.log("✅ FACILITY OWNERSHIP: Credentials found, making API request...");
-    
+
     try {
       const apiUrl = `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory,optionSet[id,displayName,options[id,displayName,code,sortOrder]]]]`;
       console.log("🌐 FACILITY OWNERSHIP: API URL:", apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         headers: { Authorization: `Basic ${credentials}` },
       });
-      
+
       console.log("📡 FACILITY OWNERSHIP: Response status:", response.status);
       console.log("📡 FACILITY OWNERSHIP: Response ok:", response.ok);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ FACILITY OWNERSHIP: API Error Response:", errorText);
         throw new Error(`Failed to fetch metadata: ${response.status} - ${response.statusText}`);
       }
-      
+
       const metadata = await response.json();
       console.log("✅ FACILITY OWNERSHIP: Metadata received:", metadata);
       console.log("📋 FACILITY OWNERSHIP: Program stage sections:", metadata.programStageSections?.length || 0);
-      
+
       setProgramStageMetadata(metadata);
       console.log("✅ FACILITY OWNERSHIP: Metadata set successfully");
-      
+
     } catch (error) {
       console.error("❌ FACILITY OWNERSHIP: Fetch error:", error);
       setErrorMessage(`Failed to load form metadata: ${error.message}`);
@@ -84,12 +105,12 @@ const EditFacilityOwnershipDialog = ({
   // Function to check if the facility is already in the screening group
   const checkIfInScreeningGroup = useCallback(async () => {
     if (!event || !event.orgUnit) return;
-    
+
     const credentials = await StorageService.get('userCredentials');
     if (!credentials) {
       return;
     }
-    
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnitGroups/nDAvPPtYHQP?fields=organisationUnits`,
@@ -97,13 +118,13 @@ const EditFacilityOwnershipDialog = ({
           headers: { Authorization: `Basic ${credentials}` },
         }
       );
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch screening group: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Check if the current facility is in the screening group
       const isInGroup = data.organisationUnits?.some(ou => ou.id === event.orgUnit);
       setIsInScreeningGroup(isInGroup);
@@ -115,7 +136,7 @@ const EditFacilityOwnershipDialog = ({
   // Initialize form data from event and fetch metadata
   useEffect(() => {
     console.log("🔄 FACILITY OWNERSHIP: useEffect triggered, open =", open);
-    
+
     async function repopulateLocalStorage() {
       // Example: Fetch user info and org unit as on page load
       try {
@@ -146,21 +167,21 @@ const EditFacilityOwnershipDialog = ({
 
     if (open) {
       document.body.style.overflow = 'hidden';
-      
+
       // Don't clear all localStorage - preserve credentials and important data
       // localStorage.clear(); // This was clearing credentials needed for API calls!
       console.log("🚀 FACILITY OWNERSHIP: Dialog opened, initializing...");
-      
+
       repopulateLocalStorage();
       fetchProgramStageMetadata();
-      
+
       // Only check screening group in edit mode
       if (isEditMode && event) {
-      checkIfInScreeningGroup();
+        checkIfInScreeningGroup();
       } else {
         setIsInScreeningGroup(false);
       }
-      
+
       // Initialize form data from event if in edit mode
       if (isEditMode && event && event.dataValues) {
         const initialData = {};
@@ -172,17 +193,17 @@ const EditFacilityOwnershipDialog = ({
         // Reset form data in add mode
         setFormData({});
       }
-      
+
       setIsSubmitting(false);
       setErrorMessage("");
       setSubmitSuccess(false);
       setSubmitError(null);
-      
+
       // Log for debugging
-      console.log("Dialog initialized with:", { 
-        isEditMode, 
+      console.log("Dialog initialized with:", {
+        isEditMode,
         hasEvent: !!event,
-        trackedEntityInstanceId 
+        trackedEntityInstanceId
       });
     } else {
       // Unfreeze background
@@ -295,7 +316,7 @@ const EditFacilityOwnershipDialog = ({
     }
     try {
       console.log("Form submission started", { isEditMode, hasEvent: !!event });
-      
+
       const dataValues = [
         ...Object.entries(formData)
           .filter(([, value]) => value !== null && value !== '')
@@ -308,18 +329,18 @@ const EditFacilityOwnershipDialog = ({
           value: 'true',
         }
       ];
-      
+
       console.log(`Prepared ${dataValues.length} data values for submission`);
 
       if (isEditMode && event) {
         // Edit mode - update existing event
-        console.log("Update mode - Event data:", { 
+        console.log("Update mode - Event data:", {
           eventId: event.event,
           orgUnit: event.orgUnit,
           program: event.program || "EE8yeLVo6cN",
           programStage: event.programStage || "MuJubgTzJrY"
         });
-        
+
         const payload = {
           event: event.event,
           orgUnit: event.orgUnit,
@@ -328,9 +349,9 @@ const EditFacilityOwnershipDialog = ({
           status: "COMPLETED",
           dataValues,
         };
-        
+
         console.log("Sending PUT request to update event:", payload);
-        
+
         const response = await fetch(`/api/events/${event.event}`, {
           method: "PUT",
           headers: {
@@ -339,24 +360,24 @@ const EditFacilityOwnershipDialog = ({
           },
           body: JSON.stringify(payload),
         });
-        
+
         console.log("Update response status:", response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Update failed:", { status: response.status, error: errorText });
           throw new Error(`Update failed: ${response.status} - ${errorText}`);
         }
-        
+
         const responseData = await response.json();
         console.log("Update successful:", responseData);
-        
+
         // Call the success callback
         onUpdateSuccess && onUpdateSuccess();
-        
+
         // Show success message
         setErrorMessage("Changes saved successfully!");
-        
+
         // Close dialog after a short delay to show success message
         setTimeout(() => {
           onClose();
@@ -366,80 +387,80 @@ const EditFacilityOwnershipDialog = ({
         // Get the organization unit ID from the current user
         const orgUnitId = await getCurrentUserOrgUnit();
         const today = new Date().toISOString().split('T')[0];
-        
+
         console.log("Add mode - Using organization unit:", orgUnitId);
-        
+
         // Use the provided trackedEntityInstanceId or fetch it if not available
         let effectiveTrackedEntityInstanceId = trackedEntityInstanceId;
-        
+
         if (!effectiveTrackedEntityInstanceId) {
           // Fetch trackedEntityInstanceId if not provided
           console.log("No trackedEntityInstanceId provided, fetching from API");
-          
+
           const teiResponse = await fetch(`/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`, {
-                headers: { Authorization: `Basic ${credentials}` },
+            headers: { Authorization: `Basic ${credentials}` },
           });
-          
+
           if (!teiResponse.ok) {
             console.error("Failed to fetch tracked entity instance:", teiResponse.status);
             throw new Error(`Failed to fetch tracked entity instance: ${teiResponse.status}`);
           }
-          
+
           const teiData = await teiResponse.json();
           console.log("Tracked entity response:", teiData);
-          
+
           if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
             effectiveTrackedEntityInstanceId = teiData.trackedEntityInstances[0].trackedEntityInstance;
             console.log("Found trackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
-            } else {
+          } else {
             console.error("No tracked entity instances found");
             throw new Error("No tracked entity instance found for this organization unit.");
           }
         } else {
           console.log("Using provided trackedEntityInstanceId:", effectiveTrackedEntityInstanceId);
         }
-        
-      const payload = {
-        orgUnit: orgUnitId,
-        program: "EE8yeLVo6cN",
-        programStage: "MuJubgTzJrY",
-        status: "COMPLETED",
-        dataValues,
+
+        const payload = {
+          orgUnit: orgUnitId,
+          program: "EE8yeLVo6cN",
+          programStage: "MuJubgTzJrY",
+          status: "COMPLETED",
+          dataValues,
           trackedEntityInstance: effectiveTrackedEntityInstanceId,
           eventDate: today
         };
-        
+
         console.log("Sending POST request to create event:", payload);
-        
+
         const response = await fetch(`/api/events`, {
           method: "POST",
-        headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-        
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
         console.log("Create response status:", response.status);
-        
-      if (!response.ok) {
-        const errorText = await response.text();
+
+        if (!response.ok) {
+          const errorText = await response.text();
           console.error("Create failed:", { status: response.status, error: errorText });
-        throw new Error(`Submission failed: ${response.status} - ${errorText}`);
-      }
-        
+          throw new Error(`Submission failed: ${response.status} - ${errorText}`);
+        }
+
         const responseData = await response.json();
         console.log("Create successful:", responseData);
-        
+
         // Call the success callback
         onAddSuccess && onAddSuccess();
-        
+
         // Show success message
         setErrorMessage("Record added successfully!");
-        
+
         // Close dialog after a short delay to show success message
         setTimeout(() => {
-      onClose();
+          onClose();
         }, 1500);
       }
     } catch (error) {
@@ -475,7 +496,7 @@ const EditFacilityOwnershipDialog = ({
       // Detailed fetch configuration
       const fetchConfig = {
         method: 'GET',
-        headers: { 
+        headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -491,9 +512,9 @@ const EditFacilityOwnershipDialog = ({
       // Perform the fetch with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
-      
+
       const response = await fetch(
-        `/api/me?fields=organisationUnits[id,name]`, 
+        `/api/me?fields=organisationUnits[id,name]`,
         {
           ...fetchConfig,
           signal: controller.signal
@@ -507,11 +528,11 @@ const EditFacilityOwnershipDialog = ({
           status: response.status,
           statusText: response.statusText
         });
-        
+
         // Try to get error details
         const errorText = await response.text();
         console.error('Error Response Body:', errorText);
-        
+
         throw new Error(`Failed to fetch user information: ${response.status} - ${response.statusText}`);
       }
 
@@ -548,16 +569,16 @@ const EditFacilityOwnershipDialog = ({
         message: error.message,
         stack: error.stack
       });
-      
+
       console.groupEnd();
-      
+
       // Rethrow with additional context
       throw new Error(`Organization Unit Retrieval Failed: ${error.message}`);
     }
   };
 
   const isFileValueType = (vt) => ['FILE_RESOURCE', 'FILE', 'fileResource'].includes(vt);
-  
+
   // Helper to determine if a data element should be rendered as a dropdown
   const shouldRenderAsDropdown = (de) => {
     return de.optionSet && !isFileValueType(de.valueType) && de.valueType !== 'BOOLEAN' && de.valueType !== 'TRUE_ONLY';
@@ -597,10 +618,10 @@ const EditFacilityOwnershipDialog = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         {formData[de.id] ? (
           <>
-            <a 
-              href={`/api/fileResources/${formData[de.id]}/data`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={`/api/fileResources/${formData[de.id]}/data`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="file-download-link"
               style={{
                 color: '#1976d2',
@@ -614,9 +635,9 @@ const EditFacilityOwnershipDialog = ({
               {selectedFileNames[de.id] || 'Download current file'}
             </a>
             {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
-              <button 
-                type="button" 
-                className="btn btn-link" 
+              <button
+                type="button"
+                className="btn btn-link"
                 style={{
                   color: '#1976d2',
                   background: 'none',
@@ -625,15 +646,15 @@ const EditFacilityOwnershipDialog = ({
                   cursor: 'pointer',
                   fontSize: '0.9rem',
                   textDecoration: 'underline'
-                }} 
+                }}
                 onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
               >
                 Preview
               </button>
             )}
-            <button 
-              type="button" 
-              className="btn btn-link text-danger" 
+            <button
+              type="button"
+              className="btn btn-link text-danger"
               style={{
                 color: '#d32f2f',
                 background: 'none',
@@ -642,7 +663,7 @@ const EditFacilityOwnershipDialog = ({
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 textDecoration: 'underline'
-              }} 
+              }}
               onClick={() => handleRemoveFile(de)}
             >
               Remove
@@ -658,8 +679,8 @@ const EditFacilityOwnershipDialog = ({
               required={true}
               disabled={fileUploadStatus[de.id]?.uploading}
             />
-            <label 
-              htmlFor={fileInputId} 
+            <label
+              htmlFor={fileInputId}
               style={{
                 display: 'inline-block',
                 padding: '8px 16px',
@@ -679,8 +700,8 @@ const EditFacilityOwnershipDialog = ({
             </label>
             {selectedFileNames[de.id] && (
               <span style={{
-                marginLeft: 8, 
-                fontStyle: 'italic', 
+                marginLeft: 8,
+                fontStyle: 'italic',
                 color: '#333',
                 display: 'flex',
                 alignItems: 'center',
@@ -704,7 +725,7 @@ const EditFacilityOwnershipDialog = ({
             )}
             {fileUploadStatus[de.id]?.error && (
               <span style={{
-                marginLeft: 8, 
+                marginLeft: 8,
                 color: '#d32f2f',
                 display: 'flex',
                 alignItems: 'center',
@@ -719,36 +740,36 @@ const EditFacilityOwnershipDialog = ({
         {/* Preview Modal */}
         {previewUrl && previewType && (
           <div style={{
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            width: '100vw', 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
             height: '100vh',
-            background: 'rgba(0,0,0,0.8)', 
-            zIndex: 9999, 
-            display: 'flex', 
-            alignItems: 'center', 
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             backdropFilter: 'blur(3px)'
           }}>
-            <div style={{ 
-              background: 'white', 
-              padding: 24, 
-              borderRadius: 8, 
-              maxWidth: '90vw', 
-              maxHeight: '90vh', 
+            <div style={{
+              background: 'white',
+              padding: 24,
+              borderRadius: 8,
+              maxWidth: '90vw',
+              maxHeight: '90vh',
               position: 'relative',
               boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
             }}>
-              <button 
-                onClick={closePreview} 
-                style={{ 
-                  position: 'absolute', 
-                  top: 8, 
-                  right: 8, 
-                  fontSize: 24, 
-                  background: 'none', 
-                  border: 'none', 
+              <button
+                onClick={closePreview}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  fontSize: 24,
+                  background: 'none',
+                  border: 'none',
                   cursor: 'pointer',
                   color: '#666',
                   width: '36px',
@@ -766,28 +787,28 @@ const EditFacilityOwnershipDialog = ({
               </button>
               <div style={{ marginTop: '10px' }}>
                 {previewType === 'pdf' ? (
-                  <iframe 
-                    src={previewUrl} 
-                    title="Preview" 
-                    style={{ 
-                      width: '80vw', 
-                      height: '80vh', 
+                  <iframe
+                    src={previewUrl}
+                    title="Preview"
+                    style={{
+                      width: '80vw',
+                      height: '80vh',
                       border: 'none',
                       borderRadius: '4px'
-                    }} 
+                    }}
                   />
                 ) : (
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview" 
-                    style={{ 
-                      maxWidth: '80vw', 
-                      maxHeight: '80vh', 
-                      display: 'block', 
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '80vw',
+                      maxHeight: '80vh',
+                      display: 'block',
                       margin: '0 auto',
                       borderRadius: '4px',
                       boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                    }} 
+                    }}
                   />
                 )}
               </div>
@@ -802,322 +823,336 @@ const EditFacilityOwnershipDialog = ({
     if (isLoading) return <div style={{ padding: '20px', textAlign: 'center' }}>
       <div style={{ fontSize: '1.1rem', color: '#666' }}>Loading form...</div>
     </div>;
-    if (errorMessage) return <div style={{ 
-      padding: '16px', 
-      margin: '16px 0', 
-      backgroundColor: '#fdeded', 
+    if (errorMessage) return <div style={{
+      padding: '16px',
+      margin: '16px 0',
+      backgroundColor: '#fdeded',
       color: '#d32f2f',
       borderRadius: '4px',
       border: '1px solid #f5c2c7'
     }}>{errorMessage}</div>;
-    if (!programStageMetadata) return <div style={{ 
-      padding: '16px', 
-      margin: '16px 0', 
-      backgroundColor: '#fff3cd', 
+    if (!programStageMetadata) return <div style={{
+      padding: '16px',
+      margin: '16px 0',
+      backgroundColor: '#fff3cd',
       color: '#856404',
       borderRadius: '4px',
       border: '1px solid #ffeeba'
     }}>Form metadata could not be loaded.</div>;
+
+    const selectedFacilityType = formData[FACILITY_TYPE_FIELD_ID];
+    
     return (
       <div className="dynamic-form-body">
-        {programStageMetadata.programStageSections.map(section => (
-          <div key={section.id} className="section-group" style={{
-            marginBottom: '28px',
-            padding: '0 0 16px 0',
-            borderBottom: section !== programStageMetadata.programStageSections[programStageMetadata.programStageSections.length - 1] ? '1px solid #eee' : 'none'
-          }}>
-            {section.name && (
-              <h4 style={{
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                marginBottom: '16px',
-                color: '#333',
-                paddingBottom: '8px',
-                borderBottom: '1px solid #eee'
-              }}>
-                {section.name}
-                {isComplianceSection(section) && (
-                  <span style={{ 
-                    fontSize: '0.8em', 
-                    fontWeight: 'normal', 
-                    marginLeft: '10px', 
-                    color: '#666',
-                    backgroundColor: '#f8f9fa',
-                    padding: '2px 6px',
-                    borderRadius: '4px'
-                  }}>
-                    (Read Only)
-                  </span>
-                )}
-              </h4>
-            )}
-            {section.dataElements.map(de => (
-              shouldHideField(de) ? null : (
-              <div key={de.id} className="form-group-dhis2" style={{
-                marginBottom: '16px'
-              }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  fontSize: '0.95rem',
-                  fontWeight: '500',
-                  color: '#333'
+        {programStageMetadata.programStageSections.map(section => {
+          // Sort section.dataElements by Excel order, then by original order for those not in Excel
+          const sortedDataElements = [...section.dataElements].sort((a, b) => {
+            const idxA = orderedDocumentIds.indexOf(a.id);
+            const idxB = orderedDocumentIds.indexOf(b.id);
+            if (idxA === -1 && idxB === -1) return 0; // neither in Excel, keep original order
+            if (idxA === -1) return 1; // a after b
+            if (idxB === -1) return -1; // a before b
+            return idxA - idxB;
+          });
+          return (
+            <div key={section.id} className="section-group" style={{
+              marginBottom: '28px',
+              padding: '0 0 16px 0',
+              borderBottom: section !== programStageMetadata.programStageSections[programStageMetadata.programStageSections.length - 1] ? '1px solid #eee' : 'none'
+            }}>
+              {section.name && (
+                <h4 style={{
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  marginBottom: '16px',
+                  color: '#333',
+                  paddingBottom: '8px',
+                  borderBottom: '1px solid #eee'
                 }}>
-                  {de.displayFormName}<span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>
-                </label>
-                {isComplianceSection(section) ? (
-                  // Render read-only fields for compliance section
-                  isFileValueType(de.valueType) ? (
-                    <div>
-                      {formData[de.id] ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <a 
-                            href={`/api/fileResources/${formData[de.id]}/data`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="file-download-link"
-                            style={{
-                              color: '#1976d2',
-                              textDecoration: 'none',
-                              fontWeight: '500',
-                              display: 'flex',
-                              alignItems: 'center'
-                            }}
-                          >
-                            <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
-                            {selectedFileNames[de.id] || 'Download file'}
-                          </a>
-                          {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
-                            <button 
-                              type="button" 
-                              className="btn btn-link" 
-                              style={{
-                                marginLeft: 8,
-                                color: '#1976d2',
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px 8px',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                                textDecoration: 'underline'
-                              }} 
-                              onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
-                            >
-                              Preview
-                            </button>
+                  {section.name}
+                  {isComplianceSection(section) && (
+                    <span style={{
+                      fontSize: '0.8em',
+                      fontWeight: 'normal',
+                      marginLeft: '10px',
+                      color: '#666',
+                      backgroundColor: '#f8f9fa',
+                      padding: '2px 6px',
+                      borderRadius: '4px'
+                    }}>
+                      (Read Only)
+                    </span>
+                  )}
+                </h4>
+              )}
+              {sortedDataElements.map(de => (
+                (!shouldHideField(de) && shouldShowDataElement(de.id, selectedFacilityType, facilityTypeMapping)) && (
+                  <div key={de.id} className="form-group-dhis2" style={{
+                    marginBottom: '16px'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '6px',
+                      fontSize: '0.95rem',
+                      fontWeight: '500',
+                      color: '#333'
+                    }}>
+                      {de.displayFormName}<span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
+                    </label>
+                    {isComplianceSection(section) ? (
+                      // Render read-only fields for compliance section
+                      isFileValueType(de.valueType) ? (
+                        <div>
+                          {formData[de.id] ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <a
+                                href={`/api/fileResources/${formData[de.id]}/data`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="file-download-link"
+                                style={{
+                                  color: '#1976d2',
+                                  textDecoration: 'none',
+                                  fontWeight: '500',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
+                                {selectedFileNames[de.id] || 'Download file'}
+                              </a>
+                              {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-link"
+                                  style={{
+                                    marginLeft: 8,
+                                    color: '#1976d2',
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    textDecoration: 'underline'
+                                  }}
+                                  onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
+                                >
+                                  Preview
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{
+                              color: '#666',
+                              fontStyle: 'italic',
+                              padding: '8px 0',
+                              display: 'block'
+                            }}>No file uploaded</span>
                           )}
                         </div>
+                      ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
+                        <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData[de.id] === 'true'}
+                            disabled={true}
+                            style={{
+                              marginRight: '8px',
+                              width: '18px',
+                              height: '18px',
+                              cursor: 'not-allowed',
+                              opacity: 0.7
+                            }}
+                          />
+                          <span style={{ fontSize: '0.95rem' }}>Yes</span>
+                        </div>
+                      ) : shouldRenderAsDropdown(de) ? (
+                        <div style={{
+                          padding: '10px 12px',
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px',
+                          color: '#333',
+                          fontSize: '0.95rem'
+                        }}>
+                          {de.optionSet.options &&
+                            de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName ||
+                            <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
+                          }
+                        </div>
                       ) : (
-                        <span style={{ 
-                          color: '#666', 
-                          fontStyle: 'italic',
-                          padding: '8px 0',
-                          display: 'block'
-                        }}>No file uploaded</span>
-                      )}
-                    </div>
-                  ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
-                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={formData[de.id] === 'true'}
-                        disabled={true}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          cursor: 'not-allowed',
-                          opacity: 0.7
-                        }}
-                      />
-                      <span style={{ fontSize: '0.95rem' }}>Yes</span>
-                    </div>
-                  ) : shouldRenderAsDropdown(de) ? (
-                    <div style={{ 
-                      padding: '10px 12px',
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      color: '#333',
-                      fontSize: '0.95rem'
-                    }}>
-                      {de.optionSet.options && 
-                        de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName || 
-                        <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
-                      }
-                    </div>
-                  ) : (
-                    <div style={{ 
-                      padding: '10px 12px',
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      color: '#333',
-                      fontSize: '0.95rem'
-                    }}>
-                      {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
-                    </div>
-                  )
-                ) : (
-                  // Normal editable fields for non-compliance sections
-                  isFileValueType(de.valueType) ? (
-                    renderFileInput(de)
-                  ) : de.valueType === 'NUMBER' ? (
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={true}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : de.valueType === 'TRUE_ONLY' ? (
-                    <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                      <input
-                        type="checkbox"
-                        id={`checkbox-${de.id}`}
-                        checked={formData[de.id] === 'true'}
-                        onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          accentColor: '#1976d2'
-                        }}
-                      />
-                      <label 
-                        htmlFor={`checkbox-${de.id}`}
-                        style={{ 
-                          cursor: 'pointer', 
-                          fontWeight: 'normal', 
-                          margin: 0,
+                        <div style={{
+                          padding: '10px 12px',
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px',
+                          color: '#333',
                           fontSize: '0.95rem'
-                        }}
-                      >
-                        Yes
-                      </label>
-                    </div>
-                  ) : de.valueType === 'BOOLEAN' ? (
-                    <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                      <input
-                        type="checkbox"
-                        id={`checkbox-${de.id}`}
-                        checked={formData[de.id] === 'true'}
-                        onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          accentColor: '#1976d2'
-                        }}
-                      />
-                      <label 
-                        htmlFor={`checkbox-${de.id}`}
-                        style={{ 
-                          cursor: 'pointer', 
-                          fontWeight: 'normal', 
-                          margin: 0,
-                          fontSize: '0.95rem'
-                        }}
-                      >
-                        Yes
-                      </label>
-                    </div>
-                  ) : shouldRenderAsDropdown(de) ? (
-                    <select
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={true}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        appearance: 'auto',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">Select</option>
-                      {de.optionSet.options && de.optionSet.options.map(opt => (
-                        <option key={opt.id} value={opt.code}>{opt.displayName}</option>
-                      ))}
-                    </select>
-                  ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={true}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : de.valueType === 'DATE' ? (
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={true}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={true}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  )
-                )}
-              </div>
-              )
-            ))}
-          </div>
-        ))}
+                        }}>
+                          {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                        </div>
+                      )
+                    ) : (
+                      // Normal editable fields for non-compliance sections
+                      isFileValueType(de.valueType) ? (
+                        renderFileInput(de)
+                      ) : de.valueType === 'NUMBER' ? (
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={formData[de.id] || ''}
+                          onChange={e => handleInputChange(de.id, e.target.value)}
+                          required={true}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '0.95rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            transition: 'border-color 0.2s ease',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      ) : de.valueType === 'TRUE_ONLY' ? (
+                        <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                          <input
+                            type="checkbox"
+                            id={`checkbox-${de.id}`}
+                            checked={formData[de.id] === 'true'}
+                            onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
+                            style={{
+                              marginRight: '8px',
+                              width: '18px',
+                              height: '18px',
+                              accentColor: '#1976d2'
+                            }}
+                          />
+                          <label
+                            htmlFor={`checkbox-${de.id}`}
+                            style={{
+                              cursor: 'pointer',
+                              fontWeight: 'normal',
+                              margin: 0,
+                              fontSize: '0.95rem'
+                            }}
+                          >
+                            Yes
+                          </label>
+                        </div>
+                      ) : de.valueType === 'BOOLEAN' ? (
+                        <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                          <input
+                            type="checkbox"
+                            id={`checkbox-${de.id}`}
+                            checked={formData[de.id] === 'true'}
+                            onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
+                            style={{
+                              marginRight: '8px',
+                              width: '18px',
+                              height: '18px',
+                              accentColor: '#1976d2'
+                            }}
+                          />
+                          <label
+                            htmlFor={`checkbox-${de.id}`}
+                            style={{
+                              cursor: 'pointer',
+                              fontWeight: 'normal',
+                              margin: 0,
+                              fontSize: '0.95rem'
+                            }}
+                          >
+                            Yes
+                          </label>
+                        </div>
+                      ) : shouldRenderAsDropdown(de) ? (
+                        <select
+                          className="form-control"
+                          value={formData[de.id] || ''}
+                          onChange={e => handleInputChange(de.id, e.target.value)}
+                          required={true}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '0.95rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            transition: 'border-color 0.2s ease',
+                            outline: 'none',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            appearance: 'auto',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <option value="">Select</option>
+                          {de.optionSet.options && de.optionSet.options.map(opt => (
+                            <option key={opt.id} value={opt.code}>{opt.displayName}</option>
+                          ))}
+                        </select>
+                      ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData[de.id] || ''}
+                          onChange={e => handleInputChange(de.id, e.target.value)}
+                          required={true}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '0.95rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            transition: 'border-color 0.2s ease',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      ) : de.valueType === 'DATE' ? (
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={formData[de.id] || ''}
+                          onChange={e => handleInputChange(de.id, e.target.value)}
+                          required={true}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '0.95rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            transition: 'border-color 0.2s ease',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData[de.id] || ''}
+                          onChange={e => handleInputChange(de.id, e.target.value)}
+                          required={true}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '0.95rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            transition: 'border-color 0.2s ease',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      )
+                    )}
+                  </div>
+                )
+              ))}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1125,19 +1160,19 @@ const EditFacilityOwnershipDialog = ({
   // Helper to check if all required fields are filled
   const isAllRequiredFieldsFilled = () => {
     if (!programStageMetadata) return false;
-    
+
     for (const section of programStageMetadata.programStageSections) {
       // Exclude fields in Compliance sections and Special Circumstances sections
       if (isComplianceSection(section) || isSpecialCircumstancesSection(section)) {
         continue;
       }
-      
+
       for (const de of section.dataElements) {
         // Skip hidden fields (permit fields when ID Type is Omang)
         if (shouldHideField(de)) {
           continue;
         }
-        
+
         // Check ALL fields in required sections, not just those marked as compulsory
         const value = formData[de.id];
         if (value === undefined || value === null || value === '') {
@@ -1156,7 +1191,7 @@ const EditFacilityOwnershipDialog = ({
     try {
       const credentials = await StorageService.get('userCredentials');
       if (!credentials || !name) return null;
-      
+
       const encodedName = encodeURIComponent(name);
       const response = await fetch(
         `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits?paging=false&filter=displayName:ilike:${encodedName}`,
@@ -1164,9 +1199,9 @@ const EditFacilityOwnershipDialog = ({
           headers: { Authorization: `Basic ${credentials}` },
         }
       );
-      
+
       if (!response.ok) throw new Error('Failed to fetch organization unit');
-      
+
       const data = await response.json();
       return data.organisationUnits?.[0]?.id || null;
     } catch (error) {
@@ -1176,24 +1211,26 @@ const EditFacilityOwnershipDialog = ({
   };
 
   const handleClose = () => {
+    // setEmailStatus(null);
     sessionStorage.removeItem('currentFacilityName');
     onClose();
   };
-  
+
   // Actual submission after confirmation
   const handleConfirmedSubmit = async () => {
     setShowConfirmDialog(false);
     setSubmitInProgress(true);
     setSubmitError(null);
+    setEmailStatus(null);
     try {
       // 1. Get facility name from sessionStorage
       const { getCredentials } = await import('../utils/credentialHelper');
       let credentials = await getCredentials();
-      
+
       if (!credentials) {
         throw new Error('No credentials available. Please log in again.');
       }
-      
+
       console.log('🔐 Using credentials for /api/me call:', !!credentials);
       const meRes = await fetch(`/api/me?fields=id,organisationUnits[id,displayName]`, {
         headers: { Authorization: `Basic ${credentials}` },
@@ -1209,11 +1246,11 @@ const EditFacilityOwnershipDialog = ({
 
       // 1.1 Set "Application Submitted" to true before saving
       if (programStageMetadata && programStageMetadata.programStageSections) {
-        const complianceSection = programStageMetadata.programStageSections.find(section => 
+        const complianceSection = programStageMetadata.programStageSections.find(section =>
           section.name && section.name.toLowerCase().includes('compliance')
         );
         if (complianceSection) {
-          const applicationSubmittedDE = complianceSection.dataElements.find(de => 
+          const applicationSubmittedDE = complianceSection.dataElements.find(de =>
             de.displayFormName && de.displayFormName.toLowerCase().includes('application submitted')
           );
           if (applicationSubmittedDE) {
@@ -1224,7 +1261,7 @@ const EditFacilityOwnershipDialog = ({
           }
         }
       }
-      
+
       // 2. Save the record first (this will create or update the event)
       await handleSubmit(new Event('submit'));
 
@@ -1239,20 +1276,20 @@ const EditFacilityOwnershipDialog = ({
       } else {
         throw new Error('Facility name is required');
       }
-      
+
       // 3.1 Add facility to Screening org unit group
 
-// Use the same credentials we got earlier
-if (!credentials) {
-  console.error("❌ FACILITY OWNERSHIP: No credentials available");
-  setErrorMessage("Authentication required. Please log in again.");
-  setIsLoading(false);
-  return;
-}
+      // Use the same credentials we got earlier
+      if (!credentials) {
+        console.error("❌ FACILITY OWNERSHIP: No credentials available");
+        setErrorMessage("Authentication required. Please log in again.");
+        setIsLoading(false);
+        return;
+      }
 
       const nextGroupId = 'nDAvPPtYHQP';
       const nextGroupName = 'Screening Review';
-      
+
       // 3.2 First get the current group members
       const getResponse = await fetch(
         `/api/organisationUnitGroups/${nextGroupId}?fields=id,name,organisationUnits[id]`,
@@ -1308,6 +1345,7 @@ if (!credentials) {
       console.log(`Facility successfully added to ${nextGroupName} group`);
 
       // 4. Send email to user and reviewers
+      setEmailStatus('sending');
       try {
         // 4.1 Get the current user's username from /api/me
         const meEmailRes = await fetch(`/api/me?fields=username`, {
@@ -1329,26 +1367,30 @@ if (!credentials) {
           if (reviewersData.users && Array.isArray(reviewersData.users)) {
             reviewerEmails = reviewersData.users
               .map(u => u.email)
+
               .filter(email => email && email !== userEmail);
           }
         }
 
         // 4.3 Combine all emails (no duplicates)
-        const emails = [userEmail, ...reviewerEmails].filter((v, i, a) => v && a.indexOf(v) === i);
+        const emails = [userEmail, "qimsmohbots@gmail.com", ...reviewerEmails].filter((v, i, a) => v && a.indexOf(v) === i);
 
         // 4.4 Send POST to /email2/api/facility-reg-update
-        const emailResponse = await fetch('/email2/api/facility-reg-update', {
+        const emailResponse = await fetch(`/email2/api/facility-reg-update`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ emails }),
         });
+
         if (!emailResponse.ok) {
-          console.error('Failed to send email notification, but continuing with submission');
-        } else {
-          console.log('Email notification sent to:', emails);
+          throw new Error('Failed to send email notification');
         }
+        setEmailStatus('sent');
+
+        setShowEmailConfirmation(true);
+
       } catch (emailErr) {
         console.error('Error sending email notification:', emailErr);
       }
@@ -1360,9 +1402,9 @@ if (!credentials) {
       // 7. Set isInScreeningGroup to true to disable Save Changes button
       setIsInScreeningGroup(true);
       // 8. Close the form after successful submission
-      setTimeout(() => {
-        handleClose();
-      }, 2000); // Close after 2 seconds to allow user to see success message
+      // setTimeout(() => {
+      //   handleClose();
+      // }, 5000); // Close after 2 seconds to allow user to see success message
     } catch (err) {
       setSubmitError(err.message || 'Save or submission failed');
       setSubmitInProgress(false);
@@ -1382,7 +1424,9 @@ if (!credentials) {
   }
 
   return (
+    <>
     <ModalPortal open={open} onClose={handleClose}>
+
       {/* Loading overlay during submission */}
       {isSubmitting && (
         <div style={{
@@ -1414,6 +1458,7 @@ if (!credentials) {
             }}>
               {isEditMode ? 'Updating Facility Ownership...' : 'Adding Facility Ownership...'}
             </div>
+            
             <div style={{
               width: '100%',
               height: '4px',
@@ -1426,21 +1471,24 @@ if (!credentials) {
                 width: '100%',
                 height: '100%',
                 backgroundColor: '#1976d2',
-                animation: 'loading-bar 1.5s ease-in-out infinite'
+                animation: 'loading-bar 5s ease-in-out infinite'
               }} />
             </div>
             <div style={{
               fontSize: '14px',
               color: '#666'
             }}>
-              Please wait while we process your request...
+              {emailStatus === 'sent'
+                ? 'Processing complete'
+                : 'Please wait while we process your request...'}
+
             </div>
           </div>
         </div>
-      )}
+      )}      
 
-      <div className="modal-content" style={{ 
-        padding: '0', 
+      <div className="modal-content" style={{
+        padding: '0',
         maxWidth: '700px',
         width: '100%',
         borderRadius: '8px',
@@ -1478,20 +1526,20 @@ if (!credentials) {
                 borderBottom: '1px solid #eee',
                 paddingBottom: '16px'
               }}>
-                <span style={{ 
-                  fontSize: '24px', 
+                <span style={{
+                  fontSize: '24px',
                   color: '#f57c00',
                   marginRight: '8px'
                 }}>⚠️</span>
-                <h3 style={{ 
-                  margin: 0, 
+                <h3 style={{
+                  margin: 0,
                   color: '#333',
                   fontSize: '18px',
                   fontWeight: '600'
                 }}>Confirm Submission</h3>
               </div>
-              
-              <p style={{ 
+
+              <p style={{
                 margin: '0 0 8px 0',
                 fontSize: '14px',
                 lineHeight: '1.5',
@@ -1499,7 +1547,7 @@ if (!credentials) {
               }}>
                 You are about to submit this application for review. Once submitted:
               </p>
-              
+
               <ul style={{
                 margin: '0 0 16px 0',
                 paddingLeft: '20px',
@@ -1511,8 +1559,8 @@ if (!credentials) {
                 <li>Your application will be sent for official review</li>
                 <li>You will receive confirmation via email</li>
               </ul>
-              
-              <p style={{ 
+
+              <p style={{
                 margin: '0 0 16px 0',
                 fontSize: '14px',
                 fontWeight: '500',
@@ -1520,7 +1568,7 @@ if (!credentials) {
               }}>
                 Are you sure you want to proceed?
               </p>
-              
+
               <div style={{
                 display: 'flex',
                 justifyContent: 'flex-end',
@@ -1528,7 +1576,7 @@ if (!credentials) {
                 borderTop: '1px solid #eee',
                 paddingTop: '16px'
               }}>
-                <button 
+                <button
                   onClick={handleCancelConfirmation}
                   style={{
                     padding: '10px 16px',
@@ -1543,7 +1591,7 @@ if (!credentials) {
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleConfirmedSubmit}
                   style={{
                     padding: '10px 16px',
@@ -1572,16 +1620,16 @@ if (!credentials) {
           justifyContent: 'space-between',
           background: '#f8f9fa'
         }}>
-          <h5 className="modal-title" style={{ 
-            margin: 0, 
-            fontSize: '1.25rem', 
+          <h5 className="modal-title" style={{
+            margin: 0,
+            fontSize: '1.25rem',
             fontWeight: '500',
             color: '#333'
           }}>{isEditMode ? 'Edit Facility Ownership' : 'Add Facility Ownership'}</h5>
-          <button 
-            type="button" 
-            className="close-btn" 
-            onClick={handleClose} 
+          <button
+            type="button"
+            className="close-btn"
+            onClick={handleClose}
             disabled={isSubmitting}
             style={{
               background: 'none',
@@ -1595,8 +1643,8 @@ if (!credentials) {
             }}
           >&times;</button>
         </div>
-        <div className="modal-body" style={{ 
-          position: 'relative', 
+        <div className="modal-body" style={{
+          position: 'relative',
           padding: '24px',
           maxHeight: '70vh',
           overflowY: 'auto'
@@ -1614,9 +1662,9 @@ if (!credentials) {
                 display: 'flex',
                 alignItems: 'center',
               }}>
-                <span style={{ 
-                  marginRight: '8px', 
-                  fontSize: '18px' 
+                <span style={{
+                  marginRight: '8px',
+                  fontSize: '18px'
                 }}>
                   {errorMessage.includes('successfully') ? '✓' : '⚠️'}
                 </span>
@@ -1624,9 +1672,9 @@ if (!credentials) {
               </div>
             )}
             {renderFormBody()}
-            <div className="button-container" style={{ 
-              display: 'flex', 
-              gap: 12, 
+            <div className="button-container" style={{
+              display: 'flex',
+              gap: 12,
               justifyContent: 'flex-end',
               marginTop: '32px',
               padding: '16px 0',
@@ -1636,13 +1684,13 @@ if (!credentials) {
               background: 'white',
               zIndex: 10
             }}>
-              <button 
-                type="button" 
-                className="btn-secondary" 
-                onClick={handleClose} 
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleClose}
                 disabled={isSubmitting}
-                style={{ 
-                  padding: '10px 24px', 
+                style={{
+                  padding: '10px 24px',
                   fontSize: '0.95rem',
                   borderRadius: '4px',
                   border: '1px solid #ccc',
@@ -1656,12 +1704,12 @@ if (!credentials) {
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
-                className="btn-primary" 
+              <button
+                type="submit"
+                className="btn-primary"
                 disabled={isSubmitting || isLoading}
-                style={{ 
-                  padding: '10px 24px', 
+                style={{
+                  padding: '10px 24px',
                   fontSize: '0.95rem',
                   borderRadius: '4px',
                   border: 'none',
@@ -1677,12 +1725,12 @@ if (!credentials) {
                 {isSubmitting ? 'Saving...' : 'Save'}
               </button>
               {isInScreeningGroup && (
-                <div style={{ 
-                  color: '#ed6c02', 
-                  marginLeft: 8, 
+                <div style={{
+                  color: '#ed6c02',
+                  marginLeft: 8,
                   fontSize: '0.9em',
                   display: 'flex',
-                  alignItems: 'center' 
+                  alignItems: 'center'
                 }}>
                   <span style={{ marginRight: '6px', fontSize: '1.2em' }}>⚠️</span>
                   This application has already been submitted for review
@@ -1710,9 +1758,9 @@ if (!credentials) {
                 {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
               </button>
               {submitSuccess && (
-                <div style={{ 
-                  color: '#2e7d32', 
-                  marginTop: 8, 
+                <div style={{
+                  color: '#2e7d32',
+                  marginTop: 8,
                   fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center'
@@ -1722,8 +1770,8 @@ if (!credentials) {
                 </div>
               )}
               {submitError && (
-                <div style={{ 
-                  color: '#d32f2f', 
+                <div style={{
+                  color: '#d32f2f',
                   marginTop: 8,
                   display: 'flex',
                   alignItems: 'center'
@@ -1737,6 +1785,55 @@ if (!credentials) {
         </div>
       </div>
     </ModalPortal>
+    {/* show email confirmation */}
+    {showEmailConfirmation && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10005
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '24px',
+          width: '400px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', color: '#4caf50', marginBottom: '16px' }}>✓</div>
+          <h3 style={{ margin: '0 0 16px 0', color: '#333' }}>Email Sent Successfully</h3>
+          <p style={{ marginBottom: '24px', color: '#555' }}>
+            Notification emails have been sent to all recipients.
+          </p>
+          <button
+            onClick={() => {
+              setShowEmailConfirmation(false);
+              // handleClose(); // move handleClose here
+            }}
+            style={{
+              padding: '10px 24px',
+              backgroundColor: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
