@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './Dhis2Input.css';
+import { StorageService } from '../services';
 
 const Dhis2Input = ({ dataElement, value, onChange }) => {
   const { id, displayFormName, valueType, compulsory, optionSet } = dataElement;
   const [internalValue, setInternalValue] = useState(value || '');
   const [datePart, setDatePart] = useState('');
   const [timePart, setTimePart] = useState('');
+  
+  // File upload states
+  const [fileUploadStatus, setFileUploadStatus] = useState({ uploading: false, error: null });
+  const [selectedFileName, setSelectedFileName] = useState('');
 
   useEffect(() => {
     if (valueType === 'DATETIME' && value) {
@@ -35,7 +40,141 @@ const Dhis2Input = ({ dataElement, value, onChange }) => {
     }
   };
 
+  // File upload handler
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    
+    setFileUploadStatus({ uploading: true, error: null });
+    setSelectedFileName(file.name);
+    
+    try {
+      const credentials = await StorageService.get('userCredentials');
+      if (!credentials) {
+        throw new Error('Authentication required');
+      }
+
+      const fileData = new FormData();
+      fileData.append('file', file);
+      
+      const response = await fetch('/api/fileResources', {
+        method: 'POST',
+        headers: { Authorization: `Basic ${credentials}` },
+        body: fileData,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`File upload failed: ${response.status} - ${errorText}`);
+      }
+      
+      const responseJson = await response.json();
+      const fileResourceId = responseJson.response.fileResource.id;
+      
+      onChange(id, fileResourceId);
+      setFileUploadStatus({ uploading: false, error: null });
+    } catch (error) {
+      setFileUploadStatus({ uploading: false, error: error.message });
+      setSelectedFileName('');
+    }
+  };
+
+  // File preview handler
+  const handlePreview = () => {
+    if (internalValue) {
+      window.open(`/api/fileResources/${internalValue}/data`, '_blank');
+    }
+  };
+
+  // File removal handler
+  const handleRemoveFile = () => {
+    onChange(id, '');
+    setSelectedFileName('');
+    setFileUploadStatus({ uploading: false, error: null });
+  };
+
+  // Check if file is previewable
+  const isPreviewable = (fileName) => {
+    if (!fileName) return false;
+    const ext = fileName.split('.').pop().toLowerCase();
+    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'].includes(ext);
+  };
+
   const renderInput = () => {
+    // Handle FILE_RESOURCE value type
+    if (valueType === 'FILE_RESOURCE') {
+      const fileInputId = `file-input-${id}`;
+      
+      return (
+        <div className="dhis2-file-upload-container">
+          {internalValue ? (
+            // File is uploaded - show download/preview options
+            <div className="dhis2-file-actions">
+              <a 
+                href={`/api/fileResources/${internalValue}/data`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="dhis2-file-download-link"
+              >
+                <span className="file-icon">📄</span>
+                {selectedFileName || 'Download current file'}
+              </a>
+              {selectedFileName && isPreviewable(selectedFileName) && (
+                <button 
+                  type="button" 
+                  className="dhis2-file-preview-btn"
+                  onClick={handlePreview}
+                >
+                  Preview
+                </button>
+              )}
+              <button 
+                type="button" 
+                className="dhis2-file-remove-btn"
+                onClick={handleRemoveFile}
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            // No file uploaded - show upload interface
+            <div className="dhis2-file-upload-interface">
+              <input
+                id={fileInputId}
+                type="file"
+                className="dhis2-file-input"
+                onChange={(e) => handleFileUpload(e.target.files[0])}
+                required={compulsory}
+                disabled={fileUploadStatus.uploading}
+              />
+              <label 
+                htmlFor={fileInputId} 
+                className={`dhis2-file-upload-label ${fileUploadStatus.uploading ? 'uploading' : ''}`}
+              >
+                Choose File
+              </label>
+              {selectedFileName && (
+                <span className="dhis2-file-name">
+                  <span className="file-icon">📄</span>
+                  {selectedFileName}
+                </span>
+              )}
+              {fileUploadStatus.uploading && (
+                <div className="dhis2-file-upload-status">
+                  <span className="upload-spinner">⏳</span>
+                  Uploading...
+                </div>
+              )}
+              {fileUploadStatus.error && (
+                <div className="dhis2-file-upload-error">
+                  ❌ {fileUploadStatus.error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // Prioritize rendering as a dropdown if an optionSet exists
     if (optionSet && optionSet.options && optionSet.options.length > 0) {
       return (
