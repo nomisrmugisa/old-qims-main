@@ -57,6 +57,11 @@ const FacilityUserDashboard = () => {
         const userData = await StorageService.getUserData();
     };
 
+    const loadUserList = async() => {
+        const data = await UserService.listFacilityUsers();
+        window.console.log("loadFacilityUserList", data);
+    };
+
     // Load initial data
     useEffect(() => {
         // Simulate API calls
@@ -98,10 +103,7 @@ const FacilityUserDashboard = () => {
             setNotifications(notificationsData);
             setUnreadCount(notificationsData.filter(n => !n.read).length);
         };
-        const loadUserList = async() => {
-            const data = UserService.listGroupUsers(`${import.meta.env.VITE_FACILITY_USER_GROUP_ID}`);
-            window.console.log(data);
-        };
+
 
         loadData();
         loadUserList();
