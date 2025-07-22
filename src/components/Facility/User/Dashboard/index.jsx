@@ -91,7 +91,7 @@ const FacilityUserDashboard = () => {
 
             // Load notifications
             const notificationsData = [
-                { id: 1, title: 'Self Assessment Scheduled', message: 'Main Hospital self assessment scheduled for June 15', date: '2 hours ago', read: false },
+                { id: 1, title: 'Pre-Inspection Scheduled', message: 'Main Hospital pre-inspection scheduled for June 15', date: '2 hours ago', read: false },
                 { id: 2, title: 'License Renewal', message: 'Your license renewal is due in 30 days', date: '1 day ago', read: false },
                 { id: 3, title: 'New Facility', message: 'You have been assigned to Northside Medical', date: '3 days ago', read: true }
             ];

@@ -147,7 +147,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Edit: Situational Analysis</h5>
+          <h5 className="modal-title">Edit: Pre-Inspection</h5>
           <button type="button" className="close-btn" onClick={onClose} disabled={isSubmitting}>&times;</button>
         </div>
         <div className="modal-body">
@@ -156,7 +156,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
               {programStageMetadata && programStageMetadata.programStageSections.map(section => {
                 // Override display name for specific sections
                 const getDisplayName = (sectionName) => {
-                  if (sectionName === "Self Assessment Details") {
+                  if (sectionName === "Pre-Inspection Details") {
                     return "Date and Time";
                   }
                   return sectionName;
@@ -180,7 +180,7 @@ const EditInspectionDialog = ({ open, onClose, onSuccess, event }) => {
               <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
-                  {isSubmitting ? 'Updating...' : 'Update Self Assessment'}
+                  {isSubmitting ? 'Updating...' : 'Update Pre-Inspection'}
               </button>
             </div>
           </form>

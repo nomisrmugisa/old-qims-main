@@ -14,6 +14,14 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventId, setEventId] = useState(null);
 
+  const ALLOWED_SECTION_IDS = new Set([
+    "GjvSxtEd4JA",
+    "sj3t0fYKfax",
+    "qCEoj588vmU",
+    "SZwV0c855QB"
+  ]);
+  
+
   // Fetch Program Stage Metadata
   const fetchProgramStageMetadata = useCallback(async () => {
     const credentials = await StorageService.get('userCredentials');
@@ -36,12 +44,19 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
       }
 
       const metadata = await response.json();
-      setProgramStageMetadata(metadata);
-      
+
+      // Filter sections by allowed IDs
+      const filteredSections = metadata.programStageSections?.filter(section =>
+        ALLOWED_SECTION_IDS.has(section.id)
+      ) || [];
+
+      setProgramStageMetadata({ ...metadata, programStageSections: filteredSections });
+
       // Set the first section as active by default
-      if (metadata.programStageSections && metadata.programStageSections.length > 0) {
-        setActiveSection(metadata.programStageSections[0].id);
+      if (filteredSections.length > 0) {
+        setActiveSection(filteredSections[0].id);
       }
+
       
     } catch (error) {
       setErrorMessage(error.message);
@@ -165,7 +180,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Situational Analysis</h5>
+          <h5 className="modal-title">Pre-Inspection</h5>
           <button type="button" className="close-btn" onClick={onClose} disabled={isSubmitting}>&times;</button>
         </div>
         <div className="modal-body">
@@ -174,7 +189,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
               {programStageMetadata && programStageMetadata.programStageSections.map(section => {
                 // Override display name for specific sections
                 const getDisplayName = (sectionName) => {
-                  if (sectionName === "Self Assessment Details") {
+                  if (sectionName === "Pre-Inspection Details") {
                     return "Date and Time";
                   }
                   return sectionName;
@@ -198,7 +213,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
             <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
-                  {isSubmitting ? 'Submitting...' : 'Submit Self Assessment'}
+                  {isSubmitting ? 'Submitting...' : 'Submit Pre-Inspection'}
               </button>
             </div>
           </form>

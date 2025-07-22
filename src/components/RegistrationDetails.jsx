@@ -44,7 +44,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [facilityName, setFacilityName] = useState('');
   const [completeApplicationEvent, setCompleteApplicationEvent] = useState(null);
   
-  // Situational Analysis state
+  // Pre-Inspection state
   const [inspectionEvents, setInspectionEvents] = useState([]);
   const [isLoadingInspections, setIsLoadingInspections] = useState(true);
   const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
@@ -583,13 +583,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       borderColor: "#c3e6cb"
     },
     COMPLETE_SELF_INSPECTION: {
-      text: "Complete a Self Assessment",
+      text: "Complete a Pre-Inspection",
       color: "#fd7e14", // Orange
       bgColor: "#ffe8d1",
       borderColor: "#ffd8a8"
     },
     SELECT_INSPECTION_DATE: {
-      text: "Please Conduct a self assessment",
+      text: "Please Conduct a pre-inspection",
       color: "#6f42c1", // Purple
       bgColor: "#e2d9f3",
       borderColor: "#d1c7e5"
@@ -666,7 +666,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     
           // Step 6: Check self assessment
     if (!hasTabData('inspectionSchedule')) {
-            console.log("📝 Setting status: Complete Self Assessment");
+            console.log("📝 Setting status: Complete Pre-Inspection");
             setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
       return;
     }
@@ -680,7 +680,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }
     
           // Step 8: All conditions met but no date set
-          console.log("📝 Setting status: Please Conduct a self assessment");
+          console.log("📝 Setting status: Please Conduct a pre-inspection");
           setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
           return;
         }
@@ -728,7 +728,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     
     // Manually trigger fetch for self assessment data when clicking on inspectionSchedule tab
     if (tabKey === 'inspectionSchedule') {
-      console.log("- Manually triggering fetchInspectionData for Situational Analysis tab");
+      console.log("- Manually triggering fetchInspectionData for Pre-Inspection tab");
       fetchInspectionData();
     }
     
@@ -1035,7 +1035,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     return () => clearInterval(intervalId);
   }, []);
   
-  // Auto-navigate to View Self Assessment when both Complete Application and Facility Ownership are complete
+  // Auto-navigate to View Pre-Inspection when both Complete Application and Facility Ownership are complete
   useEffect(() => {
     const checkAndNavigateToInspections = () => {
       try {
@@ -1046,7 +1046,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         const isFacilityOwnershipDone = facilityOwnershipStatus === 'true';
         
         if (isCompleteApplicationDone && isFacilityOwnershipDone) {
-          // Navigate to View Self Assessment tab
+          // Navigate to View Pre-Inspection tab
           const event = new CustomEvent('switchToTab', { detail: 'inspections' });
           window.dispatchEvent(event);
         }
@@ -1314,7 +1314,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   const fetchInspectionData = async () => {
-    console.log("🔄 === STARTING SELF ASSESSMENT DATA FETCH ===");
+    console.log("🔄 === STARTING PRE-INSPECTION DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     
     const currentTeiId = getCurrentTrackedEntityInstanceId();
@@ -1341,10 +1341,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingInspections(true);
-      // Use the correct program stage ID for Situational Analysis (Inspection)
+      // Use the correct program stage ID for Pre-Inspection (Inspection)
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
-      console.log("Situational Analysis API Request:");
+      console.log("Pre-Inspection API Request:");
       console.log("- Full URL:", url);
       console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
@@ -1363,7 +1363,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       const data = await response.json();
       
-      console.log("Situational Analysis API Response:");
+      console.log("Pre-Inspection API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
@@ -1377,7 +1377,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           console.log(`  - Events in inspection enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
             console.log(`  - First inspection event programStage:`, enrollment.events[0].programStage);
-            // Filter events to only include Situational Analysis program stage (Eupjm3J0dt2)
+            // Filter events to only include Pre-Inspection program stage (Eupjm3J0dt2)
             const inspectionEvents = enrollment.events.filter(event => event.programStage === "Eupjm3J0dt2");
             console.log(`  - Filtered inspection events (Eupjm3J0dt2):`, inspectionEvents.length);
             fetchedEvents = fetchedEvents.concat(inspectionEvents);
@@ -1433,7 +1433,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
     } catch (error) {
-      console.error("Error fetching self assessment data:", error);
+      console.error("Error fetching pre-inspection data:", error);
       setIsLoadingInspections(false);
     }
   };
@@ -2406,7 +2406,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="inspection-schedule-details">
               <h2>
-                Self Assessment 
+                Pre-Inspection 
                 <button 
                   className="add-icon" 
                   onClick={handleAddInspection}
@@ -2424,10 +2424,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </button>
               </h2>
               {isLoadingInspections ? (
-                <p>Loading self assessment data...</p>
+                <p>Loading pre-inspection data...</p>
               ) : inspectionEvents.length === 0 ? (
                 <div>
-                  <p>No self assessment records found.</p>
+                  <p>No pre-inspection records found.</p>
                 </div>
               ) : (
                 <>
@@ -2436,7 +2436,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       <thead>
                         <tr>
                           <th>Date and Time</th>
-                          <th>Self Assessment Code</th>
+                          <th>Pre-Inspection Code</th>
                           <th>Inspector</th>
                           <th>Type</th>
                           <th>Organization Structure</th>
@@ -2798,7 +2798,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Services Offered:", serviceEvents.length);
       console.log("  • Statutory Compliance:", statutoryComplianceEvents.length);
       console.log("  • Equipment & Machinery:", equipmentEvents.length);
-      console.log("  • Self Assessment:", inspectionEvents.length);
+      console.log("  • Pre-Inspection:", inspectionEvents.length);
       
       // Validate all program stages
       const facilityOwnershipComplete = validateFacilityOwnership(facilityOwnershipEvents);
@@ -2814,7 +2814,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Services Offered:", servicesOfferedComplete);
       console.log("  • Statutory Compliance:", statutoryComplianceComplete);
       console.log("  • Equipment & Machinery:", equipmentMachineryComplete);
-      console.log("  • Self Assessment:", inspectionScheduleComplete);
+      console.log("  • Pre-Inspection:", inspectionScheduleComplete);
       
       // Update all validation states
       setTabValidationStates({
@@ -2867,7 +2867,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               );
             })()}
             
-            {/* Date Range Picker - Only show when Self Assessment has events */}
+            {/* Date Range Picker - Only show when Pre-Inspection has events */}
             {inspectionEvents.length > 0 && (
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 3 }}>
@@ -2943,7 +2943,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               { number: 4, title: 'Services Offered', key: 'servicesOffered' },
               { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
               { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Self Assessment', key: 'inspectionSchedule' }
+              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
             ];
             
             // Check if "Passed MOH Screening" is true (status shows permission message)
@@ -2972,10 +2972,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               const shouldBeActive = hasPermissionToEstablish && isTab3To6;
               const shouldBeClickable = hasPermissionToEstablish && isTab3To6;
               
-              // Enable Situational Analysis tab when tabs 3-6 are all validated
+              // Enable Pre-Inspection tab when tabs 3-6 are all validated
               const isSituationalAnalysisEnabled = step.key === 'inspectionSchedule' && tabs3To6Validated;
               
-              // Override disabled state for tabs 3-6 when permission is granted, and Situational Analysis when tabs 3-6 are validated
+              // Override disabled state for tabs 3-6 when permission is granted, and Pre-Inspection when tabs 3-6 are validated
               const finalDisabled = shouldBeClickable ? false : (isDisabled || (!isSituationalAnalysisEnabled && step.key === 'inspectionSchedule') || isTabDisabled(step.key));
               
               return (
@@ -2984,8 +2984,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     title={
                       step.key === 'inspectionSchedule'
                         ? tabs3To6Validated 
-                          ? "Click to access Situational Analysis"
-                          : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Situational Analysis"
+                          ? "Click to access Pre-Inspection"
+                          : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Pre-Inspection"
                         : shouldBeClickable
                           ? `Click to access ${step.title}`
                           : isTabDisabled(step.key)
@@ -3014,7 +3014,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       <span className="step-number">{step.number}</span>
                       <Typography
                         variant="subtitle1"
-                        className={`step-title${step.title === 'Situational Analysis' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
+                        className={`step-title${step.title === 'Pre-Inspection' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
                       >
                         {step.title}
                       </Typography>
@@ -3148,7 +3148,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={openInspectionDialog}
           onClose={() => {
-            console.log("AddInspectionDialog onClose called - reloading self assessment data");
+            console.log("AddInspectionDialog onClose called - reloading pre-inspection data");
             handleCloseInspectionDialog();
           }}
           onSuccess={handleInspectionAddSuccess}
@@ -3161,12 +3161,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={showEditInspectionDialog}
           onClose={() => {
-            console.log("EditInspectionDialog onClose called - reloading self assessment data");
+            console.log("EditInspectionDialog onClose called - reloading pre-inspection data");
             setShowEditInspectionDialog(false);
             fetchInspectionData(); // Always reload data when dialog closes
           }}
           onSuccess={() => {
-            console.log("EditInspectionDialog onSuccess called - reloading self assessment data");
+            console.log("EditInspectionDialog onSuccess called - reloading pre-inspection data");
             setShowEditInspectionDialog(false);
             fetchInspectionData();
           }}
