@@ -9,7 +9,7 @@ import 'aos/dist/aos.css';
 import './Main.css';
 import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
-import aboutImg from '../assets/about.jpg';
+import aboutImg from '../assets/about_us.jpg';
 import {eventBus, EVENTS } from '../events';
 import { useNavigate } from 'react-router-dom';
 
