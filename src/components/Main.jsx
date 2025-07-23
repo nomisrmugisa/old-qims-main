@@ -9,7 +9,7 @@ import 'aos/dist/aos.css';
 import './Main.css';
 import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
-import aboutImg from '../assets/about.jpg';
+import aboutImg from '../assets/about_us.jpg';
 
 const services = [
   {
@@ -331,21 +331,17 @@ const Main = () => {
             <section id="about" className="about section">
                 <div className="container">
                     <div className="row gy-4 gx-5">
-                        <div className="col-lg-6 position-relative align-self-start" data-aos="fade-up"
-                             data-aos-delay="200">
-                            <div style={{position: 'relative', borderRadius: '8px', overflow: 'hidden'}}>
+                        <div className="col-lg-6" data-aos="fade-up" data-aos-delay="200">
+                            <div className="about-image-wrapper">
                                 <img
                                     src={aboutImg}
-                                    className="img-fluid"
+                                    className="img-fluid rounded-3 shadow-lg"
                                     alt="Senior doctor performing facility inspection"
-                                    style={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        objectFit: 'cover',
-                                        borderRadius: '8px',
-                                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-                                    }}
+                                    loading="lazy"
+                                    width="600"
+                                    height="400"
                                 />
+                                <div className="image-overlay"></div>
                             </div>
                         </div>
 

@@ -140,150 +140,130 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
         </div>
       </div>
 
-      <div className="branding d-flex align-items-center">
-        <div className="container position-relative d-flex align-items-center justify-content-between">
-          <div className="logo d-flex flex-column align-items-center">
-            <img src={logo} alt="Ministry of Health Logo" className="header-logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
-          </div>
+        <div className="branding" style={{ backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <div className="container px-4">
+                <div className="d-flex align-items-center" style={{ height: '120px' }}>
+                    {/* Logo - Left aligned */}
+                    <div className="logo">
+                        <img
+                            src={logo}
+                            alt="Ministry of Health Logo"
+                            style={{ height: '120px', width: 'auto', maxWidth: '100%' }}
+                        />
+                    </div>
 
-          <nav id="navmenu" className="navmenu">
-            <ul>
-              {
+                    {/* Primary Navigation - Centered */}
+                    <nav className="flex-grow-1">
+                        <ul className="d-flex justify-content-center gap-5 mb-2 ps-2" style={{ listStyle: 'none' }}>
+                            <li>
+                                <a
+                                    href="/main/#"
+                                    className={`text-decoration-none nav-link-hover  fw-semibold`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigate(isLoggedIn ? '/dashboards/facility-ownership' : '/');
+                                    }}
+                                >
+                                    Home
 
-                  <li>
-                      <a
-                          href="javascript:void(0);"
-                          className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
-                          onClick={(e) => {
-                              const _route = (isLoggedIn) ? '/dashboards/facility-ownership':'/';
-                              navigate(_route);
-                          }}
-                      >
-                          Home
-                      </a>
-                  </li>
-
-
-                  /*<li><a href="#Registration" className={activeDashboardSection === 'registration' ? 'active' : ''} onClick={() => setActiveDashboardSection('registration')}>Complete Application</a></li>*/}
-                  {/*<li>
-                    <a 
-                      href="javascript:void(0);"
-                      className={`${activeDashboardSection === 'home' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? 'active' : ''}`}
-                      onClick={(e) => {
-                        if (isLoggedIn && isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('home');
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      Home
-                    </a>
-                  </li>
-                  <li>
-                    <a 
-                      href="#about"
-                      className={`${activeDashboardSection === 'about' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                      onClick={(e) => {
-                        if (!isLoggedIn && !isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('about');
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      About Us
-                    </a>
-                  </li>
-                  <li>
-                    <a 
-                      href="#check-validity"
-                      className={`${activeDashboardSection === 'check-validity' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                      onClick={(e) => {
-                        if (isLoggedIn && isSituationalAnalysisGreen()) {
-                          setActiveDashboardSection('check-validity');
-                        } else {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      Check Validity
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                        href="#report-incident"
-                        className={`${activeDashboardSection === 'report-incident' ? 'active' : ''} ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}
-                        onClick={(e) => {
-                          if (isLoggedIn && isSituationalAnalysisGreen()) {
-                            setActiveDashboardSection('report-incident');
-                          } else {
-                            e.preventDefault();
-                          }
-                        }}
-                    >
-                      Report Incident
-                    </a>
-                  </li>
-                  <li className={`dropdown ${(!isLoggedIn || !isSituationalAnalysisGreen()) ? '' : ''}`}>
-                    <a 
-                      href="#"
-                      onClick={(e) => {
-                        if (!isLoggedIn || !isSituationalAnalysisGreen()) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      <span>Documents Repository</span> 
-                      <i className="bi bi-chevron-down toggle-dropdown"></i>
-                    </a>
-                    <ul>
-                  <li><a href="#">Dropdown 1</a></li>
-                      <li className="dropdown">
-                        <a href="#"><span>Deep Dropdown</span> <i className="bi bi-chevron-down toggle-dropdown"></i></a>
-                        <ul>
-                          <li><a href="#">Deep Dropdown 1</a></li>
-                          <li><a href="#">Deep Dropdown 2</a></li>
-                          <li><a href="#">Deep Dropdown 3</a></li>
-                          <li><a href="#">Deep Dropdown 4</a></li>
-                          <li><a href="#">Deep Dropdown 5</a></li>
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="#about"
+                                    className={`text-decoration-none nav-link-hover  fw-semibold`}
+                                    onClick={(e) => {
+                                        if (!isLoggedIn && !isSituationalAnalysisGreen()) {
+                                            setActiveDashboardSection('about');
+                                        } else {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                >
+                                    About Us
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="#check-validity"
+                                    className={`text-decoration-none nav-link-hover  fw-semibold`}
+                                    onClick={(e) => {
+                                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                                            setActiveDashboardSection('check-validity');
+                                        } else {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                >
+                                    Check Validity
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="#report-incident"
+                                    className={`text-decoration-none nav-link-hover  fw-semibold`}
+                                    onClick={(e) => {
+                                        if (isLoggedIn && isSituationalAnalysisGreen()) {
+                                            setActiveDashboardSection('report-incident');
+                                        } else {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                >
+                                    Report Incident
+                                </a>
+                            </li>
+                            {/* Add more menu items here */}
                         </ul>
-                      </li>
-                      <li><a href="#">Dropdown 2</a></li>
-                      <li><a href="#">Dropdown 3</a></li>
-                      <li><a href="#">Dropdown 4</a></li>
-                    </ul>
-                  </li>*/}
-              {/*<li>*/}
-              {/*  {isLoggedIn ? (*/}
-              {/*    <button className="login-button" onClick={onLogout}>*/}
-              {/*      Logout*/}
-              {/*    </button>*/}
-              {/*  ) : (*/}
-              {/*    <button className="login-button" onClick={onLoginClick}>*/}
-              {/*      Login*/}
-              {/*    </button>*/}
-              {/*  )}*/}
-              {/*</li>*/}
-            </ul>
-            <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
-          </nav>
-          <div className="d-flex align-items-center justify-content-between">
-            {isLoggedIn ? (
-                <button className="cta-btn" onClick={onLogout}>
-                  Logout
-                </button>
-            ) : (
-                <button className="cta-btn" onClick={onLoginClick}>
-                  Login
-                </button>
-            )}
-            {!isLoggedIn && (
-                <a className="cta-btn d-none d-sm-block" href="javascript:void(0);" onClick={onApplyClick}>Join</a>
-            )}
-          </div>
+                    </nav>
+
+                    {/* Auth Actions - Right aligned */}
+                    <div className="d-flex gap-3">
+                        {isLoggedIn ? (
+                            <button
+                                className="btn btn-sm btn-outline-primary"
+                                style={{
+                                    borderRadius: '20px',
+                                    padding: '6px 16px',
+                                    borderWidth: '2px'
+                                }}
+                                onClick={onLogout}
+                            >
+                                Logout
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    className="btn btn-sm btn-outline-primary"
+                                    style={{
+                                        borderRadius: '20px',
+                                        padding: '6px 16px',
+                                        borderWidth: '2px'
+                                    }}
+                                    onClick={onLoginClick}
+                                >
+                                    Login
+                                </button>
+                                <button
+                                    className="btn btn-sm btn-primary d-none d-sm-block"
+                                    style={{
+                                        borderRadius: '20px',
+                                        padding: '6px 16px',
+                                        fontWeight: 600
+                                    }}
+                                    onClick={onApplyClick}
+                                >
+                                    Join Now
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+
+
     </header>
   );
 };
