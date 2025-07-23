@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
-import { StorageService } from '../services';
 import { FACILITY_TYPE_FIELD_ID, shouldShowDataElement, getFacilityTypeMapping, getOrderedDocumentIds } from '../utils/facilityTypeMapping';
 
 // import NotificationPopUp from './NotificationPopUp';
