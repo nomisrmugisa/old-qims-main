@@ -9,7 +9,7 @@ import 'aos/dist/aos.css';
 import './Main.css';
 import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
-import aboutImg from '../assets/about.jpg';
+import aboutImg from '../assets/about_us.jpg';
 
 const services = [
   {
@@ -230,7 +230,7 @@ const Main = () => {
                       <p style={{ color: 'rgba(255,255,255,0.92)', fontSize: '1.25rem', marginBottom: 32, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
                         Register, upgrade, or inspect your health facility with ease. Trusted by the Ministry of Health for a modern, efficient, and paperless experience.
                       </p>
-                      <a href="#Registration" className="btn btn-primary btn-lg" style={{ background: '#ffd600', color: '#1977cc', fontWeight: 700, border: 'none', borderRadius: 8, padding: '14px 38px', fontSize: '1.15rem', boxShadow: '0 2px 8px rgba(25,119,204,0.18)', transition: 'background 0.2s' }}>
+                      <a href="main/register" className="btn btn-primary btn-lg" style={{ background: '#ffd600', color: '#1977cc', fontWeight: 700, border: 'none', borderRadius: 8, padding: '14px 38px', fontSize: '1.15rem', boxShadow: '0 2px 8px rgba(25,119,204,0.18)', transition: 'background 0.2s' }}>
                         Start Registration
                       </a>
                     </div>
