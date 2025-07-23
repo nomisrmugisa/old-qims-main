@@ -22,12 +22,15 @@ import {
     ArrowRight
 } from 'react-bootstrap-icons';
 import { eventBus, EVENTS } from '../../../../events';
-import {FacilityService} from '../../../../services';
+import {FacilityService, UserService, StorageService} from '../../../../services';
+import {DHIS2_PROGRAMS, USER_ROLES} from '../../../../services/constants';
+import {extractDataElementValues} from '../../../../utils/helpers';
 import enrolmentApplicationData from '../../../../data/enrolmentApplicationData.json';
 
 const EnrolmentApplicationReview = () => {
     // State management
     const [applications, setApplications] = useState([]);
+    const [listUsers, setListUsers] = useState([]);
     const [filteredApplications, setFilteredApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
@@ -36,7 +39,49 @@ const EnrolmentApplicationReview = () => {
     const [showModal, setShowModal] = useState(false);
     const [actionType, setActionType] = useState('');
     const [removingApp, setRemovingApp] = useState(null);
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('pending');
+    const [page, setPage] = useState(1);
+    const [filter, setFilter] = useState('pending');
+
+    const [primaryRoles, setPrimaryRoles] = useState(null);
+    const [locumRoles, setLocumRoles] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('');
+    const [roleGroup, setRoleGroup] = useState('primary');
+
+    const getFacilityPrimaryRoles = async() => {
+        try {
+            const response = await FacilityService.listPrimaryFacilityRoles();
+            setPrimaryRoles(response);
+        }
+        catch(err) {
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                title: 'Error',
+                message: err.message || 'Operation failed. Please try again.',
+                type: 'error'
+            });
+        }
+        finally {
+
+        }
+
+    };
+    const getFacilityLocumRoles = async() => {
+        try {
+            const response = await FacilityService.listLocumFacilityRoles();
+            setLocumRoles(response);
+        }
+        catch(err) {
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                title: 'Error',
+                message: err.message || 'Operation failed. Please try again.',
+                type: 'error'
+            });
+        }
+        finally {
+
+        }
+
+    };
 
 
 
@@ -44,9 +89,10 @@ const EnrolmentApplicationReview = () => {
         if(!data)
             return [];
 
-        return data.filter(function(item) {
+        /*return data.filter(function(item) {
             return typeof item.email !== "undefined";
-        });
+        });*/
+        return data;
     };
 
     const initApplicationList = async(data) => {
@@ -58,9 +104,11 @@ const EnrolmentApplicationReview = () => {
     const getEnrolmentListApplications = async() => {
         setLoading(true);
         try {
-            const response = await FacilityService.listEnrolmentRequest();
+            let response = await FacilityService.listEnrolmentRequest(page, filter);
             window.console.log("applicationLists", response);
-            await initApplicationList(response);
+
+            setPage(response.page);
+            await initApplicationList(response.instances);
         }
         catch(err) {
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
@@ -75,10 +123,59 @@ const EnrolmentApplicationReview = () => {
         }
     };
 
+    const getUserInfo = (app) => {
+        let _foundApp = app.dataValues.find(dv => dv.dataElement === DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.USER_ID.id);
+        if(listUsers && _foundApp)
+            return listUsers.find(u => u.id === _foundApp.value);
+
+        return null;
+    };
+
+    const checkUserRole = async(role_id) => {
+        /*const response = await UserService.hasRole(role_id);
+        window.console.log("checkUserRole", response);*/
+
+        const data = await StorageService.getUserData();
+        const found = data.userRoles.find(r => r.id === role_id);
+        return typeof found !== "undefined" && found !== null;
+    };
+
+    const getUserName = (app) => {
+        const d = getUserInfo(app);
+        window.console.log("user data", d);
+        /*for(let i=0;i<d.dataValues.length;i++)
+            if(d.dataValues[i].dataElement === DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.USER_NAME.id)
+                return d.dataValues[i].value;
+
+        return "Unknown";*/
+        return d ? getDataElementValue(d.dataValues, DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.USER_NAME.id) : "UNKNOWN";
+    };
+
+    const getUserEmail = (app) => {
+        const d = getUserInfo(app);
+        window.console.log("user data", d);
+        /*for(let i=0;i<d.dataValues.length;i++)
+         if(d.dataValues[i].dataElement === DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.USER_NAME.id)
+         return d.dataValues[i].value;
+
+         return "Unknown";*/
+        return d ? getDataElementValue(d.dataValues, DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.EMAIL.id) : "UNKNOWN";
+    };
+
+    const getDataElementValue = (dataElements, key) => {
+        for(let i=0;i<dataElements.length;i++)
+            if(d.dataElements[i].dataElement === key)
+                return dataElements[i].value;
+        return "Unknown";
+    };
+
     // Sample data - in a real app this would come from an API
     useEffect(() => {
         // Simulate API loading
         getEnrolmentListApplications();
+        getFacilityPrimaryRoles();
+        getFacilityLocumRoles();
+        checkUserRole(USER_ROLES.FACILITY.PRIMARY.ADMIN.ID);
         /*setTimeout(() => {
             setApplications(enrolmentApplicationData);
             setFilteredApplications(enrolmentApplicationData);
@@ -91,7 +188,11 @@ const EnrolmentApplicationReview = () => {
         if (statusFilter === 'all') {
             setFilteredApplications(applications);
         } else {
-            setFilteredApplications(applications.filter(app => app.status === statusFilter));
+            setFilteredApplications(applications.filter(app => {
+
+                let _found = app.dataValues.find(dv => dv.dataElement === DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.STATUS.id);
+                return _found?.value.toLowerCase() === statusFilter.toLowerCase();
+            }));
         }
         setCurrentPage(1);
     }, [statusFilter, applications]);
@@ -105,11 +206,12 @@ const EnrolmentApplicationReview = () => {
     // Format date
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        //window.console.log(`date: ${dateString}`, new Date(dateString));
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
     // Handle action buttons
-    const handleAction = (app, action) => {
+    const handleAction = async (app, action) => {
         setSelectedApp(app);
         setActionType(action);
         setShowModal(true);
@@ -122,7 +224,22 @@ const EnrolmentApplicationReview = () => {
             try {
                 let response;
                 if(actionType === 'approve') {
-                    response = await FacilityService.approveEnrolmentRequest(app);
+
+                    if(!selectedRole || !roleGroup)
+                        throw new Error("Please select assigned role.");
+
+                    //Update Enrollment request
+                    const requestProgramData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS;
+                    response = await FacilityService.approveEnrolmentRequest({
+                        facilityId: app.orgUnit,
+                        userId: getDataElementValue(app.dataValues, requestProgramData.USER_ID.id),
+                        role: selectedRole,
+                        type: roleGroup,
+                    });
+                    window.console.log("update enrollment request");
+                    window.console.log(response);
+
+                    //TODO: Check role and update user roles, then add assignment
 
                 }
                 else if(actionType === 'reject') {
@@ -167,7 +284,10 @@ const EnrolmentApplicationReview = () => {
     };
 
     // Status badge
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (app) => {
+
+        let _found = app.dataValues.find(dv => dv.dataElement === DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS.STATUS.id);
+        let status = _found? _found.value.toLowerCase() : null;
         switch (status) {
             case 'pending':
                 return <Badge bg="warning" className="ms-2">Pending</Badge>;
@@ -186,7 +306,7 @@ const EnrolmentApplicationReview = () => {
                 <Card.Header className="bg-white py-3">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3 className="mb-0">Facility Enrollment Applications</h3>
-                        <div className="d-flex align-items-center">
+                        {/*<div className="d-flex align-items-center">
                             <span className="me-2">Filter:</span>
                             <select
                                 className="form-select w-auto"
@@ -198,7 +318,7 @@ const EnrolmentApplicationReview = () => {
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                             </select>
-                        </div>
+                        </div>*/}
                     </div>
                 </Card.Header>
 
@@ -232,18 +352,13 @@ const EnrolmentApplicationReview = () => {
                                             </div>
                                             <div>
                                                 <div className="d-flex align-items-center mb-2">
-                                                    <h5 className="mb-0">{app.organisationUnits[0].name}</h5>
+                                                    <h5 className="mb-0">{app.orgUnitName}</h5>
 
-                                                    {getStatusBadge(app.status)}
+                                                    {getStatusBadge(app)}
                                                 </div>
                                                 <div className="text-muted small mt-1">
-                                                    {app.username !== app.email && (
-                                                        <div className="mb-2">
-                                                            <h6 className="mb-1">#{app.username}</h6>
-                                                        </div>
-                                                    )}
-                                                    <span className="me-3"><Person className="me-1" /> {app.email}</span>
-                                                    <span><Clock className="me-1" /> {formatDate(app.createdAt)}</span>
+                                                    <span className="me-3"><Person className="me-1" /> {getUserName(app)}</span>
+                                                    <span><Clock className="me-1" /> {formatDate(app.occurredAt)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -352,12 +467,7 @@ const EnrolmentApplicationReview = () => {
                             Showing {Math.min(indexOfFirstItem + 1, filteredApplications.length)} to {Math.min(indexOfLastItem, filteredApplications.length)} of {filteredApplications.length} applications
                         </div>
                         <div>
-                            <Badge bg="light" text="dark" className="me-2">
-                                Pending: {applications.filter(app => app.status === 'pending').length}
-                            </Badge>
-                            <Badge bg="light" text="dark">
-                                Processed: {applications.filter(app => app.status !== 'pending').length}
-                            </Badge>
+
                         </div>
                     </div>
                 </Card.Footer>
@@ -376,12 +486,54 @@ const EnrolmentApplicationReview = () => {
                             <Building size={24} />
                         </div>
                         <div>
-                            <h5 className="mb-0">#{selectedApp?.id} - {selectedApp?.facilityName}</h5>
+                            <h5 className="mb-0">{selectedApp?.orgUnitName}</h5>
+                            <h6 className="mb-1">#{selectedApp?.event}</h6>
                             <div className="text-muted small mt-1">
                                 <Person className="me-1" /> {selectedApp?.userName} (ID: {selectedApp?.userId})
                             </div>
                         </div>
                     </div>
+
+                    {actionType === 'approve' && (
+                        <>
+                        <div className="mb-3 mt-2">
+                            <label className="form-label">What kind of role do you wish to assign to this user?</label>
+                            <div className="btn-group btn-group-sm w-100 mb-2">
+                                <Button
+                                    variant={roleGroup === 'primary' ? 'primary' : 'outline-primary'}
+                                    onClick={() => setRoleGroup('primary')}
+                                >
+                                    PRIMARY
+                                </Button>
+                                <Button
+                                    variant={roleGroup === 'locum' ? 'primary' : 'outline-primary'}
+                                    onClick={() => setRoleGroup('locum')}
+                                >
+                                    LOCUM
+                                </Button>
+                            </div>
+
+                            <select
+                                className="form-select"
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
+                                required
+                            >
+                                <option value="">Select a role</option>
+                                {roleGroup === 'primary' && primaryRoles.map(role => (
+                                    <option key={role.id} value={role.id}>
+                                        {role.name}
+                                    </option>
+                                ))}
+                                {roleGroup === 'locum' && locumRoles.map(role => (
+                                    <option key={role.id} value={role.id}>
+                                        {role.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        </>
+                    )}
 
                     <p>
                         Are you sure you want to <strong className={actionType === 'approve' ? 'text-success' : 'text-danger'}>
@@ -391,6 +543,9 @@ const EnrolmentApplicationReview = () => {
                     <div className="alert alert-warning mb-0">
                         This action cannot be undone. The application will be removed from the list.
                     </div>
+
+
+
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="outline-secondary" onClick={closeModal}>

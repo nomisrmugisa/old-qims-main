@@ -14,7 +14,7 @@ import NavigationWrapper from './components/NavigationWrapper';
 
 
 import AlertNotification from './components/AlertNotification';
-import { AuthService, StorageService } from './services';
+import { AuthService, StorageService, UserService } from './services';
 
 //Routes
 import ForgotPassword from './views/ForgotPassword';
@@ -34,10 +34,13 @@ import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
 import PasswordChangePage from './views/ChangePassword';
 import FacilityCalendarPage from './views/Facility/Calendar';
+import UserProfileModal from './components/User/ProfileModal';
 
 function App() {
   const [loadingProcesses, setLoadingProcesses] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Start with loading state
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeDashboardSection, setActiveDashboardSection] = useState('overview');
@@ -161,6 +164,11 @@ function App() {
             } else {
                 console.log('🔐 App.jsx: No existing credentials found');
             }
+
+            /*Profile update trigger*/
+            let profileUpdateTrigger = await mustTriggerProfileUpdate();
+            setShowProfileModal(profileUpdateTrigger);
+
         } catch (error) {
             console.error('Error checking existing login:', error);
             // Clear potentially corrupted data
@@ -208,10 +216,35 @@ function App() {
       }
   };
 
+  const mustTriggerProfileUpdate = async() => {
+
+      const authUserData = await StorageService.getUserData();
+      window.console.log("mustTriggerProfileUpdate", authUserData);
+      if(!authUserData)
+          return false;
+      window.console.log("email", authUserData.email);
+      window.console.log("firstName", authUserData.firstName);
+      window.console.log("surame", authUserData.surname);
+      window.console.log("isLoggedIn", isLoggedIn);
+      setCurrentUser(authUserData);
+      const res = (authUserData.email === authUserData.firstName || authUserData.email === authUserData.surname);
+      window.console.log("res", res);
+      return res;
+  };
+
   const triggerLoginClick = () => {
       //setShowLoginModal(true);
       navigate('/login');
   };
+
+    const fetchCurrentUser = async () => {
+        try {
+            const response = await UserService.refreshMe();
+            setCurrentUser(response);
+        } catch (error) {
+            console.error('Failed to fetch user data:', error);
+        }
+    };
 
   const handleLogout = () => {
     setIsLoading(true);
@@ -284,6 +317,14 @@ function App() {
         <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
       )}
       {isLoading && <Loading />}
+        <UserProfileModal
+            show={showProfileModal}
+            onHide={async(success) => {
+                setShowProfileModal(false);
+                if (success) await fetchCurrentUser(); // Refresh user data after update
+            }}
+            currentUser={currentUser}
+        />
       <BackToTop />
     </div>
   )

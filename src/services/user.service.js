@@ -182,8 +182,50 @@ const UserService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
+    updateProfile: async(data) => {
+        const method = "updateProfile";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        try {
+            let userData = await StorageService.getUserData();
+            let token = await getAuthToken('Basic');
+            const response = await httpService.patch(`/users/${userData.id}`, data, {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            window.console.log(response);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
     listFacilityUsers: async () => {
         return await UserService.listGroupUsers(`${import.meta.env.VITE_FACILITY_USER_GROUP_ID}`);
+    },
+    hasRole: async (role_id) => {
+        const method = "hasRole";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let token = await getAuthToken('Basic');
+            let userData = await StorageService.getUserData();
+            const response = await httpService.get(`/users/${userData.id}?fields=id,userRoles[id]`, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+            window.console.log(`${method}`, response.userGroups);
+            window.console.log("---***");
+            return response.userGroups.indexOf(role_id) >= 0;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
     },
 };
 

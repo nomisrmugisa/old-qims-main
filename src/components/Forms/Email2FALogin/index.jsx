@@ -60,6 +60,10 @@ const LoginForm = () => {
         setIsCredentialsVerified(false);
     };
 
+    const getForgotPasswordLink = () => {
+        return `${import.meta.env.VITE_DHIS2_URL}/dhis-web-commons/security/login.action`;
+    };
+
     const handleVerifyCredentials = async (e) => {
         e.preventDefault();
         resetStep1();
@@ -88,11 +92,7 @@ const LoginForm = () => {
             window.console.log(response);
             window.console.log("***---");
 
-            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                title: 'OTP Sent',
-                message: 'Verification code sent to your email',
-                type: 'success'
-            });
+
             setStep(2);
 
             window.console.log("Send-OTP-RESPONSE---");
@@ -102,7 +102,7 @@ const LoginForm = () => {
 
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'OTP Sent',
-                message: 'Verification code sent to your email',
+                message: 'Verification code sent to your email, please note that it expires after 5 minutes.',
                 type: 'success'
             });
 
@@ -229,7 +229,10 @@ const LoginForm = () => {
                         />
                     </Form.Group>
                     <div className="d-flex justify-content-end mb-3">
-                        <Link to="/forgot-password" className="text-decoration-none">
+                        {/*<Link to="/forgot-password" className="text-decoration-none">
+                            Forgot password?
+                        </Link>*/}
+                        <Link to={getForgotPasswordLink()} target="_blank" className="text-decoration-none">
                             Forgot password?
                         </Link>
                     </div>
