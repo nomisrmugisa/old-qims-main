@@ -319,15 +319,15 @@ const StorageService = {
             console.error('Data migration error:', error);
         }
     },
-    getAuthToken(type) {
+    async getAuthToken(type) {
         let key = (!type)? STORAGE_KEYS.AUTH_TOKEN: STORAGE_KEYS.USER_KEY;
-        return StorageService.get(key);
+        return await StorageService.get(key);
     },
     async getUserData () {
-        return StorageService.get(STORAGE_KEYS.USER_DATA);
+        return await StorageService.get(STORAGE_KEYS.USER_DATA);
     },
     async setUserData(value) {
-        return StorageService.set(STORAGE_KEYS.USER_DATA, value);
+        return await StorageService.set(STORAGE_KEYS.USER_DATA, value);
     }
 };
 

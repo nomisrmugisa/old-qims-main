@@ -10,6 +10,8 @@ import './Main.css';
 import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
 import aboutImg from '../assets/about_us.jpg';
+import {eventBus, EVENTS } from '../events';
+import { useNavigate } from 'react-router-dom';
 
 const services = [
   {
@@ -189,6 +191,7 @@ const services = [
 ];
 
 const Main = () => {
+  const navigate = useNavigate();
     useEffect(() => {
         AOS.init({
             duration: 1000,

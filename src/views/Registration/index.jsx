@@ -112,8 +112,8 @@ const Registration = () => {
             window.console.log("otp verification", response);
             response = await AuthService.registrationDHISDev(formData);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                title: 'Registration Complete',
-                message: 'Your account has been created successfully',
+                title: 'Registration Successful!',
+                message: 'Welcome to QIMS. Your account has been created successfully. You can now login and start exploring.',
                 type: 'success',
                 options: {
                     willClose: () => {

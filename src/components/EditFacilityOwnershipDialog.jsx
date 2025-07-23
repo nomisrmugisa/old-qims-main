@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
+import { FACILITY_TYPE_FIELD_ID, shouldShowDataElement, getFacilityTypeMapping, getOrderedDocumentIds } from '../utils/facilityTypeMapping';
+
 // import NotificationPopUp from './NotificationPopUp';
 import { showEmailNotificationModal } from './NotificationPopUp';
 
@@ -41,6 +43,25 @@ const EditFacilityOwnershipDialog = ({
 
   console.log("🧠 Component mounted");
 
+
+  const [emailStatus, setEmailStatus] = useState(null); // null, 'sending', 'sent', or 'failed'
+
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [facilityTypeMapping, setFacilityTypeMapping] = useState({});
+  const [orderedDocumentIds, setOrderedDocumentIds] = useState([]);
+
+  // Load the mapping and ordered IDs when the component mounts
+  useEffect(() => {
+    const mapping = getFacilityTypeMapping();
+    setFacilityTypeMapping(mapping);
+    const orderedIds = getOrderedDocumentIds();
+    setOrderedDocumentIds(orderedIds);
+  }, []);
+
+  useEffect(() => {
+    console.log("DEBUG:", { open, showEmailConfirmation });
+  }, [open, showEmailConfirmation]);
+  
 
   // Fetch Program Stage Metadata for Facility Ownership
   const fetchProgramStageMetadata = useCallback(async () => {
@@ -832,6 +853,9 @@ const EditFacilityOwnershipDialog = ({
       borderRadius: '4px',
       border: '1px solid #ffeeba'
     }}>Form metadata could not be loaded.</div>;
+
+    const selectedFacilityType = formData[FACILITY_TYPE_FIELD_ID];
+    
     return (
       <div className="dynamic-form-body">
         {programStageMetadata.programStageSections.map(section => (
@@ -1190,6 +1214,7 @@ const EditFacilityOwnershipDialog = ({
   };
 
   const handleClose = () => {
+    // setEmailStatus(null);
     sessionStorage.removeItem('currentFacilityName');
     onClose();
   };
@@ -1199,6 +1224,7 @@ const EditFacilityOwnershipDialog = ({
     setShowConfirmDialog(false);
     setSubmitInProgress(true);
     setSubmitError(null);
+    setEmailStatus(null);
     try {
       // 1. Get facility name from sessionStorage
       const { getCredentials } = await import('../utils/credentialHelper');
@@ -1322,6 +1348,7 @@ const EditFacilityOwnershipDialog = ({
       console.log(`Facility successfully added to ${nextGroupName} group`);
 
       // 4. Send email to user and reviewers
+      setEmailStatus('sending');
       try {
         // 4.1 Get the current user's username from /api/me
         const meEmailRes = await fetch(`/api/me?fields=username`, {
@@ -1343,6 +1370,7 @@ const EditFacilityOwnershipDialog = ({
           if (reviewersData.users && Array.isArray(reviewersData.users)) {
             reviewerEmails = reviewersData.users
               .map(u => u.email)
+
               .filter(email => email && email !== userEmail);
           }
         }
@@ -1351,7 +1379,7 @@ const EditFacilityOwnershipDialog = ({
         const emails = [userEmail, "qimsmohbots@gmail.com", ...reviewerEmails].filter((v, i, a) => v && a.indexOf(v) === i);
 
         // 4.4 Send POST to /email2/api/facility-reg-update
-        const emailResponse = await fetch('/email2/api/facility-reg-update', {
+        const emailResponse = await fetch(`/email2/api/facility-reg-update`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1369,6 +1397,10 @@ const EditFacilityOwnershipDialog = ({
           console.log("✅ Email sent successfully. Showing modal...");
           showEmailNotificationModal(); // ✅ TRIGGER MODAL directly
         }
+        setEmailStatus('sent');
+
+        setShowEmailConfirmation(true);
+
       } catch (emailErr) {
         console.error('Error sending email notification:', emailErr);
       }
@@ -1383,9 +1415,9 @@ const EditFacilityOwnershipDialog = ({
       // 7. Set isInScreeningGroup to true to disable Save Changes button
       setIsInScreeningGroup(true);
       // 8. Close the form after successful submission
-      setTimeout(() => {
-        handleClose();
-      }, 2000); // Close after 2 seconds to allow user to see success message
+      // setTimeout(() => {
+      //   handleClose();
+      // }, 5000); // Close after 2 seconds to allow user to see success message
     } catch (err) {
       setSubmitError(err.message || 'Save or submission failed');
       setSubmitInProgress(false);

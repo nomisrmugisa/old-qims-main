@@ -127,12 +127,12 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
             </i>
           </div>
           <div className="d-flex align-items-center">
-            {isLoggedIn && (
+            {/*{isLoggedIn && (
               <div className="logged-in-message me-3">
                 <i className="bi bi-building me-1"></i>
                 <span>Facility: {orgUnitName || 'Loading...'}</span>
               </div>
-            )}
+            )}*/}
             <div className="social-links d-none d-md-flex align-items-center">
 
             </div>
