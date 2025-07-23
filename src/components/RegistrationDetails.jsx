@@ -44,7 +44,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [facilityName, setFacilityName] = useState('');
   const [completeApplicationEvent, setCompleteApplicationEvent] = useState(null);
   
-  // Situational Analysis state
+  // Pre-Inspection state
   const [inspectionEvents, setInspectionEvents] = useState([]);
   const [isLoadingInspections, setIsLoadingInspections] = useState(true);
   const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
@@ -589,7 +589,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       borderColor: "#ffd8a8"
     },
     SELECT_INSPECTION_DATE: {
-      text: "Please Conduct a Pre-Inspection",
+      text: "Please Conduct a pre-inspection",
       color: "#6f42c1", // Purple
       bgColor: "#e2d9f3",
       borderColor: "#d1c7e5"
@@ -680,7 +680,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }
     
           // Step 8: All conditions met but no date set
-          console.log("📝 Setting status: Please Conduct a Pre-Inspection");
+          console.log("📝 Setting status: Please Conduct a pre-inspection");
           setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
           return;
         }
@@ -863,8 +863,166 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Handle tab click without restrictions
   const handleTabClick = (tabKey) => {
-    console.log("Tab clicked:", tabKey);
-    setActiveTab(tabKey); // Always allow navigation
+    console.log("=== TAB CLICKED ===", tabKey);
+    console.log("- completeApplicationStatus:", completeApplicationStatus);
+    
+    // If Complete Application is not complete and trying to access another tab, don't allow it
+    if (!completeApplicationStatus && tabKey !== 'completeApplication') {
+      console.log("- Tab click blocked - application not complete");
+      return; // Don't change tabs
+    }
+    
+    // Disable certain tabs unless application is submitted OR permission is granted
+    const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+    if (!isApplicationSubmitted && !hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
+      console.log("- Tab click blocked - application not submitted for review and no permission granted");
+      return;
+    }
+    
+    console.log("- Setting active tab to:", tabKey);
+    setActiveTab(tabKey);
+    
+    // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+    if (tabKey === 'equipmentMachinery') {
+      console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+      fetchEquipmentData();
+    }
+    
+    // Manually trigger fetch for self assessment data when clicking on inspectionSchedule tab
+    if (tabKey === 'inspectionSchedule') {
+      console.log("- Manually triggering fetchInspectionData for Pre-Inspection tab");
+      fetchInspectionData();
+    }
+    
+    // Manually trigger fetch for facility ownership data when clicking on facilityOwnership tab
+    if (tabKey === 'facilityOwnership') {
+      console.log("🏢 === FACILITY OWNERSHIP TAB CLICKED ===");
+      console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      
+      // Always fetch fresh data from DHIS2 when Facility Ownership tab is clicked
+      console.log("🔄 Force refreshing Facility Ownership data from DHIS2");
+      fetchFacilityOwnershipData();
+      
+      // Directly fetch organization unit from API instead of localStorage
+      const fetchOrgUnitAndTrackedEntity = async () => {
+        try {
+          const credentials = await StorageService.get('userCredentials');
+          if (!credentials) {
+            console.error('❌ No credentials found in localStorage');
+            return;
+          }
+          
+          console.log('📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY');
+          const orgUnitResponse = await fetch(`/api/me?fields=organisationUnits[displayName,id]`, {
+            headers: {
+              'Authorization': `Basic ${credentials}`
+            }
+          });
+          
+          if (!orgUnitResponse.ok) {
+            console.error('❌ Failed to fetch organization unit data:', orgUnitResponse.status);
+            return;
+          }
+          
+          const orgData = await orgUnitResponse.json();
+          console.log('- Organization API Response:', orgData);
+          
+          if (!orgData.organisationUnits || orgData.organisationUnits.length === 0) {
+            console.error('❌ No organization units found in response');
+            return;
+          }
+          
+          const orgUnitId = orgData.organisationUnits[0].id;
+          const orgUnitName = orgData.organisationUnits[0].displayName;
+          
+          console.log('✅ ORGANIZATION UNIT DATA:');
+          console.log('- Name:', orgUnitName);
+          console.log('- ID:', orgUnitId);
+          
+          // Now fetch the trackedEntityInstanceId using this organization unit ID
+          console.log('🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID');
+          const teiUrl = `/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
+          console.log('- API URL:', teiUrl);
+          
+          const teiResponse = await fetch(teiUrl, {
+            headers: {
+              'Authorization': `Basic ${credentials}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!teiResponse.ok) {
+            console.error('❌ Failed to fetch tracked entity instance:', teiResponse.status);
+            return;
+          }
+          
+          const teiData = await teiResponse.json();
+          console.log('- Tracked Entity API Response:', teiData);
+          
+          if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
+            const teiId = teiData.trackedEntityInstances[0].trackedEntityInstance;
+            console.log('✅ Found trackedEntityInstanceId:', teiId);
+            
+            // Store for future use
+            localStorage.setItem('tempTrackedEntityInstanceId', teiId);
+            
+            // CRITICAL FIX: Force a refresh to use the new trackedEntityInstanceId
+            // This is a workaround since we can't directly update the parent's prop
+            console.log('🔄 FORCING PAGE REFRESH TO USE NEW TRACKED ENTITY INSTANCE ID');
+            // window.location.reload(); // Removing this to avoid blank screen
+            
+            // Instead, update local state directly
+            // setLocalTrackedEntityInstanceId removed
+            
+            // Now fetch the facility ownership data with this ID
+            console.log('🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID');
+            fetchFacilityOwnershipData(teiId, orgUnitId);
+          } else {
+            console.log('❌ No tracked entity instances found in response');
+          }
+        } catch (error) {
+          console.error('❌ Error in fetchOrgUnitAndTrackedEntity:', error);
+        }
+      };
+      
+      // Execute the function
+      fetchOrgUnitAndTrackedEntity();
+    }
+    
+    // Manually trigger fetch for employee data when clicking on employeeRegistration tab
+    if (tabKey === 'employeeRegistration') {
+      console.log("👥 === EMPLOYEE REGISTRATION TAB CLICKED ===");
+      console.log("- Manually triggering fetchEmployeeData for Employee Registration tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchEmployeeData();
+    }
+    
+    // Manually trigger fetch for services data when clicking on servicesOffered tab
+    if (tabKey === 'servicesOffered') {
+      console.log("🏥 === SERVICES OFFERED TAB CLICKED ===");
+      console.log("- Manually triggering fetchServiceData for Services Offered tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchServiceData();
+    }
+    
+    // Manually trigger fetch for statutory compliance data when clicking on statutoryCompliance tab
+    if (tabKey === 'statutoryCompliance') {
+      console.log("📋 === STATUTORY COMPLIANCE TAB CLICKED ===");
+      console.log("- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchStatutoryComplianceData();
+    }
+    
+    // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+    if (tabKey === 'equipmentMachinery') {
+      console.log("⚙️ === EQUIPMENT & MACHINERY TAB CLICKED ===");
+      console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+      console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      fetchEquipmentData();
+    }
   };
 
 
@@ -1320,7 +1478,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   const fetchInspectionData = async () => {
-    console.log("🔄 === STARTING Pre-Inspection DATA FETCH ===");
+    console.log("🔄 === STARTING PRE-INSPECTION DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     
     const currentTeiId = getCurrentTrackedEntityInstanceId();
@@ -1347,10 +1505,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoadingInspections(true);
-      // Use the correct program stage ID for Situational Analysis (Inspection)
+      // Use the correct program stage ID for Pre-Inspection (Inspection)
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
       
-      console.log("Situational Analysis API Request:");
+      console.log("Pre-Inspection API Request:");
       console.log("- Full URL:", url);
       console.log("- trackedEntityInstanceId:", currentTeiId);
       console.log("- organizationUnitId:", userOrgUnitId);
@@ -1369,7 +1527,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
       const data = await response.json();
       
-      console.log("Situational Analysis API Response:");
+      console.log("Pre-Inspection API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
@@ -1383,7 +1541,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           console.log(`  - Events in inspection enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
             console.log(`  - First inspection event programStage:`, enrollment.events[0].programStage);
-            // Filter events to only include Situational Analysis program stage (Eupjm3J0dt2)
+            // Filter events to only include Pre-Inspection program stage (Eupjm3J0dt2)
             const inspectionEvents = enrollment.events.filter(event => event.programStage === "Eupjm3J0dt2");
             console.log(`  - Filtered inspection events (Eupjm3J0dt2):`, inspectionEvents.length);
             fetchedEvents = fetchedEvents.concat(inspectionEvents);
@@ -1439,7 +1597,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
     } catch (error) {
-      console.error("Error fetching Pre-Inspection data:", error);
+      console.error("Error fetching pre-inspection data:", error);
       setIsLoadingInspections(false);
     }
   };
@@ -1945,6 +2103,28 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const facilityOwnershipEvents = Array.isArray(events) ? events.filter(e => e.programStage === 'MuJubgTzJrY') : [];
   const facilityOwnershipEvent = facilityOwnershipEvents.length > 0 ? facilityOwnershipEvents[0] : undefined;
 
+  const [statutoryComplianceMetadata, setStatutoryComplianceMetadata] = useState(null);
+
+  // Fetch statutory compliance program stage metadata on mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const credentials = await getCredentials();
+        if (!credentials) return;
+        const response = await fetch(
+          `${import.meta.env.VITE_DHIS2_URL}/api/programStages/vyv7zncjCmV?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
+          { headers: { Authorization: `Basic ${credentials}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch statutory compliance metadata');
+        const metadata = await response.json();
+        setStatutoryComplianceMetadata(metadata);
+      } catch (error) {
+        setStatutoryComplianceMetadata(null);
+      }
+    };
+    fetchMetadata();
+  }, []);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'completeApplication':
@@ -2141,7 +2321,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : '';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           return (
@@ -2203,8 +2383,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     <table className="table table-hover">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Description</th>
                           <th>Core Services</th>
                           <th>Specialised Services</th>
                           <th>Support Services</th>
@@ -2216,7 +2394,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : '';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to check if service type is offered
@@ -2263,15 +2441,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
-                              <td>{getFormattedValue("IR8eO63QKKe")}</td>
-                              <td>{getFormattedValue("pRPw37nqZQ3")}</td>
                               <td>{coreServices || "None"}</td>
                               <td>{specialisedServices || "None"}</td>
                               <td>{supportServices || "None"}</td>
                               <td>{additionalServices || "None"}</td>
-                              <td>{event.programStage}</td>
-                              <td>{event.event}</td>
-                              <td>{event.trackedEntityInstance}</td>
                             </tr>
                           );
                         })}
@@ -2323,9 +2496,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Radiology</th>
                           <th>Pharmacy</th>
                           <th>Compliance Status</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2333,14 +2503,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format boolean values
                           const formatBoolean = (value) => {
                             if (value === 'true') return 'Yes';
                             if (value === 'false') return 'No';
-                            return 'N/A';
+                            return 'None';
                           };
 
                           // Aggregate emergency equipment
@@ -2393,9 +2563,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{radiologyEquipment || "None"}</td>
                               <td>{pharmacyEquipment || "None"}</td>
                               <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+
                             </tr>
                           );
                         })}
@@ -2430,10 +2598,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </button>
               </h2>
               {isLoadingInspections ? (
-                <p>Loading Pre-Inspection data...</p>
+                <p>Loading pre-inspection data...</p>
               ) : inspectionEvents.length === 0 ? (
                 <div>
-                  <p>No Pre-Inspection records found.</p>
+                  <p>No pre-inspection records found.</p>
                 </div>
               ) : (
                 <>
@@ -2448,9 +2616,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Organization Structure</th>
                           <th>Patient Policies</th>
                           <th>Facility Environment</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2458,12 +2623,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format date
                           const formatDate = (dateString) => {
-                            if (!dateString) return 'N/A';
+                            if (!dateString) return 'None';
                             try {
                               return new Date(dateString).toLocaleDateString();
                             } catch {
@@ -2475,7 +2640,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const formatBoolean = (value) => {
                             if (value === 'true') return 'Yes';
                             if (value === 'false') return 'No';
-                            return 'N/A';
+                            return 'None';
                           };
 
                           // Aggregate policy compliance
@@ -2514,9 +2679,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
                               <td>{policiesStatus}</td>
                               <td>{facilityStatus}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
                             </tr>
                           );
                         })}
@@ -2533,11 +2695,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="statutory-compliance-details">
               <h2>
-                Statutory Compliance Details 
-                <button 
-                  className="add-icon" 
+                Statutory Compliance Details
+                <button
+                  className="add-icon"
                   onClick={handleAddStatutoryCompliance}
-                  style={{ 
+                  style={{
                     background: 'none',
                     border: 'none',
                     fontSize: '28px',
@@ -2553,67 +2715,48 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingStatutoryCompliance ? (
                 <p>Loading statutory compliance data...</p>
               ) : statutoryComplianceEvents.length === 0 ? (
-                <p>No statutory compliance records found.</p>
+                <div>
+                  <p>No statutory compliance records found.</p>
+                </div>
               ) : (
-                <>
+                statutoryComplianceMetadata && statutoryComplianceMetadata.programStageSections && (
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
                         <tr>
-                          <th>Application Type</th>
-                          <th>Facility Name</th>
-                          <th>License Holder</th>
-                          <th>Payment Number</th>
-                          <th>Phone Number</th>
-                          <th>Registration Status</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
+                          {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                            section.dataElements.map(de => (
+                              <th key={de.id}>{de.displayFormName}</th>
+                            ))
+                          )}
                         </tr>
                       </thead>
                       <tbody>
                         {statutoryComplianceEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
-                          const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
-                          };
-
-                          // Helper function to format boolean values
-                          const formatBoolean = (value) => {
-                            if (value === 'true') return 'Yes';
-                            if (value === 'false') return 'No';
-                            return 'N/A';
-                          };
-
-                          // Build license holder name
-                          const firstName = getFormattedValue("HMk4LZ9ESOq");
-                          const surname = getFormattedValue("ykwhsQQPVH0");
-                          const licenseHolderName = `${firstName} ${surname}`.trim() || 'N/A';
-
                           return (
-                            <tr 
-                              key={event.event || index}
-                              onClick={() => handleStatutoryComplianceRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
-                            >
-                              <td>{getFormattedValue("JSwAq5HRQa8")}</td>
-                              <td>{getFormattedValue("D707dj4Rpjz")}</td>
-                              <td>{licenseHolderName}</td>
-                              <td>{getFormattedValue("LAHlCWh18bP")}</td>
-                              <td>{getFormattedValue("SReqZgQk0RY")}</td>
-                              <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+                            <tr key={event.event || index} className="hover-row" style={{ cursor: 'pointer' }} onClick={() => handleStatutoryComplianceRowClick(event)}>
+                              {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                                section.dataElements.map(de => {
+                                  const value = dataValues.find(dv => dv.dataElement === de.id)?.value;
+                                  if (de.valueType === 'FILE_RESOURCE') {
+                                    return <td key={de.id}>{value ? 'Submitted' : 'None'}</td>;
+                                  }
+                                  if (de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
+                                    if (value === 'true') return <td key={de.id}>Yes</td>;
+                                    if (value === 'false') return <td key={de.id}>No</td>;
+                                    return <td key={de.id}>None</td>;
+                                  }
+                                  return <td key={de.id}>{value || 'None'}</td>;
+                                })
+                              )}
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
                   </div>
-                </>
+                )
               )}
             </div>
           </div>
@@ -2837,6 +2980,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   }, [events]);
 
+  useEffect(() => {
+    setDatePickerEnabled(inspectionEvents.length > 0);
+  }, [inspectionEvents]);
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
@@ -2978,10 +3125,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               const shouldBeActive = hasPermissionToEstablish && isTab3To6;
               const shouldBeClickable = hasPermissionToEstablish && isTab3To6;
               
-              // Enable Situational Analysis tab when tabs 3-6 are all validated
+              // Enable Pre-Inspection tab when tabs 3-6 are all validated
               const isSituationalAnalysisEnabled = step.key === 'inspectionSchedule' && tabs3To6Validated;
               
-              // Override disabled state for tabs 3-6 when permission is granted, and Situational Analysis when tabs 3-6 are validated
+              // Override disabled state for tabs 3-6 when permission is granted, and Pre-Inspection when tabs 3-6 are validated
               const finalDisabled = shouldBeClickable ? false : (isDisabled || (!isSituationalAnalysisEnabled && step.key === 'inspectionSchedule') || isTabDisabled(step.key));
               
               return (
@@ -2990,8 +3137,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     title={
                       step.key === 'inspectionSchedule'
                         ? tabs3To6Validated 
-                          ? "Click to access Situational Analysis"
-                          : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Situational Analysis"
+                          ? "Click to access Pre-Inspection"
+                          : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Pre-Inspection"
                         : shouldBeClickable
                           ? `Click to access ${step.title}`
                           : isTabDisabled(step.key)
@@ -3020,7 +3167,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       <span className="step-number">{step.number}</span>
                       <Typography
                         variant="subtitle1"
-                        className={`step-title${step.title === 'Situational Analysis' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
+                        className={`step-title${step.title === 'Pre-Inspection' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
                       >
                         {step.title}
                       </Typography>
@@ -3215,7 +3362,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={openInspectionDialog}
           onClose={() => {
-            console.log("AddInspectionDialog onClose called - reloading Pre-Inspection data");
+            console.log("AddInspectionDialog onClose called - reloading pre-inspection data");
             handleCloseInspectionDialog();
           }}
           onSuccess={handleInspectionAddSuccess}
@@ -3228,12 +3375,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddInspectionDialog
           open={showEditInspectionDialog}
           onClose={() => {
-            console.log("EditInspectionDialog onClose called - reloading Pre-Inspection data");
+            console.log("EditInspectionDialog onClose called - reloading pre-inspection data");
             setShowEditInspectionDialog(false);
             fetchInspectionData(); // Always reload data when dialog closes
           }}
           onSuccess={() => {
-            console.log("EditInspectionDialog onSuccess called - reloading Pre-Inspection data");
+            console.log("EditInspectionDialog onSuccess called - reloading pre-inspection data");
             setShowEditInspectionDialog(false);
             fetchInspectionData();
           }}

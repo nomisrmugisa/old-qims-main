@@ -180,7 +180,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
     <ModalPortal open={open} onClose={onClose}>
       <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
         <div className="modal-header">
-          <h5 className="modal-title">Situational Analysis</h5>
+          <h5 className="modal-title">Pre-Inspection</h5>
           <button type="button" className="close-btn" onClick={onClose} disabled={isSubmitting}>&times;</button>
         </div>
         <div className="modal-body">
@@ -189,7 +189,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
               {programStageMetadata && programStageMetadata.programStageSections.map(section => {
                 // Override display name for specific sections
                 const getDisplayName = (sectionName) => {
-                  if (sectionName === "Self Assessment Details") {
+                  if (sectionName === "Pre-Inspection Details") {
                     return "Date and Time";
                   }
                   return sectionName;
@@ -213,7 +213,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
             <div className="button-container">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting || isLoading}>
-                  {isSubmitting ? 'Submitting...' : 'Submit Self Assessment'}
+                  {isSubmitting ? 'Submitting...' : 'Submit Pre-Inspection'}
               </button>
             </div>
           </form>

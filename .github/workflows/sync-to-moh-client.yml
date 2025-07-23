@@ -1,0 +1,32 @@
+name: Sync to moh_client_frontend/update-production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout qims repo
+        uses: actions/checkout@v3
+
+      - name: Push contents to update-production branch in moh_client_frontend
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Clone the destination repo (moh_client_frontend)
+          git clone https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@github.com/qimssystem/moh_client_frontend.git target-repo
+
+          # Copy qims contents into target-repo (excluding .git and target-repo)          
+          rsync -av --exclude='.git' --exclude='target-repo' --exclude='.github/workflows' ./ target-repo/ --delete
+
+          cd target-repo
+          git checkout -B update-production
+
+          git add .
+          git commit -m "Sync from qims/main [CI]" || echo "Nothing to commit"
+          git push origin update-production --force

@@ -23,8 +23,8 @@ const ClientPortal = () => {
                        </div>;
             case 'inspection-schedule':
                 return <div>
-                                    <h2>Self Assessment</h2>
-        <p>Content for Self Assessment goes here.</p>
+                                    <h2>Pre-Inspection</h2>
+        <p>Content for Pre-Inspection goes here.</p>
                        </div>;
             default:
                 return null;
@@ -56,7 +56,7 @@ const ClientPortal = () => {
                     className={activeTab === 'inspection-schedule' ? 'active' : ''}
                     onClick={() => setActiveTab('inspection-schedule')}
                 >
-                    Self Assessment
+                    Pre-Inspection
                 </button>
             </div>
             <div className="tab-content">

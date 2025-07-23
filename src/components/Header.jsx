@@ -12,7 +12,7 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
     const navigate = useNavigate();
     const [authUser, setAuthUser] = useState(null);
   
-  // Function to check if Situational Analysis is green (completed)
+  // Function to check if Pre-Inspection is green (completed)
   const isSituationalAnalysisGreen = () => {
     return situationalAnalysisComplete;
   };
@@ -261,9 +261,6 @@ const Header = ({ onLoginClick, isLoggedIn, onLogout, activeDashboardSection, se
                 </div>
             </div>
         </div>
-
-
-
     </header>
   );
 };

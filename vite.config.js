@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   base: '/main/',
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'https://qimsdev.5am.co.bw/qims/api',

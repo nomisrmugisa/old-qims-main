@@ -4,6 +4,15 @@ import ModalPortal from './ModalPortal';
 import { StorageService } from '../services';
 import { FACILITY_TYPE_FIELD_ID, shouldShowDataElement, getFacilityTypeMapping, getOrderedDocumentIds } from '../utils/facilityTypeMapping';
 
+// import NotificationPopUp from './NotificationPopUp';
+import { showEmailNotificationModal } from './NotificationPopUp';
+
+import TopLevelNotificationPortal from './TopLevelNotificationPortal';
+import { StorageService } from '../services';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+import Dialog from '@mui/material/Dialog';
+
 
 const EditFacilityOwnershipDialog = ({
   open,
@@ -29,6 +38,12 @@ const EditFacilityOwnershipDialog = ({
   const [submitError, setSubmitError] = useState(null);
   const [isInScreeningGroup, setIsInScreeningGroup] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showEmailSent, setShowEmailSent] = useState(false);
+
+  const [showEmailAlert, setShowEmailAlert] = useState(false);
+
+  console.log("🧠 Component mounted");
+
 
   const [emailStatus, setEmailStatus] = useState(null); // null, 'sending', 'sent', or 'failed'
 
@@ -381,7 +396,7 @@ const EditFacilityOwnershipDialog = ({
         // Close dialog after a short delay to show success message
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 3000);
       } else {
         // Add mode - create new event
         // Get the organization unit ID from the current user
@@ -461,7 +476,7 @@ const EditFacilityOwnershipDialog = ({
         // Close dialog after a short delay to show success message
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 3000);
       }
     } catch (error) {
       console.error("Form submission error:", error);
@@ -844,315 +859,304 @@ const EditFacilityOwnershipDialog = ({
     
     return (
       <div className="dynamic-form-body">
-        {programStageMetadata.programStageSections.map(section => {
-          // Sort section.dataElements by Excel order, then by original order for those not in Excel
-          const sortedDataElements = [...section.dataElements].sort((a, b) => {
-            const idxA = orderedDocumentIds.indexOf(a.id);
-            const idxB = orderedDocumentIds.indexOf(b.id);
-            if (idxA === -1 && idxB === -1) return 0; // neither in Excel, keep original order
-            if (idxA === -1) return 1; // a after b
-            if (idxB === -1) return -1; // a before b
-            return idxA - idxB;
-          });
-          return (
-            <div key={section.id} className="section-group" style={{
-              marginBottom: '28px',
-              padding: '0 0 16px 0',
-              borderBottom: section !== programStageMetadata.programStageSections[programStageMetadata.programStageSections.length - 1] ? '1px solid #eee' : 'none'
-            }}>
-              {section.name && (
-                <h4 style={{
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  marginBottom: '16px',
-                  color: '#333',
-                  paddingBottom: '8px',
-                  borderBottom: '1px solid #eee'
-                }}>
-                  {section.name}
-                  {isComplianceSection(section) && (
-                    <span style={{
-                      fontSize: '0.8em',
-                      fontWeight: 'normal',
-                      marginLeft: '10px',
-                      color: '#666',
-                      backgroundColor: '#f8f9fa',
-                      padding: '2px 6px',
-                      borderRadius: '4px'
-                    }}>
-                      (Read Only)
-                    </span>
-                  )}
-                </h4>
-              )}
-              {sortedDataElements.map(de => (
-                (!shouldHideField(de) && shouldShowDataElement(de.id, selectedFacilityType, facilityTypeMapping)) && (
-                  <div key={de.id} className="form-group-dhis2" style={{
-                    marginBottom: '16px'
+        {programStageMetadata.programStageSections.map(section => (
+          <div key={section.id} className="section-group" style={{
+            marginBottom: '28px',
+            padding: '0 0 16px 0',
+            borderBottom: section !== programStageMetadata.programStageSections[programStageMetadata.programStageSections.length - 1] ? '1px solid #eee' : 'none'
+          }}>
+            {section.name && (
+              <h4 style={{
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                marginBottom: '16px',
+                color: '#333',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #eee'
+              }}>
+                {section.name}
+                {isComplianceSection(section) && (
+                  <span style={{
+                    fontSize: '0.8em',
+                    fontWeight: 'normal',
+                    marginLeft: '10px',
+                    color: '#666',
+                    backgroundColor: '#f8f9fa',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
                   }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '6px',
-                      fontSize: '0.95rem',
-                      fontWeight: '500',
-                      color: '#333'
-                    }}>
-                      {de.displayFormName}<span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
-                    </label>
-                    {isComplianceSection(section) ? (
-                      // Render read-only fields for compliance section
-                      isFileValueType(de.valueType) ? (
-                        <div>
-                          {formData[de.id] ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <a
-                                href={`/api/fileResources/${formData[de.id]}/data`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="file-download-link"
+                    (Read Only)
+                  </span>
+                )}
+              </h4>
+            )}
+            {section.dataElements.map(de => (
+              shouldHideField(de) ? null : (
+                <div key={de.id} className="form-group-dhis2" style={{
+                  marginBottom: '16px'
+                }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    fontSize: '0.95rem',
+                    fontWeight: '500',
+                    color: '#333'
+                  }}>
+                    {de.displayFormName}<span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
+                  </label>
+                  {isComplianceSection(section) ? (
+                    // Render read-only fields for compliance section
+                    isFileValueType(de.valueType) ? (
+                      <div>
+                        {formData[de.id] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <a
+                              href={`/api/fileResources/${formData[de.id]}/data`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="file-download-link"
+                              style={{
+                                color: '#1976d2',
+                                textDecoration: 'none',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
+                              {selectedFileNames[de.id] || 'Download file'}
+                            </a>
+                            {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
+                              <button
+                                type="button"
+                                className="btn btn-link"
                                 style={{
+                                  marginLeft: 8,
                                   color: '#1976d2',
-                                  textDecoration: 'none',
-                                  fontWeight: '500',
-                                  display: 'flex',
-                                  alignItems: 'center'
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem',
+                                  textDecoration: 'underline'
                                 }}
+                                onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
                               >
-                                <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
-                                {selectedFileNames[de.id] || 'Download file'}
-                              </a>
-                              {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
-                                <button
-                                  type="button"
-                                  className="btn btn-link"
-                                  style={{
-                                    marginLeft: 8,
-                                    color: '#1976d2',
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: '4px 8px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.9rem',
-                                    textDecoration: 'underline'
-                                  }}
-                                  onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
-                                >
-                                  Preview
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <span style={{
-                              color: '#666',
-                              fontStyle: 'italic',
-                              padding: '8px 0',
-                              display: 'block'
-                            }}>No file uploaded</span>
-                          )}
-                        </div>
-                      ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
-                        <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                          <input
-                            type="checkbox"
-                            checked={formData[de.id] === 'true'}
-                            disabled={true}
-                            style={{
-                              marginRight: '8px',
-                              width: '18px',
-                              height: '18px',
-                              cursor: 'not-allowed',
-                              opacity: 0.7
-                            }}
-                          />
-                          <span style={{ fontSize: '0.95rem' }}>Yes</span>
-                        </div>
-                      ) : shouldRenderAsDropdown(de) ? (
-                        <div style={{
-                          padding: '10px 12px',
-                          backgroundColor: '#f8f9fa',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '4px',
-                          color: '#333',
-                          fontSize: '0.95rem'
-                        }}>
-                          {de.optionSet.options &&
-                            de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName ||
-                            <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
-                          }
-                        </div>
-                      ) : (
-                        <div style={{
-                          padding: '10px 12px',
-                          backgroundColor: '#f8f9fa',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '4px',
-                          color: '#333',
-                          fontSize: '0.95rem'
-                        }}>
-                          {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
-                        </div>
-                      )
-                    ) : (
-                      // Normal editable fields for non-compliance sections
-                      isFileValueType(de.valueType) ? (
-                        renderFileInput(de)
-                      ) : de.valueType === 'NUMBER' ? (
+                                Preview
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{
+                            color: '#666',
+                            fontStyle: 'italic',
+                            padding: '8px 0',
+                            display: 'block'
+                          }}>No file uploaded</span>
+                        )}
+                      </div>
+                    ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
                         <input
-                          type="number"
-                          className="form-control"
-                          value={formData[de.id] || ''}
-                          onChange={e => handleInputChange(de.id, e.target.value)}
-                          required={true}
+                          type="checkbox"
+                          checked={formData[de.id] === 'true'}
+                          disabled={true}
                           style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '0.95rem',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            transition: 'border-color 0.2s ease',
-                            outline: 'none',
-                            boxSizing: 'border-box'
+                            marginRight: '8px',
+                            width: '18px',
+                            height: '18px',
+                            cursor: 'not-allowed',
+                            opacity: 0.7
                           }}
                         />
-                      ) : de.valueType === 'TRUE_ONLY' ? (
-                        <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                          <input
-                            type="checkbox"
-                            id={`checkbox-${de.id}`}
-                            checked={formData[de.id] === 'true'}
-                            onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
-                            style={{
-                              marginRight: '8px',
-                              width: '18px',
-                              height: '18px',
-                              accentColor: '#1976d2'
-                            }}
-                          />
-                          <label
-                            htmlFor={`checkbox-${de.id}`}
-                            style={{
-                              cursor: 'pointer',
-                              fontWeight: 'normal',
-                              margin: 0,
-                              fontSize: '0.95rem'
-                            }}
-                          >
-                            Yes
-                          </label>
-                        </div>
-                      ) : de.valueType === 'BOOLEAN' ? (
-                        <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                          <input
-                            type="checkbox"
-                            id={`checkbox-${de.id}`}
-                            checked={formData[de.id] === 'true'}
-                            onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
-                            style={{
-                              marginRight: '8px',
-                              width: '18px',
-                              height: '18px',
-                              accentColor: '#1976d2'
-                            }}
-                          />
-                          <label
-                            htmlFor={`checkbox-${de.id}`}
-                            style={{
-                              cursor: 'pointer',
-                              fontWeight: 'normal',
-                              margin: 0,
-                              fontSize: '0.95rem'
-                            }}
-                          >
-                            Yes
-                          </label>
-                        </div>
-                      ) : shouldRenderAsDropdown(de) ? (
-                        <select
-                          className="form-control"
-                          value={formData[de.id] || ''}
-                          onChange={e => handleInputChange(de.id, e.target.value)}
-                          required={true}
+                        <span style={{ fontSize: '0.95rem' }}>Yes</span>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <div style={{
+                        padding: '10px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '4px',
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {de.optionSet.options &&
+                          de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName ||
+                          <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
+                        }
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: '10px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '4px',
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                      </div>
+                    )
+                  ) : (
+                    // Normal editable fields for non-compliance sections
+                    isFileValueType(de.valueType) ? (
+                      renderFileInput(de)
+                    ) : de.valueType === 'NUMBER' ? (
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={true}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : de.valueType === 'TRUE_ONLY' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
                           style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '0.95rem',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            transition: 'border-color 0.2s ease',
-                            outline: 'none',
-                            backgroundColor: 'white',
+                            marginRight: '8px',
+                            width: '18px',
+                            height: '18px',
+                            accentColor: '#1976d2'
+                          }}
+                        />
+                        <label
+                          htmlFor={`checkbox-${de.id}`}
+                          style={{
                             cursor: 'pointer',
-                            appearance: 'auto',
-                            boxSizing: 'border-box'
+                            fontWeight: 'normal',
+                            margin: 0,
+                            fontSize: '0.95rem'
                           }}
                         >
-                          <option value="">Select</option>
-                          {de.optionSet.options && de.optionSet.options.map(opt => (
-                            <option key={opt.id} value={opt.code}>{opt.displayName}</option>
-                          ))}
-                        </select>
-                      ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
+                          Yes
+                        </label>
+                      </div>
+                    ) : de.valueType === 'BOOLEAN' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
                         <input
-                          type="text"
-                          className="form-control"
-                          value={formData[de.id] || ''}
-                          onChange={e => handleInputChange(de.id, e.target.value)}
-                          required={true}
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
                           style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '0.95rem',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            transition: 'border-color 0.2s ease',
-                            outline: 'none',
-                            boxSizing: 'border-box'
+                            marginRight: '8px',
+                            width: '18px',
+                            height: '18px',
+                            accentColor: '#1976d2'
                           }}
                         />
-                      ) : de.valueType === 'DATE' ? (
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={formData[de.id] || ''}
-                          onChange={e => handleInputChange(de.id, e.target.value)}
-                          required={true}
+                        <label
+                          htmlFor={`checkbox-${de.id}`}
                           style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '0.95rem',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            transition: 'border-color 0.2s ease',
-                            outline: 'none',
-                            boxSizing: 'border-box'
+                            cursor: 'pointer',
+                            fontWeight: 'normal',
+                            margin: 0,
+                            fontSize: '0.95rem'
                           }}
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={formData[de.id] || ''}
-                          onChange={e => handleInputChange(de.id, e.target.value)}
-                          required={true}
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '0.95rem',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            transition: 'border-color 0.2s ease',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                          }}
-                        />
-                      )
-                    )}
-                  </div>
-                )
-              ))}
-            </div>
-          );
-        })}
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <select
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={true}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          appearance: 'auto',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="">Select</option>
+                        {de.optionSet.options && de.optionSet.options.map(opt => (
+                          <option key={opt.id} value={opt.code}>{opt.displayName}</option>
+                        ))}
+                      </select>
+                    ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={true}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : de.valueType === 'DATE' ? (
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={true}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={true}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    )
+                  )}
+                </div>
+              )
+            ))}
+          </div>
+        ))}
       </div>
     );
   };
@@ -1384,8 +1388,15 @@ const EditFacilityOwnershipDialog = ({
           body: JSON.stringify({ emails }),
         });
 
-        if (!emailResponse.ok) {
-          throw new Error('Failed to send email notification');
+        const result = await emailResponse.json().catch(() => ({})); // handle non-JSON
+
+        console.log("📧 Email response status:", emailResponse.status);
+        console.log("📧 Email response ok:", emailResponse.ok);
+        console.log("📧 Email response body:", result);
+
+        if (emailResponse.ok) {
+          console.log("✅ Email sent successfully. Showing modal...");
+          showEmailNotificationModal(); // ✅ TRIGGER MODAL directly
         }
         setEmailStatus('sent');
 
@@ -1394,6 +1405,9 @@ const EditFacilityOwnershipDialog = ({
       } catch (emailErr) {
         console.error('Error sending email notification:', emailErr);
       }
+
+      setShowEmailSent(true);
+      console.log(`Email Sent Status:`, showEmailSent);
 
       // 5. Show success feedback
       setSubmitSuccess(true);
@@ -1423,80 +1437,33 @@ const EditFacilityOwnershipDialog = ({
     console.error("isEditMode prop is undefined in EditFacilityOwnershipDialog");
   }
 
+  useEffect(() => {
+    if (showEmailSent) {
+      console.log("✅ Modal should now show because showEmailSent is true");
+    }
+  }, [showEmailSent]);
+
+
   return (
     <>
-    <ModalPortal open={open} onClose={handleClose}>
 
-      {/* Loading overlay during submission */}
-      {isSubmitting && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 10002,
-          backdropFilter: 'blur(2px)'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '32px',
-            textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-            minWidth: '300px'
-          }}>
-            <div style={{
-              fontSize: '18px',
-              fontWeight: '500',
-              marginBottom: '20px',
-              color: '#333'
-            }}>
-              {isEditMode ? 'Updating Facility Ownership...' : 'Adding Facility Ownership...'}
-            </div>
-            
-            <div style={{
-              width: '100%',
-              height: '4px',
-              backgroundColor: '#e0e0e0',
-              borderRadius: '2px',
-              overflow: 'hidden',
-              marginBottom: '16px'
-            }}>
-              <div style={{
-                width: '100%',
-                height: '100%',
-                backgroundColor: '#1976d2',
-                animation: 'loading-bar 5s ease-in-out infinite'
-              }} />
-            </div>
-            <div style={{
-              fontSize: '14px',
-              color: '#666'
-            }}>
-              {emailStatus === 'sent'
-                ? 'Processing complete'
-                : 'Please wait while we process your request...'}
-
-            </div>
-          </div>
-        </div>
-      )}      
-
-      <div className="modal-content" style={{
-        padding: '0',
-        maxWidth: '700px',
-        width: '100%',
-        borderRadius: '8px',
-        boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
-        overflow: 'hidden'
-      }}>
-        {/* Confirmation Dialog */}
-        {showConfirmDialog && (
+      
+      {/* <ModalPortal open={open} onClose={handleClose}> */}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          style: {
+            width: '700px',           // custom width
+            maxWidth: '100%',         // responsive fallback
+            margin: 'auto',           // center horizontally
+          }
+        }}
+      >
+        {/* Loading overlay during submission */}
+        {isSubmitting && (
           <div style={{
             position: 'fixed',
             top: 0,
@@ -1507,332 +1474,375 @@ const EditFacilityOwnershipDialog = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 10001
+            zIndex: 10002,
+            backdropFilter: 'blur(2px)'
           }}>
             <div style={{
               backgroundColor: 'white',
               borderRadius: '8px',
-              padding: '24px',
-              width: '400px',
+              padding: '32px',
+              textAlign: 'center',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px'
+              minWidth: '300px'
             }}>
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                borderBottom: '1px solid #eee',
-                paddingBottom: '16px'
-              }}>
-                <span style={{
-                  fontSize: '24px',
-                  color: '#f57c00',
-                  marginRight: '8px'
-                }}>⚠️</span>
-                <h3 style={{
-                  margin: 0,
-                  color: '#333',
-                  fontSize: '18px',
-                  fontWeight: '600'
-                }}>Confirm Submission</h3>
-              </div>
-
-              <p style={{
-                margin: '0 0 8px 0',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                color: '#555'
-              }}>
-                You are about to submit this application for review. Once submitted:
-              </p>
-
-              <ul style={{
-                margin: '0 0 16px 0',
-                paddingLeft: '20px',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                color: '#555'
-              }}>
-                <li>You will not be able to make further edits to this information</li>
-                <li>Your application will be sent for official review</li>
-                <li>You will receive confirmation via email</li>
-              </ul>
-
-              <p style={{
-                margin: '0 0 16px 0',
-                fontSize: '14px',
+                fontSize: '18px',
                 fontWeight: '500',
+                marginBottom: '20px',
                 color: '#333'
               }}>
-                Are you sure you want to proceed?
-              </p>
+                {isEditMode ? 'Updating Facility Ownership...' : 'Adding Facility Ownership...'}
+              </div>
 
               <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                borderTop: '1px solid #eee',
-                paddingTop: '16px'
+                width: '100%',
+                height: '4px',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '2px',
+                overflow: 'hidden',
+                marginBottom: '16px'
               }}>
-                <button
-                  onClick={handleCancelConfirmation}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#f5f5f5',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#555',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmedSubmit}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#2e7d32',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: 'white',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
-                  }}
-                >
-                  Yes, Submit Application
-                </button>
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: '#1976d2',
+                  animation: 'loading-bar 1.5s ease-in-out infinite'
+                }} />
+              </div>
+              <div style={{
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                Please wait while we process your request...
               </div>
             </div>
           </div>
         )}
 
-        <div className="modal-header" style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: '#f8f9fa'
-        }}>
-          <h5 className="modal-title" style={{
-            margin: 0,
-            fontSize: '1.25rem',
-            fontWeight: '500',
-            color: '#333'
-          }}>{isEditMode ? 'Edit Facility Ownership' : 'Add Facility Ownership'}</h5>
-          <button
-            type="button"
-            className="close-btn"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              color: '#666',
-              padding: '0 8px',
-              lineHeight: 1
-            }}
-          >&times;</button>
-        </div>
-        <div className="modal-body" style={{
-          position: 'relative',
-          padding: '24px',
-          maxHeight: '70vh',
-          overflowY: 'auto'
-        }}>
-          <form onSubmit={handleSubmit} className="ownership-form">
-            {errorMessage && (
-              <div style={{
-                padding: '12px 16px',
-                marginBottom: '20px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                backgroundColor: errorMessage.includes('successfully') ? '#e8f5e9' : '#ffebee',
-                color: errorMessage.includes('successfully') ? '#2e7d32' : '#c62828',
-                border: `1px solid ${errorMessage.includes('successfully') ? '#a5d6a7' : '#ef9a9a'}`,
-                display: 'flex',
-                alignItems: 'center',
-              }}>
-                <span style={{
-                  marginRight: '8px',
-                  fontSize: '18px'
-                }}>
-                  {errorMessage.includes('successfully') ? '✓' : '⚠️'}
-                </span>
-                {errorMessage}
-              </div>
-            )}
-            {renderFormBody()}
-            <div className="button-container" style={{
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'flex-end',
-              marginTop: '32px',
-              padding: '16px 0',
-              borderTop: '1px solid #e0e0e0',
-              position: 'sticky',
-              bottom: 0,
-              background: 'white',
-              zIndex: 10
-            }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                style={{
-                  padding: '10px 24px',
-                  fontSize: '0.95rem',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc',
-                  background: '#fff',
-                  color: '#333',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: 'none'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={isSubmitting || isLoading}
-                style={{
-                  padding: '10px 24px',
-                  fontSize: '0.95rem',
-                  borderRadius: '4px',
-                  border: 'none',
-                  background: '#1976d2',
-                  color: 'white',
-                  fontWeight: '500',
-                  cursor: isSubmitting || isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || isLoading ? 0.7 : 1,
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
-                }}
-              >
-                {isSubmitting ? 'Saving...' : 'Save'}
-              </button>
-              {isInScreeningGroup && (
-                <div style={{
-                  color: '#ed6c02',
-                  marginLeft: 8,
-                  fontSize: '0.9em',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ marginRight: '6px', fontSize: '1.2em' }}>⚠️</span>
-                  This application has already been submitted for review
-                </div>
-              )}
-              <button
-                type="button"
-                className="btn-primary"
-                style={{
-                  background: submitSuccess || isInScreeningGroup ? '#9e9e9e' : '#2e7d32',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '10px 24px',
-                  fontSize: '0.95rem',
-                  fontWeight: '500',
-                  boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
-                  cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s',
-                  opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
-                }}
-                disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
-                onClick={handleSaveAndSubmit}
-              >
-                {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
-              </button>
-              {submitSuccess && (
-                <div style={{
-                  color: '#2e7d32',
-                  marginTop: 8,
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ marginRight: '6px', fontSize: '1.2em' }}>✓</span>
-                  Application submitted successfully
-                </div>
-              )}
-              {submitError && (
-                <div style={{
-                  color: '#d32f2f',
-                  marginTop: 8,
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ marginRight: '6px', fontSize: '1.2em' }}>✕</span>
-                  {submitError}
-                </div>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
-    </ModalPortal>
-    {/* show email confirmation */}
-    {showEmailConfirmation && (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10005
-      }}>
-        <div style={{
-          backgroundColor: 'white',
+        <div className="modal-content" style={{
+          padding: '0',
+          maxWidth: '700px',
+          width: '100%',
           borderRadius: '8px',
-          padding: '24px',
-          width: '400px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-          textAlign: 'center'
+          boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
+          overflow: 'hidden'
         }}>
-          <div style={{ fontSize: '48px', color: '#4caf50', marginBottom: '16px' }}>✓</div>
-          <h3 style={{ margin: '0 0 16px 0', color: '#333' }}>Email Sent Successfully</h3>
-          <p style={{ marginBottom: '24px', color: '#555' }}>
-            Notification emails have been sent to all recipients.
-          </p>
-          <button
-            onClick={() => {
-              setShowEmailConfirmation(false);
-              // handleClose(); // move handleClose here
-            }}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#4caf50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            OK
-          </button>
+          {/* Confirmation Dialog */}
+          {showConfirmDialog && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 10001
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                padding: '24px',
+                width: '400px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  borderBottom: '1px solid #eee',
+                  paddingBottom: '16px'
+                }}>
+                  <span style={{
+                    fontSize: '24px',
+                    color: '#f57c00',
+                    marginRight: '8px'
+                  }}>⚠️</span>
+                  <h3 style={{
+                    margin: 0,
+                    color: '#333',
+                    fontSize: '18px',
+                    fontWeight: '600'
+                  }}>Confirm Submission</h3>
+                </div>
+
+                <p style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  color: '#555'
+                }}>
+                  You are about to submit this application for review. Once submitted:
+                </p>
+
+                <ul style={{
+                  margin: '0 0 16px 0',
+                  paddingLeft: '20px',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  color: '#555'
+                }}>
+                  <li>You will not be able to make further edits to this information</li>
+                  <li>Your application will be sent for official review</li>
+                  <li>You will receive confirmation via email</li>
+                </ul>
+
+                <p style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#333'
+                }}>
+                  Are you sure you want to proceed?
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '12px',
+                  borderTop: '1px solid #eee',
+                  paddingTop: '16px'
+                }}>
+                  <button
+                    onClick={handleCancelConfirmation}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#f5f5f5',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#555',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmedSubmit}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#2e7d32',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: 'white',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                    }}
+                  >
+                    Yes, Submit Application
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="modal-header" style={{
+            padding: '16px 24px',
+            borderBottom: '1px solid #e0e0e0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#f8f9fa'
+          }}>
+            <h5 className="modal-title" style={{
+              margin: 0,
+              fontSize: '1.25rem',
+              fontWeight: '500',
+              color: '#333'
+            }}>{isEditMode ? 'Edit Facility Ownership' : 'Add Facility Ownership'}</h5>
+
+            <button
+              type="button"
+              className="close-btn"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                color: '#666',
+                padding: '0 8px',
+                lineHeight: 1
+              }}
+            >&times;</button>
+          </div>
+          <div className="modal-body" style={{
+            position: 'relative',
+            padding: '24px',
+            maxHeight: '70vh',
+            overflowY: 'auto'
+          }}>
+            <form onSubmit={handleSubmit} className="ownership-form">
+              {errorMessage && (
+                <div style={{
+                  padding: '12px 16px',
+                  marginBottom: '20px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: errorMessage.includes('successfully') ? '#e8f5e9' : '#ffebee',
+                  color: errorMessage.includes('successfully') ? '#2e7d32' : '#c62828',
+                  border: `1px solid ${errorMessage.includes('successfully') ? '#a5d6a7' : '#ef9a9a'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}>
+                  <span style={{
+                    marginRight: '8px',
+                    fontSize: '18px'
+                  }}>
+                    {errorMessage.includes('successfully') ? '✓' : '⚠️'}
+                  </span>
+                  {errorMessage}
+                </div>
+              )}
+              {renderFormBody()}
+              <div className="button-container" style={{
+                display: 'flex',
+                gap: 12,
+                justifyContent: 'flex-end',
+                marginTop: '32px',
+                padding: '16px 0',
+                borderTop: '1px solid #e0e0e0',
+                position: 'sticky',
+                bottom: 0,
+                background: 'white',
+                zIndex: 10
+              }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  style={{
+                    padding: '10px 24px',
+                    fontSize: '0.95rem',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    background: '#fff',
+                    color: '#333',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: 'none'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSubmitting || isLoading}
+                  style={{
+                    padding: '10px 24px',
+                    fontSize: '0.95rem',
+                    borderRadius: '4px',
+                    border: 'none',
+                    background: '#1976d2',
+                    color: 'white',
+                    fontWeight: '500',
+                    cursor: isSubmitting || isLoading ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting || isLoading ? 0.7 : 1,
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 4px rgba(25, 118, 210, 0.2)'
+                  }}
+                >
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
+                {isInScreeningGroup && (
+                  <div style={{
+                    color: '#ed6c02',
+                    marginLeft: 8,
+                    fontSize: '0.9em',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ marginRight: '6px', fontSize: '1.2em' }}>⚠️</span>
+                    This application has already been submitted for review
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{
+                    background: submitSuccess || isInScreeningGroup ? '#9e9e9e' : '#2e7d32',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '10px 24px',
+                    fontSize: '0.95rem',
+                    fontWeight: '500',
+                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
+                    cursor: submitSuccess || isInScreeningGroup || !isAllRequiredFieldsFilled() ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.2s',
+                    opacity: isAllRequiredFieldsFilled() && !isInScreeningGroup && !submitSuccess ? 1 : 0.7,
+                  }}
+                  disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
+                  onClick={handleSaveAndSubmit}
+                >
+                  {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
+                </button>
+                {submitSuccess && (
+                  <div style={{
+                    color: '#2e7d32',
+                    marginTop: 8,
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ marginRight: '6px', fontSize: '1.2em' }}>✓</span>
+                    Application submitted successfully
+                  </div>
+                )}
+                {submitError && (
+                  <div style={{
+                    color: '#d32f2f',
+                    marginTop: 8,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ marginRight: '6px', fontSize: '1.2em' }}>✕</span>
+                    {submitError}
+                  </div>
+                )}
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    )}
+
+      </Dialog>
+      {/* </ModalPortal> */}
+
+      {showEmailSent && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed',
+          top: '30%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          padding: '24px',
+          backgroundColor: '#4caf50',
+          color: 'white',
+          borderRadius: '8px',
+          zIndex: 15000,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          fontSize: '16px',
+          fontWeight: 500,
+        }}>
+          ✅ Email notification sent.
+        </div>,
+        document.body
+      )}
+
+      
+
     </>
   );
 };
