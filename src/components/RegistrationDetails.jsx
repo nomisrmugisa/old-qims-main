@@ -2135,7 +2135,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : '';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           return (
@@ -2208,7 +2208,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : '';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to check if service type is offered
@@ -2317,14 +2317,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format boolean values
                           const formatBoolean = (value) => {
                             if (value === 'true') return 'Yes';
                             if (value === 'false') return 'No';
-                            return 'N/A';
+                            return 'None';
                           };
 
                           // Aggregate emergency equipment
@@ -2437,12 +2437,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format date
                           const formatDate = (dateString) => {
-                            if (!dateString) return 'N/A';
+                            if (!dateString) return 'None';
                             try {
                               return new Date(dateString).toLocaleDateString();
                             } catch {
@@ -2454,7 +2454,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const formatBoolean = (value) => {
                             if (value === 'true') return 'Yes';
                             if (value === 'false') return 'No';
-                            return 'N/A';
+                            return 'None';
                           };
 
                           // Aggregate policy compliance
@@ -2549,14 +2549,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
                             const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'N/A';
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format boolean values
                           const formatBoolean = (value) => {
                             if (value === 'true') return 'Yes';
                             if (value === 'false') return 'No';
-                            return 'N/A';
+                            return 'None';
                           };
 
                           // Build license holder name
