@@ -1,0 +1,207 @@
+[{
+    "startDate": "2025-07-18",
+    "endDate": "2025-07-19",
+    "facilityId": "T86YJYQJ7PK",
+    "facilityName": "KK Clinic",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["PERSONNEL", "FACILITY"],
+        "inspectorId": "SkO45xh7bcB",
+        "inspectorName": "James Bond"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["SUPPLIES"],
+        "inspectorId": "hZtbWsPQOnS",
+        "inspectorName": "Mario Rossi"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-20",
+    "endDate": "2025-07-20",
+    "facilityId": "FAC789XYZ",
+    "facilityName": "City Hospital",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["EMERGENCY", "SURGERY"],
+        "inspectorId": "AB12CD34EF",
+        "inspectorName": "Jane Smith"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["PHARMACY"],
+        "inspectorId": "GH56IJ78KL",
+        "inspectorName": "John Doe"
+      },
+      {
+        "role": "Specialist",
+        "sections": ["LAB"],
+        "inspectorId": "MN90OP12QR",
+        "inspectorName": "Alice Johnson"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-21",
+    "endDate": "2025-07-21",
+    "facilityId": "CLINIC555",
+    "facilityName": "Medicare Center",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["ADMIN", "RECORDS"],
+        "inspectorId": "ST34UV56WX",
+        "inspectorName": "Robert Brown"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-22",
+    "endDate": "2025-07-22",
+    "facilityId": "HOSP888",
+    "facilityName": "Regional Medical",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["ICU", "CARDIOLOGY"],
+        "inspectorId": "YZ78AB90CD",
+        "inspectorName": "Emily Davis"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["RADIOLOGY"],
+        "inspectorId": "EF12GH34IJ",
+        "inspectorName": "Michael Wilson"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-21",
+    "endDate": "2025-07-26",
+    "facilityId": "FAC999",
+    "facilityName": "Urgent Care Plus",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["TRIAGE", "PEDIATRICS"],
+        "inspectorId": "KL56MN78OP",
+        "inspectorName": "Sarah Miller"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-24",
+    "endDate": "2025-07-24",
+    "facilityId": "CL456",
+    "facilityName": "Dental Wellness",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["STERILIZATION", "X-RAY"],
+        "inspectorId": "QR90ST12UV",
+        "inspectorName": "David Taylor"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["RECORDS"],
+        "inspectorId": "WX34YZ56AB",
+        "inspectorName": "Jennifer Anderson"
+      },
+      {
+        "role": "Specialist",
+        "sections": ["ORTHODONTICS"],
+        "inspectorId": "CD78EF90GH",
+        "inspectorName": "Thomas Martinez"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-20",
+    "endDate": "2025-07-25",
+    "facilityId": "HOS123",
+    "facilityName": "Rehabilitation Center",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["PHYSICAL_THERAPY"],
+        "inspectorId": "IJ12KL34MN",
+        "inspectorName": "Lisa Garcia"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-26",
+    "endDate": "2025-07-26",
+    "facilityId": "FAC777",
+    "facilityName": "Mental Health Clinic",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["COUNSELING", "GROUP_THERAPY"],
+        "inspectorId": "OP56QR78ST",
+        "inspectorName": "Kevin Robinson"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["ADMIN"],
+        "inspectorId": "UV90WX12YZ",
+        "inspectorName": "Amanda White"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-27",
+    "endDate": "2025-07-27",
+    "facilityId": "CLIN333",
+    "facilityName": "Vision Center",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["EXAM_ROOMS", "OPTICAL"],
+        "inspectorId": "AB34CD56EF",
+        "inspectorName": "Daniel Lee"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["LAB"],
+        "inspectorId": "GH78IJ90KL",
+        "inspectorName": "Michelle Clark"
+      }
+    ]
+  },
+  {
+    "startDate": "2025-07-28",
+    "endDate": "2025-07-29",
+    "facilityId": "HOSP444",
+    "facilityName": "Women's Health Center",
+    "assignments": [
+      {
+        "role": "Lead Inspector",
+        "sections": ["OBGYN", "ULTRASOUND"],
+        "inspectorId": "MN12OP34QR",
+        "inspectorName": "Christopher Lewis"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["LAB"],
+        "inspectorId": "ST56UV78WX",
+        "inspectorName": "Elizabeth Walker"
+      },
+      {
+        "role": "Specialist",
+        "sections": ["MAMMOGRAPHY"],
+        "inspectorId": "YZ90AB12CD",
+        "inspectorName": "Matthew Hall"
+      },
+      {
+        "role": "Support Inspector",
+        "sections": ["RECORDS"],
+        "inspectorId": "EF34GH56IJ",
+        "inspectorName": "Stephanie Young"
+      }
+    ]
+  }
+]

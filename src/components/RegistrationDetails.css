@@ -1,0 +1,222 @@
+.registration-details-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tab-buttons {
+    display: flex;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.tab-buttons button {
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #e9ecef;
+    cursor: pointer;
+    font-weight: bold;
+    color: #495057;
+    transition: all 0.3s ease;
+}
+
+.tab-buttons button:hover {
+    background-color: #dae0e5;
+}
+
+.tab-buttons button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.tab-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.facility-ownership-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.facility-ownership-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.employee-registration-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.employee-registration-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.services-offered-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.services-offered-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.inspection-schedule-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.statutory-compliance-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.statutory-compliance-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.inspection-schedule-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.equipment-machinery-details h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.equipment-machinery-details .add-icon {
+    font-size: 28px;
+    color: #28a745;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Add hover effect for table rows */
+.hover-row:hover {
+    background-color: #e3f2fd;
+    transition: background-color 0.2s ease;
+}
+
+/* Style for the table */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.table th,
+.table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+/*.table thead th {
+    background-color: #dc3545;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}*/
+
+.table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.table tbody tr:hover {
+    background-color: #e2e6ea;
+}
+
+.facility-ownership-details .table-responsive {
+    margin-top: 20px;
+}
+
+/* Status Indicator Styles */
+.status-indicator {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.pending-application {
+    background-color: #dc3545; /* Red */
+}
+
+.status-indicator.in-progress {
+    background-color: #ffc107; /* Yellow */
+    color: #212529; /* Dark text for yellow bg */
+}
+
+.status-indicator.completed {
+    background-color: #28a745; /* Green */
+}
+
+.status-indicator.unknown {
+    background-color: #6c757d; /* Grey */
+}
+
+.blink-orange {
+    animation: blink-orange 1s step-start 0s infinite;
+    color: orange !important;
+}
+
+@keyframes blink-orange {
+    50% { opacity: 0; }
+} 

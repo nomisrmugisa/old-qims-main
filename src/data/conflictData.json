@@ -1,0 +1,81 @@
+[
+  {
+    "id": "q1",
+    "questionText": "What is the primary cause of the issue?",
+    "type": "single-choice",
+    "options": ["Hardware Failure", "Software Bug", "Configuration Error", "User Error"],
+    "submissions": [
+      {
+        "id": "s1",
+        "userId": "u1",
+        "userName": "John Doe",
+        "userRole": "Field Technician",
+        "answer": ["Hardware Failure"],
+        "timestamp": "2023-05-15T10:30:00Z"
+      },
+      {
+        "id": "s2",
+        "userId": "u2",
+        "userName": "Jane Smith",
+        "userRole": "Support Engineer",
+        "answer": ["Software Bug"],
+        "timestamp": "2023-05-15T11:45:00Z"
+      },
+      {
+        "id": "s3",
+        "userId": "u3",
+        "userName": "Bob Johnson",
+        "userRole": "Quality Assurance",
+        "answer": ["Configuration Error"],
+        "timestamp": "2023-05-15T12:15:00Z"
+      }
+    ]
+  },
+  {
+    "id": "q2",
+    "questionText": "Which systems are affected?",
+    "type": "multiple-choice",
+    "options": ["Billing", "CRM", "Inventory", "Reporting"],
+    "submissions": [
+      {
+        "id": "s4",
+        "userId": "u1",
+        "userName": "John Doe",
+        "userRole": "Field Technician",
+        "answer": ["Billing", "CRM"],
+        "timestamp": "2023-05-15T10:30:00Z"
+      },
+      {
+        "id": "s5",
+        "userId": "u2",
+        "userName": "Jane Smith",
+        "userRole": "Support Engineer",
+        "answer": ["CRM", "Inventory"],
+        "timestamp": "2023-05-15T11:45:00Z"
+      }
+    ]
+  },
+  {
+    "id": "q3",
+    "questionText": "Additional comments?",
+    "type": "text",
+    "submissions": [
+      {
+        "id": "s6",
+        "userId": "u1",
+        "userName": "John Doe",
+        "userRole": "Field Technician",
+        "answer": "The system was down for 2 hours during peak business time.",
+        "timestamp": "2023-05-15T10:30:00Z"
+      },
+      {
+        "id": "s7",
+        "userId": "u2",
+        "userName": "Jane Smith",
+        "userRole": "Support Engineer",
+        "answer": "The issue occurred after the latest software update.",
+        "timestamp": "2023-05-15T11:45:00Z"
+      }
+    ]
+  }
+]

@@ -1,0 +1,38 @@
+{
+  "id": "form-123",
+  "title": "Equipment Failure Report",
+  "resolvedAt": "2023-06-15T14:30:00Z",
+  "resolvedBy": "Jane Smith",
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What is the primary cause of the issue?",
+      "type": "single-choice",
+      "finalAnswer": "Hardware Failure",
+      "resolution": {
+        "selectedAnswerId": "s1",
+        "justification": "Confirmed by diagnostic tests"
+      }
+    },
+    {
+      "id": "q2",
+      "text": "Which systems are affected?",
+      "type": "multiple-choice",
+      "finalAnswer": ["Billing", "CRM"],
+      "resolution": {
+        "selectedAnswerId": "s4",
+        "justification": "Impact confirmed by system logs"
+      }
+    },
+    {
+      "id": "q3",
+      "text": "Additional comments?",
+      "type": "text",
+      "finalAnswer": "The system was down for 2 hours during peak business time",
+      "resolution": {
+        "selectedAnswerId": "s6",
+        "justification": "Consistent with outage reports"
+      }
+    }
+  ]
+}
