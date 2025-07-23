@@ -9,7 +9,9 @@ import 'aos/dist/aos.css';
 import './Main.css';
 import RegistrationForm from './RegistrationForm';
 import heroBg from '../assets/hero-bg.jpg';
-import aboutImg from '../assets/about_us.jpg';
+import aboutImg from '../assets/about.jpg';
+import {eventBus, EVENTS } from '../events';
+import { useNavigate } from 'react-router-dom';
 
 const services = [
   {
@@ -189,6 +191,7 @@ const services = [
 ];
 
 const Main = () => {
+  const navigate = useNavigate();
     useEffect(() => {
         AOS.init({
             duration: 1000,
@@ -230,9 +233,29 @@ const Main = () => {
                       <p style={{ color: 'rgba(255,255,255,0.92)', fontSize: '1.25rem', marginBottom: 32, textShadow: '0 1px 4px rgba(0,0,0,0.18)' }}>
                         Register, upgrade, or inspect your health facility with ease. Trusted by the Ministry of Health for a modern, efficient, and paperless experience.
                       </p>
-                      <a href="#Registration" className="btn btn-primary btn-lg" style={{ background: '#ffd600', color: '#1977cc', fontWeight: 700, border: 'none', borderRadius: 8, padding: '14px 38px', fontSize: '1.15rem', boxShadow: '0 2px 8px rgba(25,119,204,0.18)', transition: 'background 0.2s' }}>
-                        Start Registration
-                      </a>
+                      
+                    <a 
+                      href="javascript:void(0);" 
+                      className="btn btn-primary btn-lg" 
+                      style={{ 
+                        background: '#ffd600', 
+                        color: '#1977cc', 
+                        fontWeight: 700, 
+                        border: 'none', 
+                        borderRadius: 8, 
+                        padding: '14px 38px', 
+                        fontSize: '1.15rem', 
+                        boxShadow: '0 2px 8px rgba(25,119,204,0.18)', 
+                        transition: 'background 0.2s',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        eventBus.emit(EVENTS.REGISTRATION_FORM_SHOW);
+                        navigate('/register');
+                      }}
+                    >
+                      Start Registration
+                    </a>
                     </div>
                   </div>
                 </div>
@@ -331,17 +354,21 @@ const Main = () => {
             <section id="about" className="about section">
                 <div className="container">
                     <div className="row gy-4 gx-5">
-                        <div className="col-lg-6" data-aos="fade-up" data-aos-delay="200">
-                            <div className="about-image-wrapper">
+                        <div className="col-lg-6 position-relative align-self-start" data-aos="fade-up"
+                             data-aos-delay="200">
+                            <div style={{position: 'relative', borderRadius: '8px', overflow: 'hidden'}}>
                                 <img
                                     src={aboutImg}
-                                    className="img-fluid rounded-3 shadow-lg"
+                                    className="img-fluid"
                                     alt="Senior doctor performing facility inspection"
-                                    loading="lazy"
-                                    width="600"
-                                    height="400"
+                                    style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        objectFit: 'cover',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                                    }}
                                 />
-                                <div className="image-overlay"></div>
                             </div>
                         </div>
 

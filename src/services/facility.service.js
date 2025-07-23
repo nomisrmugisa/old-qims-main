@@ -5,6 +5,8 @@ import httpService from './http.service';
 import {getAuthToken} from './http.service';
 import StorageService from './storage.service';
 import {eventBus, EVENTS } from '../events';
+import {DHIS2_PROGRAMS} from './constants';
+
 const svc_name = "inspection_service";
 const FacilityService = {
     enrolmentRequest: async (data) => {
@@ -15,23 +17,59 @@ const FacilityService = {
             let token = await getAuthToken('Basic');
             let userData = await StorageService.getUserData();
             window.console.log('userData', userData);
-            const response = await httpService.put(`/40/users/${userData.id}`, {
-                id: userData.id,
-                email: userData.email,
-                firstName: userData.firstName,
-                surname: userData.surname,
-                username: userData.username,
-                organisationUnits: [{id: `${data.id}`}],
-                dataViewOrganisationUnits: [{id: `${data.id}`}],
-                teiSearchOrganisationUnits: [{id: `${data.id}`}],
-                userRoles: [{id: `${import.meta.env.VITE_FACILITY_USER_TYPE_ENROLMENT_REQUEST}`}],
-                    },
+            let now = new Date();
+
+            const programData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT;
+            const response = await httpService.post(`/40/tracker?async=false`, {
+                    events:[
+                        {
+                            status : "COMPLETED",
+                            program : programData.ID,
+                            programStage : programData.STAGE,
+                            orgUnit: `${data.id}`,
+                            occurredAt: now.toISOString(),
+                            dataValues:[
+                                { dataElement : programData.DATA_ELEMENTS.USER_ID.id, value:`${userData.id}`}, //userId
+                                { dataElement : programData.DATA_ELEMENTS.STATUS.id, value:"pending"}, //status
+                                { dataElement: programData.DATA_ELEMENTS.CREATED_AT.id, value:now.toISOString()}, //creationDate
+                                { dataElement: programData.DATA_ELEMENTS.DECISION_AT.id, value:null}, //decisionDate
+                                { dataElement:programData.DATA_ELEMENTS.FACILITY_ID.id, value:`${data.id}`}, //faciliytId
+                                { dataElement:programData.DATA_ELEMENTS.DECISION_NOTES.id, value:null}, //decisionNotes
+                                { dataElement:programData.DATA_ELEMENTS.DECISION_BY.id, value:null}, //decisionBy
+                            ]
+                        }
+                    ]
+                },
                 {
                     headers: {
                         'Authorization': `Basic ${token}`
                     }
                 });
             return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    listAuthPendingEnrolmentRequest: async() => {
+        const method = "listAuthPendingEnrolmentRequest";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let token = await getAuthToken('Basic');
+            let userData = await StorageService.getUserData();
+            window.console.log('userData', userData);
+            let now = new Date();
+
+            const programData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT;
+            const response = await httpService.get(`/40/tracker/events.json?program=${programData.ID}&programStage=${programData.STAGE}&skipPaging=true&filter=${programData.DATA_ELEMENTS.USER_ID.id}:eq:${userData.id}&filter=${programData.DATA_ELEMENTS.STATUS.id}:eq:pending&fields=*`,
+                {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            return response.instances;
         } catch (error) {
             throw error;
         }

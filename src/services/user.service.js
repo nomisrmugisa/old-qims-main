@@ -77,7 +77,7 @@ const UserService = {
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: "listGroupUsers"});
         let token = await getAuthToken('Basic');
         try {
-            const response = await httpService.get(`/users?filter=userGroups.id:eq:${groupId}&fields=id,email,displayName`, {
+            const response = await httpService.get(`/users?filter=userGroups.id:eq:${groupId}&fields=*`, {
                 headers: {
                     'Authorization': `Basic ${token}`
                 }
@@ -181,6 +181,9 @@ const UserService = {
         finally {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
+    },
+    listFacilityUsers: async () => {
+        return await UserService.listGroupUsers(`${import.meta.env.VITE_FACILITY_USER_GROUP_ID}`);
     },
 };
 
