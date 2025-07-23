@@ -1939,6 +1939,28 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const facilityOwnershipEvents = Array.isArray(events) ? events.filter(e => e.programStage === 'MuJubgTzJrY') : [];
   const facilityOwnershipEvent = facilityOwnershipEvents.length > 0 ? facilityOwnershipEvents[0] : undefined;
 
+  const [statutoryComplianceMetadata, setStatutoryComplianceMetadata] = useState(null);
+
+  // Fetch statutory compliance program stage metadata on mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const credentials = await getCredentials();
+        if (!credentials) return;
+        const response = await fetch(
+          `${import.meta.env.VITE_DHIS2_URL}/api/programStages/vyv7zncjCmV?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
+          { headers: { Authorization: `Basic ${credentials}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch statutory compliance metadata');
+        const metadata = await response.json();
+        setStatutoryComplianceMetadata(metadata);
+      } catch (error) {
+        setStatutoryComplianceMetadata(null);
+      }
+    };
+    fetchMetadata();
+  }, []);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'completeApplication':
@@ -2509,11 +2531,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           <div className="tab-content">
             <div className="statutory-compliance-details">
               <h2>
-                Statutory Compliance Details 
-                <button 
-                  className="add-icon" 
+                Statutory Compliance Details
+                <button
+                  className="add-icon"
                   onClick={handleAddStatutoryCompliance}
-                  style={{ 
+                  style={{
                     background: 'none',
                     border: 'none',
                     fontSize: '28px',
@@ -2529,61 +2551,48 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               {isLoadingStatutoryCompliance ? (
                 <p>Loading statutory compliance data...</p>
               ) : statutoryComplianceEvents.length === 0 ? (
-                <p>No statutory compliance records found.</p>
+                <div>
+                  <p>No statutory compliance records found.</p>
+                </div>
               ) : (
-                <>
+                statutoryComplianceMetadata && statutoryComplianceMetadata.programStageSections && (
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
                         <tr>
-                          <th>Application Type</th>
-                          <th>Facility Name</th>
-                          <th>License Holder</th>
-                          <th>Payment Number</th>
-                          <th>Phone Number</th>
-                          <th>Registration Status</th>
+                          {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                            section.dataElements.map(de => (
+                              <th key={de.id}>{de.displayFormName}</th>
+                            ))
+                          )}
                         </tr>
                       </thead>
                       <tbody>
                         {statutoryComplianceEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
-                          const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'None';
-                          };
-
-                          // Helper function to format boolean values
-                          const formatBoolean = (value) => {
-                            if (value === 'true') return 'Yes';
-                            if (value === 'false') return 'No';
-                            return 'None';
-                          };
-
-                          // Build license holder name
-                          const firstName = getFormattedValue("HMk4LZ9ESOq");
-                          const surname = getFormattedValue("ykwhsQQPVH0");
-                          const licenseHolderName = `${firstName} ${surname}`.trim() || 'N/A';
-
                           return (
-                            <tr 
-                              key={event.event || index}
-                              onClick={() => handleStatutoryComplianceRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
-                            >
-                              <td>{getFormattedValue("JSwAq5HRQa8")}</td>
-                              <td>{getFormattedValue("D707dj4Rpjz")}</td>
-                              <td>{licenseHolderName}</td>
-                              <td>{getFormattedValue("LAHlCWh18bP")}</td>
-                              <td>{getFormattedValue("SReqZgQk0RY")}</td>
-                              <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
+                            <tr key={event.event || index} className="hover-row" style={{ cursor: 'pointer' }} onClick={() => handleStatutoryComplianceRowClick(event)}>
+                              {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                                section.dataElements.map(de => {
+                                  const value = dataValues.find(dv => dv.dataElement === de.id)?.value;
+                                  if (de.valueType === 'FILE_RESOURCE') {
+                                    return <td key={de.id}>{value ? 'Submitted' : 'None'}</td>;
+                                  }
+                                  if (de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
+                                    if (value === 'true') return <td key={de.id}>Yes</td>;
+                                    if (value === 'false') return <td key={de.id}>No</td>;
+                                    return <td key={de.id}>None</td>;
+                                  }
+                                  return <td key={de.id}>{value || 'None'}</td>;
+                                })
+                              )}
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
                   </div>
-                </>
+                )
               )}
             </div>
           </div>
