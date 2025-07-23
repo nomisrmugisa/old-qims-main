@@ -2816,6 +2816,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   }, [events]);
 
+  useEffect(() => {
+    setDatePickerEnabled(inspectionEvents.length > 0);
+  }, [inspectionEvents]);
+
   return (
     <div className="registration-details-container">
       <Box sx={{ width: '100%' }}>
