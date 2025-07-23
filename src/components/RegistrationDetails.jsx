@@ -2197,8 +2197,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     <table className="table table-hover">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Description</th>
                           <th>Core Services</th>
                           <th>Specialised Services</th>
                           <th>Support Services</th>
@@ -2257,15 +2255,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
-                              <td>{getFormattedValue("IR8eO63QKKe")}</td>
-                              <td>{getFormattedValue("pRPw37nqZQ3")}</td>
                               <td>{coreServices || "None"}</td>
                               <td>{specialisedServices || "None"}</td>
                               <td>{supportServices || "None"}</td>
                               <td>{additionalServices || "None"}</td>
-                              <td>{event.programStage}</td>
-                              <td>{event.event}</td>
-                              <td>{event.trackedEntityInstance}</td>
                             </tr>
                           );
                         })}
@@ -2317,9 +2310,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Radiology</th>
                           <th>Pharmacy</th>
                           <th>Compliance Status</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2387,9 +2377,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{radiologyEquipment || "None"}</td>
                               <td>{pharmacyEquipment || "None"}</td>
                               <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
+
                             </tr>
                           );
                         })}
@@ -2442,9 +2430,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Organization Structure</th>
                           <th>Patient Policies</th>
                           <th>Facility Environment</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2508,9 +2493,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
                               <td>{policiesStatus}</td>
                               <td>{facilityStatus}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
                             </tr>
                           );
                         })}
@@ -2560,9 +2542,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           <th>Payment Number</th>
                           <th>Phone Number</th>
                           <th>Registration Status</th>
-                          <th>Program Stage ID</th>
-                          <th>Event ID</th>
-                          <th>Tracked Entity Instance ID</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2598,9 +2577,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{getFormattedValue("LAHlCWh18bP")}</td>
                               <td>{getFormattedValue("SReqZgQk0RY")}</td>
                               <td>{formatBoolean(getFormattedValue("jV5Y8XOfkgb"))}</td>
-                              <td>{event.programStage || 'N/A'}</td>
-                              <td>{event.event || 'N/A'}</td>
-                              <td>{event.trackedEntityInstance || 'N/A'}</td>
                             </tr>
                           );
                         })}
