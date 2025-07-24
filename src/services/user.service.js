@@ -203,6 +203,26 @@ const UserService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
+    updateUser: async(user_id, data) => {
+        const method = "updateUser";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+
+        try {
+            let token = await getAuthToken('Basic');
+            const response = await httpService.put(`/users/${user_id}`, data, {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            window.console.log(response);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
     listFacilityUsers: async () => {
         return await UserService.listGroupUsers(`${import.meta.env.VITE_FACILITY_USER_GROUP_ID}`);
     },
@@ -220,6 +240,29 @@ const UserService = {
             window.console.log(`${method}`, response.userGroups);
             window.console.log("---***");
             return response.userGroups.indexOf(role_id) >= 0;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    findById: async (user_id, fields) => {
+        const method = "findById";
+        if(!fields)
+            fields = "id,userRoles[id";
+
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let token = await getAuthToken('Basic');
+            const response = await httpService.get(`/users/${user_id}?fields=${fields}`, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+            window.console.log(`${method}`, response);
+            window.console.log("---***");
+            return response;
         } catch (error) {
             throw error;
         }

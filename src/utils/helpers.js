@@ -59,3 +59,43 @@ export const extractDataElementValues = (events, dataElementId) => {
         return dataValue ? dataValue.value : null;
     });
 };
+
+export const findIdByName = (obj, targetName) => {
+    // Loop through each key in the object
+    for (const key in obj) {
+        const value = obj[key];
+
+        // If the current value has a 'NAME' property and it matches the target
+        if (value?.NAME === targetName) {
+            return value.ID; // Return the corresponding ID
+        }
+
+        // If the value is an object, recursively search inside it
+        if (typeof value === 'object' && value !== null) {
+            const foundId = findIdByName(value, targetName);
+            if (foundId) return foundId; // Return if found in nested objects
+        }
+    }
+
+    return null; // Return null if no match is found
+};
+
+export const findNameById = (obj, targetId) => {
+    // Loop through each key in the object
+    for (const key in obj) {
+        const value = obj[key];
+
+        // If the current value has a 'NAME' property and it matches the target
+        if (value?.ID === targetId) {
+            return value.ID; // Return the corresponding ID
+        }
+
+        // If the value is an object, recursively search inside it
+        if (typeof value === 'object' && value !== null) {
+            const foundId = findNameById(value, targetId);
+            if (foundId) return foundId; // Return if found in nested objects
+        }
+    }
+
+    return null; // Return null if no match is found
+};
