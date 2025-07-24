@@ -722,7 +722,7 @@ const EditFacilityOwnershipDialog = ({
             position: 'fixed', 
             top: 0, 
             left: 0, 
-            width: '100vw', 
+            width: '100vw',
             height: '100vh',
             background: 'rgba(0,0,0,0.8)', 
             zIndex: 9999, 
@@ -1441,8 +1441,8 @@ if (!credentials) {
 
       <div className="modal-content" style={{ 
         padding: '0', 
-        maxWidth: '700px',
-        width: '100%',
+        // maxWidth: '700px',
+        // width: '100%',
         borderRadius: '8px',
         boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
         overflow: 'hidden'

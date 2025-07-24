@@ -98,6 +98,7 @@ const Registration = () => {
         }
     };
 
+
     const handleCompleteRegistration = async (e) => {
         e.preventDefault();
         if (!validateStep2()) return;
@@ -133,13 +134,67 @@ const Registration = () => {
             window.console.log("***---");
 
         } catch (error) {
+          console.error('Registration error:', error);
+
+          // Check if it's a 409 conflict error
+          if (error.httpStatusCode === 409 || error.status === 409) {
+            // Handle 409 conflict - email already exists
+            if (error.response?.errorReports) {
+              const fieldErrors = {};
+
+              error.response.errorReports.forEach(errorReport => {
+                if (errorReport.errorProperty === 'username' && errorReport.errorCode === 'E4054') {
+                  fieldErrors.email = 'This email address is already registered. Please use a different email or sign in instead.';
+                }
+              });
+
+              // Set field errors
+              setErrors(fieldErrors);
+            } else {
+              // Fallback for 409 without detailed error reports
+              setErrors({
+                email: 'This email address is already registered. Please use a different email or sign in instead.'
+              });
+            }
+
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
-                title: 'Error',
-                message: error.message,
-                type: 'error'
+              title: 'Email Already Exists',
+              message: 'This email is already registered. Please sign in or use a different email.',
+              type: 'error'
             });
-            // Scroll to top on error as well
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if (error.status === 400 || error.code === 'ERR_BAD_REQUEST') {
+            // Handle 400 Bad Request - likely Invalid OTP
+            setErrors({
+              otp: 'The verification code you entered is incorrect or has expired. Please check and try again.'
+            });
+
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Invalid Verification Code',
+              message: 'The verification code is incorrect or has expired. Please try again.',
+              type: 'error'
+            });
+          } else if (error.error === 'Invalid OTP' || error.message === 'Invalid OTP') {
+            // Handle Invalid OTP error (fallback)
+            setErrors({
+              otp: 'The verification code you entered is incorrect. Please check and try again.'
+            });
+
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Invalid Verification Code',
+              message: 'The verification code is incorrect. Please check and try again.',
+              type: 'error'
+            });
+          } else {
+            // Handle all other errors (keep your existing logic)
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Error',
+              message: error.message || error.error || 'An unexpected error occurred.',
+              type: 'error'
+            });
+          }
+
+          // Scroll to top on error as well
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
@@ -147,9 +202,8 @@ const Registration = () => {
 
     return (
         <Container fluid className="registration-container">
-            <Row className="h-100">
-                {/* Form Column - Full width on mobile, half on larger screens */}
-                <Col xs={12} lg={6} className="form-column d-flex align-items-center justify-content-center">
+          <Row className="justify-content-center align-items-center">
+            <Col xs={12} sm={10} md={8} lg={6} xl={4}  className="form-column"> {/* Responsive column widths */}
                     <Card className="registration-card">
                         <Card.Body>
                             <div className="text-center mb-4">
@@ -261,27 +315,6 @@ const Registration = () => {
                             </div>
                         </Card.Body>
                     </Card>
-                </Col>
-
-                {/* Illustration Column - Hidden on mobile, visible on lg+ */}
-                <Col lg={6} className="d-none d-lg-flex illustration-column align-items-center justify-content-center">
-                    <div className="text-center p-5">
-                        <img
-                            src={registrationIllustration}
-                            alt="Registration"
-                            className="img-fluid mb-4"
-                            style={{ maxHeight: '400px' }}
-                        />
-                        <h3>Join Our Community</h3>
-                        <p className="text-muted">
-                            Create your account to get started with all our features
-                        </p>
-                        <ul className="text-start mt-4">
-                            <li>Access to premium content</li>
-                            <li>Personalized recommendations</li>
-                            <li>24/7 customer support</li>
-                        </ul>
-                    </div>
                 </Col>
             </Row>
         </Container>

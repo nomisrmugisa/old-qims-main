@@ -15,10 +15,10 @@ const Login = () => {
 
     return (
         <Container fluid className="login-container">
-            <Row className="h-100">
+          <Row className="justify-content-center align-items-center">
 
                 {/* Illustration Column - Hidden on mobile, visible on lg+ */}
-                <Col lg={6} className="d-none d-lg-flex illustration-column align-items-center justify-content-center">
+                {/*<Col lg={6} className="d-none d-lg-flex illustration-column align-items-center justify-content-center">
                     <div className="text-center p-5">
                         <img
                             src={loginIllustration}
@@ -36,10 +36,10 @@ const Login = () => {
                             <li>Continue where you left off</li>
                         </ul>
                     </div>
-                </Col>
+                </Col>*/}
 
                 {/* Form Column - Full width on mobile, half on larger screens */}
-                <Col xs={12} lg={6} className="form-column d-flex align-items-center justify-content-center">
+                <Col xs={12} sm={10} md={8} lg={6} xl={4} className="form-column">
                     <Card className="login-card">
                         <Card.Body>
                             {/* Home Button */}

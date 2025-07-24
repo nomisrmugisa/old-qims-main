@@ -65,8 +65,8 @@ const ModalPortal = ({ children, open, onClose }) => {
           position: 'relative',
           zIndex: 10001,
           maxHeight: '90vh',
-          width: '95%',
-          maxWidth: '1400px', 
+          // width: '95%',
+          // maxWidth: '1400px',
           overflow: 'auto',
           margin: '20px',
           padding: '20px'
