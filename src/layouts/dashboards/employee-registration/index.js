@@ -86,6 +86,7 @@ function EmployeeRegistration() {
   const [positionOptions, setPositionOptions] = useState([]);
   const [contractTypeOptions, setContractTypeOptions] = useState([]);
   const [employeeEvents, setEmployeeEvents] = useState([]); // State for employee registration events
+  const [events, setEvents] = useState([]);
   const credentials = localStorage.getItem("userCredentials");
   const orgUnitId = localStorage.getItem("userOrgUnitId");
   const url = `https://qimsdev.5am.co.bw/qims/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=*&paging=false`;
@@ -227,6 +228,11 @@ function EmployeeRegistration() {
       });
   }, [url, credentials]);
 
+  // Compute compliedLicensing from events
+  const compliedLicensing = events.some(event =>
+    event.dataValues && event.dataValues.some(dv => dv.dataElement === "SIq5ADQjCEM" && dv.value === "true")
+  );
+
   const handleOpenDialog = () => {
     setOpenDialog(true);
   };
@@ -311,7 +317,7 @@ function EmployeeRegistration() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <TabsNavBar />
+      <TabsNavBar compliedLicensing={compliedLicensing} />
       <MDBox py={3}>
         <Grid container spacing={3}>
           <Grid item xs={12}>

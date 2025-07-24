@@ -2230,7 +2230,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             const value = (facilityOwnershipEvents[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
                             return (
                               <div key={de.id} style={{marginBottom: '10px'}}>
-                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>Not provided</span>}
+                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>False</span>}
                               </div>
                             );
                           })}

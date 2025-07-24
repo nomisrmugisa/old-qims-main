@@ -12,6 +12,7 @@ import {StorageService} from '../services';
 import { Link, useNavigate } from 'react-router-dom';
 import { safeFetch, showErrorMessage, logAPICall, logAPIResponse, API_ERROR_CODES } from '../utils/apiErrorHandler';
 import { Snackbar, Alert } from '@mui/material';
+import TabsNavBar from "./TabsNavBar";
 
 const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId }) => {
     console.log("🔍 DASHBOARD COMPONENT RENDERING - THIS SHOULD APPEAR EVERY TIME THE COMPONENT RENDERS");
@@ -21,6 +22,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
     const [inspectionEvents, setInspectionEvents] = useState([]);
     const [isLoadingInspections, setIsLoadingInspections] = useState(false);
     const [activeUserTab, setActiveUserTab] = useState('enrolment_applications');
+    const [compliedLicensing, setCompliedLicensing] = useState(false);
 
 
     const navigate = useNavigate();
@@ -638,6 +640,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         <RegistrationDetails 
                             trackedEntityInstanceId={trackedEntityInstanceId} 
                             showReviewDialog={showFacilityReviewDialog}
+                            onComplianceStatusChange={setCompliedLicensing}
                         />
                     </div>
                 );
@@ -884,6 +887,9 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
         }
     };
 
+    console.log("compliedLicensing:", compliedLicensing, "activeSection:", activeSection);
+    const tabsNavBarCompliedLicensing = activeSection === 'registration' ? compliedLicensing : true;
+    console.log("TabsNavBar will receive compliedLicensing:", tabsNavBarCompliedLicensing);
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
@@ -955,6 +961,8 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
 
                 </div>
                 <div className="dashboard-content">
+                    {/* TabsNavBar should be here, pass compliedLicensing based on activeSection */}
+                    <TabsNavBar compliedLicensing={tabsNavBarCompliedLicensing} />
                     {dashboardLoading ? (
                         <div className="dashboard-loading-container">
                             <img src="https://i.stack.imgur.com/hzk6C.gif" alt="Loading..." className="dashboard-loading-gif" />

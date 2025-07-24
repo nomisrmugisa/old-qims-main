@@ -667,7 +667,7 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
                       color: '#333',
                       fontSize: '0.95rem'
                     }}>
-                      {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                      {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>False</span>}
                     </div>
                   )
                 ) : (
