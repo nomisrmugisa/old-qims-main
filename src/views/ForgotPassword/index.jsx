@@ -31,7 +31,7 @@ const ForgotPassword = () => {
         try {
             // Replace with your actual API call
             const response = await AuthService.forgotPassword({
-                emailOrUsername: email
+                email: email
             });
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Success',

@@ -1,28 +1,29 @@
-import React, { useState, useEffect } from "react";
-import "./RegistrationDetails.css"; // We'll create this CSS file next
-import EditFacilityOwnershipDialog from "./EditFacilityOwnershipDialog";
-import AddEmployeeRegistrationDialog from "./AddEmployeeRegistrationDialog";
-import EditEmployeeRegistrationDialog from "./EditEmployeeRegistrationDialog";
-import AddServiceOfferingDialog from "./AddServiceOfferingDialog";
-import EditServiceOfferingDialog from "./EditServiceOfferingDialog";
-import AddInspectionDialog from "./AddInspectionDialog";
-import AddStatutoryComplianceDialog from "./AddStatutoryComplianceDialog";
-import AddEquipmentDialog from "./AddEquipmentDialog";
+import React, { useState, useEffect } from 'react';
+import './RegistrationDetails.css'; // We'll create this CSS file next
+import EditFacilityOwnershipDialog from './EditFacilityOwnershipDialog';
+import AddEmployeeRegistrationDialog from './AddEmployeeRegistrationDialog';
+import EditEmployeeRegistrationDialog from './EditEmployeeRegistrationDialog';
+import AddServiceOfferingDialog from './AddServiceOfferingDialog';
+import EditServiceOfferingDialog from './EditServiceOfferingDialog';
+import AddInspectionDialog from './AddInspectionDialog';
+import AddStatutoryComplianceDialog from './AddStatutoryComplianceDialog';
+import AddEquipmentDialog from './AddEquipmentDialog';
 
-import TrackerEventDetails from "./TrackerEventDetails";
-import { styled, Box, Typography, Divider, useTheme, Tooltip } from "@mui/material";
-import CustomDateRangePicker from "./CustomDateRangePicker";
-import { StorageService } from "../services";
-import { getCredentials } from "../utils/credentialHelper";
-import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import TrackerEventDetails from './TrackerEventDetails';
+import { styled, Box, Typography, Divider, useTheme, Tooltip } from '@mui/material';
+import CustomDateRangePicker from './CustomDateRangePicker';
+import {StorageService} from '../services';
+import { getCredentials } from '../utils/credentialHelper';
+import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 // Inside your component:
 
+
 const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const theme = useTheme();
-  const [activeTab, setActiveTab] = useState("completeApplication");
+  const [activeTab, setActiveTab] = useState('completeApplication');
   const [events, setEvents] = useState([]);
   const [employeeEvents, setEmployeeEvents] = useState([]);
   const [serviceEvents, setServiceEvents] = useState([]);
@@ -40,15 +41,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedServiceEvent, setSelectedServiceEvent] = useState(null);
   const [showEditServiceDialog, setShowEditServiceDialog] = useState(false);
   const [completeApplicationStatus, setCompleteApplicationStatus] = useState(false);
-  const [facilityName, setFacilityName] = useState("");
+  const [facilityName, setFacilityName] = useState('');
   const [completeApplicationEvent, setCompleteApplicationEvent] = useState(null);
-
+  
   // Pre-Inspection state
   const [inspectionEvents, setInspectionEvents] = useState([]);
   const [isLoadingInspections, setIsLoadingInspections] = useState(true);
   const [selectedInspectionEvent, setSelectedInspectionEvent] = useState(null);
   const [showEditInspectionDialog, setShowEditInspectionDialog] = useState(false);
-
+  
   // Equipment & Machinery state
   const [equipmentEvents, setEquipmentEvents] = useState([]);
   const [isLoadingEquipment, setIsLoadingEquipment] = useState(true);
@@ -63,11 +64,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const [selectedStatutoryComplianceEvent, setSelectedStatutoryComplianceEvent] = useState(null);
   const [showEditStatutoryComplianceDialog, setShowEditStatutoryComplianceDialog] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState("Unknown"); // New state for overall status
-
+  
   // Date range picker state
   const [dateRange, setDateRange] = useState([null, null]);
   const [datePickerEnabled, setDatePickerEnabled] = useState(false);
-
+  
   // Tab validation states
   const [tabValidationStates, setTabValidationStates] = useState({
     facilityOwnership: false,
@@ -75,14 +76,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     servicesOffered: false,
     statutoryCompliance: false,
     equipmentMachinery: false,
-    inspectionSchedule: false,
+    inspectionSchedule: false
   });
 
   // Validation details for debugging
   const [validationDetails, setValidationDetails] = useState({
     servicesOffered: null,
     statutoryCompliance: null,
-    equipmentMachinery: null,
+    equipmentMachinery: null
   });
 
   // Track if application has been submitted for review
@@ -92,106 +93,104 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const getCurrentTrackedEntityInstanceId = () => {
     // Priority order: props > localStorage > null
     const propId = trackedEntityInstanceId;
-    const localStorageId = localStorage.getItem("tempTrackedEntityInstanceId");
-
+    const localStorageId = localStorage.getItem('tempTrackedEntityInstanceId');
+    
     console.log("🔍 === GETTING TRACKED ENTITY INSTANCE ID ===");
     console.log("- Prop ID:", propId);
     console.log("- LocalStorage ID:", localStorageId);
-
+    
     const finalId = propId || localStorageId;
     console.log("- Final ID:", finalId);
-
+    
     return finalId;
   };
 
   // Listen for a custom event to set submission state (can be triggered from the review button)
   useEffect(() => {
     const handler = () => setIsApplicationSubmitted(true);
-    window.addEventListener("applicationSubmitted", handler);
-    return () => window.removeEventListener("applicationSubmitted", handler);
+    window.addEventListener('applicationSubmitted', handler);
+    return () => window.removeEventListener('applicationSubmitted', handler);
   }, []);
 
   const StepContainer = styled(Box)(({ theme }) => ({
-    display: "flex",
-    alignItems: "center",
+    display: 'flex',
+    alignItems: 'center',
     marginBottom: theme.spacing(3),
-    flexWrap: "nowrap", // Prevent wrapping of steps to new line
-    justifyContent: "space-between", // Distribute space evenly
-    width: "100%", // Use full width
-    overflow: "hidden", // Hide overflow
+    flexWrap: 'nowrap', // Prevent wrapping of steps to new line
+    justifyContent: 'space-between', // Distribute space evenly
+    width: '100%', // Use full width
+    overflow: 'hidden', // Hide overflow
   }));
-
+  
   const Step = styled(Box)(({ theme, active, hasdata, disabled }) => ({
-    display: "flex",
-    alignItems: "flex-start", // Changed from center to align with first line when wrapped
-    cursor: disabled ? "not-allowed" : "pointer",
+    display: 'flex',
+    alignItems: 'flex-start', // Changed from center to align with first line when wrapped
+    cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.6 : 1,
-    maxWidth: "150px", // Constrain overall width of each step
-    "& .step-number": {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+    maxWidth: '150px', // Constrain overall width of each step
+    '& .step-number': {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       width: 24,
       height: 24,
-      borderRadius: "50%",
-      backgroundColor: active
-        ? hasdata
-          ? theme.palette.success.main
+      borderRadius: '50%',
+      backgroundColor: active 
+        ? hasdata 
+          ? theme.palette.success.main 
           : theme.palette.error.main
         : theme.palette.grey[300],
       color: active ? theme.palette.common.white : theme.palette.text.primary,
       marginRight: theme.spacing(1),
-      fontSize: "0.75rem",
-      fontWeight: "bold",
+      fontSize: '0.75rem',
+      fontWeight: 'bold',
       flexShrink: 0, // Prevent number from shrinking
-      marginTop: "2px", // Align with first line of wrapped text
+      marginTop: '2px', // Align with first line of wrapped text
     },
-    "& .step-title": {
-      color: active
-        ? hasdata
-          ? theme.palette.success.main
+    '& .step-title': {
+      color: active 
+        ? hasdata 
+          ? theme.palette.success.main 
           : theme.palette.error.main
-        : disabled
-        ? theme.palette.text.disabled
-        : theme.palette.text.primary,
-      fontWeight: active ? "bold" : "normal",
+        : disabled ? theme.palette.text.disabled : theme.palette.text.primary,
+      fontWeight: active ? 'bold' : 'normal',
       marginRight: theme.spacing(1),
-      whiteSpace: "normal", // Allow text to wrap
-      wordBreak: "break-word", // Break words if needed
-      fontSize: "0.9rem", // Slightly smaller font
+      whiteSpace: 'normal', // Allow text to wrap
+      wordBreak: 'break-word', // Break words if needed
+      fontSize: '0.9rem', // Slightly smaller font
       lineHeight: 1.2, // Tighter line height for wrapped text
-      textAlign: "left", // Ensure text is left-aligned
+      textAlign: 'left', // Ensure text is left-aligned
     },
-    "& .completion-indicator": {
+    '& .completion-indicator': {
       marginLeft: theme.spacing(1),
-      fontSize: "0.9rem",
-      fontWeight: "bold",
+      fontSize: '0.9rem',
+      fontWeight: 'bold',
       flexShrink: 0, // Prevent indicator from shrinking
     },
   }));
-
+  
   const StyledDivider = styled(Box)(({ theme, disabled }) => ({
-    width: "60px", // Reduced width to save horizontal space
-    margin: "0 4px", // Reduced margin to save space
-    alignSelf: "center",
+    width: '60px', // Reduced width to save horizontal space
+    margin: '0 4px', // Reduced margin to save space
+    alignSelf: 'center',
     opacity: disabled ? 0.6 : 1,
     flexShrink: 1, // Allow divider to shrink if needed
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    "&::after": {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&::after': {
       content: '"→"',
-      fontSize: "20px",
+      fontSize: '20px',
       color: disabled ? theme.palette.grey[300] : theme.palette.divider,
-      fontWeight: "bold",
-    },
+      fontWeight: 'bold',
+    }
   }));
-
+  
   // Check localStorage for completeApplicationStatus on component mount and when tab changes
   useEffect(() => {
     const checkCompleteApplicationStatus = () => {
       try {
-        const status = localStorage.getItem("completeApplicationFormStatus");
+        const status = localStorage.getItem('completeApplicationFormStatus');
         if (status) {
           setCompleteApplicationStatus(JSON.parse(status));
         }
@@ -199,15 +198,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         console.error("Error reading form status from localStorage:", error);
       }
     };
-
+    
     checkCompleteApplicationStatus();
-
+    
     // Set up an interval to check for status changes
     const intervalId = setInterval(checkCompleteApplicationStatus, 2000);
-
+    
     return () => clearInterval(intervalId);
   }, []);
-
+  
   // Handle form status change from TrackerEventDetails component
   const handleFormStatusChange = (isComplete) => {
     setCompleteApplicationStatus(isComplete);
@@ -215,11 +214,9 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Handle successful application update - switch to facility ownership tab
   const handleApplicationUpdateSuccess = async () => {
-    console.log(
-      "Application updated successfully - fetching facility ownership data before switching tab"
-    );
+    console.log("Application updated successfully - fetching facility ownership data before switching tab");
     await fetchFacilityOwnershipData();
-    setActiveTab("facilityOwnership");
+    setActiveTab('facilityOwnership');
   };
 
   // Function to validate facility ownership completion
@@ -227,7 +224,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("🔍 === FACILITY OWNERSHIP VALIDATION ===");
     console.log("- Events to validate:", facilityEvents?.length || 0);
     console.log("- All facility events:", facilityEvents);
-
+    
     if (!facilityEvents || facilityEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No records exist)");
       return false; // No records exist
@@ -235,34 +232,31 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     // Check compliance variables instead of basic required fields
     const complianceFields = [
-      DATA_ELEMENTS.APPLICATION_SUBMITTED, // "N3bVE3GRqdf"
-      DATA_ELEMENTS.PASSED_MOH_SCREENING, // "NMTFfpLaGAy"
-      DATA_ELEMENTS.COMPLIED_FOR_LICENSING, // "SIq5ADQjCEM"
+      DATA_ELEMENTS.APPLICATION_SUBMITTED,    // "N3bVE3GRqdf"
+      DATA_ELEMENTS.PASSED_MOH_SCREENING,     // "NMTFfpLaGAy"
+      DATA_ELEMENTS.COMPLIED_FOR_LICENSING    // "SIq5ADQjCEM"
     ];
 
     console.log("- Compliance fields to check:", complianceFields);
 
     // Check if ALL compliance fields are true
-    const allComplianceMet = complianceFields.every((fieldId) => {
-      const hasCompliance = facilityEvents.some((event) => {
+    const allComplianceMet = complianceFields.every(fieldId => {
+      const hasCompliance = facilityEvents.some(event => {
         if (!event.dataValues) {
           console.log(`- Event ${event.event}: No dataValues`);
           return false;
         }
-
-        const dataValue = event.dataValues.find((dv) => dv.dataElement === fieldId);
+        
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
         console.log(`- Event ${event.event}, Field ${fieldId}:`, dataValue);
         return dataValue && dataValue.value === "true";
       });
-
-      console.log(`- Field ${fieldId}: ${hasCompliance ? "TRUE" : "FALSE"}`);
+      
+      console.log(`- Field ${fieldId}: ${hasCompliance ? 'TRUE' : 'FALSE'}`);
       return hasCompliance;
     });
-
-    console.log(
-      "- VALIDATION RESULT:",
-      allComplianceMet ? "TRUE (All compliance met)" : "FALSE (Compliance not met)"
-    );
+    
+    console.log("- VALIDATION RESULT:", allComplianceMet ? "TRUE (All compliance met)" : "FALSE (Compliance not met)");
     return allComplianceMet;
   };
 
@@ -270,7 +264,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const validateEmployeeRegistration = (employeeEvents) => {
     console.log("👥 === EMPLOYEE REGISTRATION VALIDATION ===");
     console.log("- Events to validate:", employeeEvents?.length || 0);
-
+    
     if (!employeeEvents || employeeEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No employee records exist)");
       return false; // No records exist
@@ -282,41 +276,33 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       "VFTRgPnvSHV", // lastName
       "xcTxmEUy6g6", // bhpcNmcNumber
       "FClCncccLzw", // position
-      "F3h1A96t3uL", // contractType
+      "F3h1A96t3uL"  // contractType
     ];
 
     console.log("- Required employee fields count:", requiredFields.length);
 
     // Check if ALL employee records have all required fields filled
-    const allEmployeeRecordsComplete = employeeEvents.every((event) => {
+    const allEmployeeRecordsComplete = employeeEvents.every(event => {
       if (!event.dataValues) {
         console.log(`- Employee Event ${event.event}: No dataValues`);
         return false;
       }
-
+      
       const missingFields = [];
-      const hasAllFields = requiredFields.every((fieldId) => {
-        const dataValue = event.dataValues.find((dv) => dv.dataElement === fieldId);
+      const hasAllFields = requiredFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
         const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
         if (!isValid) {
           missingFields.push(fieldId);
         }
         return isValid;
       });
-
-      console.log(
-        `- Employee Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`,
-        missingFields
-      );
+      
+      console.log(`- Employee Event ${event.event}: Complete = ${hasAllFields}, Missing fields:`, missingFields);
       return hasAllFields;
     });
-
-    console.log(
-      "- EMPLOYEE VALIDATION RESULT:",
-      allEmployeeRecordsComplete
-        ? "TRUE (ALL employee records complete)"
-        : "FALSE (Some employee records incomplete)"
-    );
+    
+    console.log("- EMPLOYEE VALIDATION RESULT:", allEmployeeRecordsComplete ? "TRUE (ALL employee records complete)" : "FALSE (Some employee records incomplete)");
     return allEmployeeRecordsComplete;
   };
 
@@ -324,7 +310,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const validateServicesOffered = (serviceEvents) => {
     console.log("🏥 === SERVICES OFFERED VALIDATION ===");
     console.log("- Events to validate:", serviceEvents?.length || 0);
-
+    
     if (!serviceEvents || serviceEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No service records exist)");
       return { isValid: false, reason: "No service records exist", details: [] };
@@ -350,7 +336,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       "m8Kl585eWSK", // supportPatientTransportation
       "yecnkdC7HtM", // supportPharmacy
       "i0QXYWMOUjy", // additionalCounseling
-      "e48W7983nBs", // additionalCommunityBased
+      "e48W7983nBs"  // additionalCommunityBased
     ];
 
     console.log("- Available service data elements count:", serviceDataElements.length);
@@ -367,22 +353,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           status: "FAILED",
           reason: "No data values found",
           selectedServices: 0,
-          totalServices: 0,
+          totalServices: 0
         });
         allServiceRecordsComplete = false;
         return;
       }
-
+      
       // Count how many services are selected (value = "true")
-      const selectedServices = event.dataValues.filter((dv) => {
+      const selectedServices = event.dataValues.filter(dv => {
         return serviceDataElements.includes(dv.dataElement) && dv.value === "true";
       });
-
+      
       const hasServices = selectedServices.length > 0;
-      console.log(
-        `- Service Event ${event.event}: Has services = ${hasServices}, Selected services count: ${selectedServices.length}`
-      );
-
+      console.log(`- Service Event ${event.event}: Has services = ${hasServices}, Selected services count: ${selectedServices.length}`);
+      
       if (!hasServices) {
         console.log(`- Service Event ${event.event}: No services selected`);
         validationDetails.push({
@@ -391,37 +375,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           reason: "No services selected",
           selectedServices: 0,
           totalServices: serviceDataElements.length,
-          availableServices: serviceDataElements,
+          availableServices: serviceDataElements
         });
         allServiceRecordsComplete = false;
       } else {
-        console.log(
-          `- Service Event ${event.event}: Selected services:`,
-          selectedServices.map((s) => s.dataElement)
-        );
+        console.log(`- Service Event ${event.event}: Selected services:`, selectedServices.map(s => s.dataElement));
         validationDetails.push({
           eventId: event.event || `Event ${index + 1}`,
           status: "PASSED",
           reason: `${selectedServices.length} service(s) selected`,
           selectedServices: selectedServices.length,
           totalServices: serviceDataElements.length,
-          selectedServiceIds: selectedServices.map((s) => s.dataElement),
+          selectedServiceIds: selectedServices.map(s => s.dataElement)
         });
       }
     });
-
-    console.log(
-      "- SERVICES VALIDATION RESULT:",
-      allServiceRecordsComplete
-        ? "TRUE (ALL service records have at least one service)"
-        : "FALSE (Some service records have no services selected)"
-    );
-    return {
-      isValid: allServiceRecordsComplete,
-      reason: allServiceRecordsComplete
-        ? "All service records have at least one service selected"
-        : "Some service records have no services selected",
-      details: validationDetails,
+    
+    console.log("- SERVICES VALIDATION RESULT:", allServiceRecordsComplete ? "TRUE (ALL service records have at least one service)" : "FALSE (Some service records have no services selected)");
+    return { 
+      isValid: allServiceRecordsComplete, 
+      reason: allServiceRecordsComplete ? "All service records have at least one service selected" : "Some service records have no services selected",
+      details: validationDetails
     };
   };
 
@@ -429,7 +403,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const validateStatutoryCompliance = (complianceEvents) => {
     console.log("📋 === STATUTORY COMPLIANCE VALIDATION ===");
     console.log("- Events to validate:", complianceEvents?.length || 0);
-
+    
     if (!complianceEvents || complianceEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No compliance records exist)");
       return false; // No records exist
@@ -440,52 +414,40 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       "fSGzyNOvsn3", // companyRegistrationDocuments
       "mooXtirlse9", // companyTaxRegistrationDocuments
       "Yv2HUJvSDKB", // facilityHealthRecognitionDocuments
-      "aa4jP4GCtin", // facilityCompanyLeaseAgreement
+      "aa4jP4GCtin"  // facilityCompanyLeaseAgreement
     ];
 
     console.log("- Required document fields count:", requiredDocumentFields.length);
 
     // Check if ALL compliance records have all required documents uploaded
-    const allComplianceRecordsComplete = complianceEvents.every((event) => {
+    const allComplianceRecordsComplete = complianceEvents.every(event => {
       if (!event.dataValues) {
         console.log(`- Compliance Event ${event.event}: No dataValues`);
         return false;
       }
-
+      
       const missingDocuments = [];
-      const hasAllDocuments = requiredDocumentFields.every((fieldId) => {
-        const dataValue = event.dataValues.find((dv) => dv.dataElement === fieldId);
+      const hasAllDocuments = requiredDocumentFields.every(fieldId => {
+        const dataValue = event.dataValues.find(dv => dv.dataElement === fieldId);
         const isValid = dataValue && dataValue.value && dataValue.value.trim() !== "";
         if (!isValid) {
           missingDocuments.push(fieldId);
         }
         return isValid;
       });
-
-      console.log(
-        `- Compliance Event ${event.event}: Complete = ${hasAllDocuments}, Missing documents:`,
-        missingDocuments
-      );
-
+      
+      console.log(`- Compliance Event ${event.event}: Complete = ${hasAllDocuments}, Missing documents:`, missingDocuments);
+      
       if (!hasAllDocuments) {
-        console.log(
-          `- Compliance Event ${event.event}: Missing ${missingDocuments.length} out of ${requiredDocumentFields.length} required documents`
-        );
+        console.log(`- Compliance Event ${event.event}: Missing ${missingDocuments.length} out of ${requiredDocumentFields.length} required documents`);
       } else {
-        console.log(
-          `- Compliance Event ${event.event}: All ${requiredDocumentFields.length} documents uploaded`
-        );
+        console.log(`- Compliance Event ${event.event}: All ${requiredDocumentFields.length} documents uploaded`);
       }
-
+      
       return hasAllDocuments;
     });
-
-    console.log(
-      "- STATUTORY COMPLIANCE VALIDATION RESULT:",
-      allComplianceRecordsComplete
-        ? "TRUE (ALL compliance records have all documents)"
-        : "FALSE (Some compliance records have missing documents)"
-    );
+    
+    console.log("- STATUTORY COMPLIANCE VALIDATION RESULT:", allComplianceRecordsComplete ? "TRUE (ALL compliance records have all documents)" : "FALSE (Some compliance records have missing documents)");
     return allComplianceRecordsComplete;
   };
 
@@ -493,98 +455,84 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const validateEquipmentMachinery = (equipmentEvents) => {
     console.log("⚙️ === EQUIPMENT & MACHINERY VALIDATION ===");
     console.log("- Events to validate:", equipmentEvents?.length || 0);
-
+    
     if (!equipmentEvents || equipmentEvents.length === 0) {
       console.log("- VALIDATION RESULT: FALSE (No equipment records exist)");
       return false; // No records exist
     }
 
-    // Since equipment form uses dynamic fields from DHIS2 metadata,
+    // Since equipment form uses dynamic fields from DHIS2 metadata, 
     // we validate that each record has at least some meaningful data
     const minRequiredFields = 3; // Minimum number of fields that should be filled
-
+    
     console.log("- Minimum required fields per record:", minRequiredFields);
 
     // Check if ALL equipment records have sufficient data
-    const allEquipmentRecordsComplete = equipmentEvents.every((event) => {
+    const allEquipmentRecordsComplete = equipmentEvents.every(event => {
       if (!event.dataValues) {
         console.log(`- Equipment Event ${event.event}: No dataValues`);
         return false;
       }
-
+      
       // Count non-empty data values
-      const filledFields = event.dataValues.filter((dv) => {
-        return (
-          dv.value && dv.value.trim() !== "" && dv.value !== "null" && dv.value !== "undefined"
-        );
+      const filledFields = event.dataValues.filter(dv => {
+        return dv.value && dv.value.trim() !== "" && dv.value !== "null" && dv.value !== "undefined";
       });
-
+      
       const hasEnoughData = filledFields.length >= minRequiredFields;
-      console.log(
-        `- Equipment Event ${event.event}: Has enough data = ${hasEnoughData}, Filled fields count: ${filledFields.length}/${event.dataValues.length}`
-      );
-
+      console.log(`- Equipment Event ${event.event}: Has enough data = ${hasEnoughData}, Filled fields count: ${filledFields.length}/${event.dataValues.length}`);
+      
       if (!hasEnoughData) {
-        console.log(
-          `- Equipment Event ${event.event}: Insufficient data - only ${filledFields.length} fields filled, need at least ${minRequiredFields}`
-        );
-        console.log(
-          `- Equipment Event ${event.event}: Filled fields:`,
-          filledFields.map((f) => `${f.dataElement}="${f.value}"`)
-        );
+        console.log(`- Equipment Event ${event.event}: Insufficient data - only ${filledFields.length} fields filled, need at least ${minRequiredFields}`);
+        console.log(`- Equipment Event ${event.event}: Filled fields:`, filledFields.map(f => `${f.dataElement}="${f.value}"`));
       } else {
-        console.log(
-          `- Equipment Event ${event.event}: Sufficient data with ${filledFields.length} filled fields`
-        );
+        console.log(`- Equipment Event ${event.event}: Sufficient data with ${filledFields.length} filled fields`);
       }
-
+      
       return hasEnoughData;
     });
-
-    console.log(
-      "- EQUIPMENT VALIDATION RESULT:",
-      allEquipmentRecordsComplete
-        ? "TRUE (ALL equipment records have sufficient data)"
-        : "FALSE (Some equipment records have insufficient data)"
-    );
+    
+    console.log("- EQUIPMENT VALIDATION RESULT:", allEquipmentRecordsComplete ? "TRUE (ALL equipment records have sufficient data)" : "FALSE (Some equipment records have insufficient data)");
     return allEquipmentRecordsComplete;
   };
 
+
+  
   const hasTabData = (tabKey) => {
     switch (tabKey) {
-      case "completeApplication":
+      case 'completeApplication':
         return completeApplicationStatus; // Use the state variable to determine if all fields are filled
-      case "facilityOwnership":
+      case 'facilityOwnership':
         return tabValidationStates.facilityOwnership; // Use validation state that checks both record existence and field completeness
-      case "employeeRegistration":
+      case 'employeeRegistration':
         return tabValidationStates.employeeRegistration; // Use validation state that checks both record existence and field completeness
-      case "servicesOffered":
+      case 'servicesOffered':
         return tabValidationStates.servicesOffered; // Use validation state that checks both record existence and service selection
-      case "statutoryCompliance":
+      case 'statutoryCompliance':
         return tabValidationStates.statutoryCompliance; // Use validation state that checks both record existence and document completeness
-      case "equipmentMachinery":
+      case 'equipmentMachinery':
         return tabValidationStates.equipmentMachinery; // Use validation state that checks both record existence and data completeness
-      case "inspectionSchedule":
+      case 'inspectionSchedule':
         return inspectionEvents.length > 0;
       default:
         return false;
     }
   };
-
+  
   // Helper function to check if facility ownership event has specific data value
   const hasFacilityOwnershipDataValue = (dataElementId, expectedValue = "true") => {
     if (!events || events.length === 0) {
       return false;
     }
-
-    const facilityOwnershipEvents = events.filter((e) => e.programStage === "MuJubgTzJrY");
+    
+    const facilityOwnershipEvents = events.filter(e => e.programStage === 'MuJubgTzJrY');
     if (facilityOwnershipEvents.length === 0) {
       return false;
     }
-
-    return facilityOwnershipEvents.some((event) => {
+    
+    return facilityOwnershipEvents.some(event => {
       if (!event.dataValues) return false;
-      const dataValue = event.dataValues.find((dv) => dv.dataElement === dataElementId);
+      const dataValue = event.dataValues.find(dv => dv.dataElement === dataElementId);
       return dataValue && dataValue.value === expectedValue;
     });
   };
@@ -592,8 +540,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Constants for data element IDs to improve maintainability
   const DATA_ELEMENTS = {
     APPLICATION_SUBMITTED: "N3bVE3GRqdf",
-    PASSED_MOH_SCREENING: "NMTFfpLaGAy",
-    COMPLIED_FOR_LICENSING: "SIq5ADQjCEM",
+    PASSED_MOH_SCREENING: "NMTFfpLaGAy", 
+    COMPLIED_FOR_LICENSING: "SIq5ADQjCEM"
   };
 
   // Status configuration with better organization and color coding
@@ -602,57 +550,59 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       text: "Complete Administrative Information Below",
       color: "#dc3545", // Red
       bgColor: "#f8d7da",
-      borderColor: "#f5c6cb",
+      borderColor: "#f5c6cb"
     },
     COMPLETE_FACILITY_OWNERSHIP: {
       text: "Complete Facility Ownership Details",
       color: "#dc3545", // Red
       bgColor: "#f8d7da",
-      borderColor: "#f5c6cb",
+      borderColor: "#f5c6cb"
     },
     SUBMIT_FOR_REVIEW: {
       text: "Under Facility Ownership Complete and submit Documents for review",
       color: "#ffc107", // Yellow
       bgColor: "#fff3cd",
-      borderColor: "#ffeaa7",
+      borderColor: "#ffeaa7"
     },
     UNDER_SCREENING_REVIEW: {
       text: "Documents Under Screening Review",
       color: "#17a2b8", // Blue
       bgColor: "#d1ecf1",
-      borderColor: "#bee5eb",
+      borderColor: "#bee5eb"
     },
     UNDER_SCREENING_COMPLIANCE: {
       text: "Documents Under Screening Compliance",
       color: "#17a2b8", // Blue
       bgColor: "#d1ecf1",
-      borderColor: "#bee5eb",
+      borderColor: "#bee5eb"
     },
     PERMISSION_GRANTED: {
       text: "You Have Permission to Establish, Complete Steps 3 to 6 with required Documents",
       color: "#28a745", // Green
       bgColor: "#d4edda",
-      borderColor: "#c3e6cb",
+      borderColor: "#c3e6cb"
     },
     COMPLETE_SELF_INSPECTION: {
       text: "Complete a Pre-Inspection",
       color: "#fd7e14", // Orange
       bgColor: "#ffe8d1",
-      borderColor: "#ffd8a8",
+      borderColor: "#ffd8a8"
     },
     SELECT_INSPECTION_DATE: {
       text: "Please Conduct a pre-inspection",
       color: "#6f42c1", // Purple
       bgColor: "#e2d9f3",
-      borderColor: "#d1c7e5",
+      borderColor: "#d1c7e5"
     },
     INSPECTIONS_UNDERWAY: {
       text: "Inspections Underway",
       color: "#20c997", // Teal
       bgColor: "#d1f2eb",
-      borderColor: "#a8e6cf",
-    },
+      borderColor: "#a8e6cf"
+    }
   };
+
+
 
   // Enhanced status determination logic
   useEffect(() => {
@@ -661,255 +611,413 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     console.log("- tabValidationStates.facilityOwnership:", tabValidationStates.facilityOwnership);
     console.log("- events.length:", events?.length || 0);
     console.log("- events data:", events);
-
+    
     try {
-      // Step 1: Check if Admin User & Facility Details is complete
-      if (!completeApplicationStatus) {
-        console.log("📝 Setting status: Complete Administrative Information Below");
-        setRegistrationStatus(STATUS_CONFIG.COMPLETE_ADMIN_INFO.text);
-        return;
-      }
-
-      // Step 2: Check if Facility Ownership has data
-      if (!tabValidationStates.facilityOwnership) {
-        console.log("📝 Setting status: Complete Facility Ownership Details");
-        setRegistrationStatus(STATUS_CONFIG.COMPLETE_FACILITY_OWNERSHIP.text);
-        return;
-      }
-
-      // Step 3: Check if Application has been submitted
-      if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.APPLICATION_SUBMITTED, "true")) {
-        console.log("📝 Setting status: Submit for review");
-        setRegistrationStatus(STATUS_CONFIG.SUBMIT_FOR_REVIEW.text);
-        return;
-      }
-
-      // Step 4: Check MOH Screening status
-      const passedMOH = hasFacilityOwnershipDataValue(DATA_ELEMENTS.PASSED_MOH_SCREENING, "true");
-      const compliedLicensing = hasFacilityOwnershipDataValue(
-        DATA_ELEMENTS.COMPLIED_FOR_LICENSING,
-        "true"
-      );
-
-      if (!passedMOH) {
-        console.log("📝 Setting status: Under Screening Review");
-        setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_REVIEW.text);
-        return;
-      }
-
-      if (!compliedLicensing) {
-        console.log("📝 Setting status: Under Screening Compliance");
-        setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_COMPLIANCE.text);
-        return;
-      }
-
-      // Step 5: Permission granted - check remaining steps
-      if (passedMOH && compliedLicensing) {
-        // Check if all required steps (3-5) are complete
-        const stepsComplete =
-          tabValidationStates.employeeRegistration &&
-          tabValidationStates.servicesOffered &&
-          tabValidationStates.statutoryCompliance &&
-          tabValidationStates.equipmentMachinery;
-
-        if (!stepsComplete) {
-          console.log("📝 Setting status: Permission Granted - Complete Steps 3-5");
-          setRegistrationStatus(STATUS_CONFIG.PERMISSION_GRANTED.text);
+              // Step 1: Check if Admin User & Facility Details is complete
+    if (!completeApplicationStatus) {
+      console.log("📝 Setting status: Complete Administrative Information Below");
+          setRegistrationStatus(STATUS_CONFIG.COMPLETE_ADMIN_INFO.text);
+      return;
+    }
+    
+        // Step 2: Check if Facility Ownership has data
+    if (!tabValidationStates.facilityOwnership) {
+      console.log("📝 Setting status: Complete Facility Ownership Details");
+          setRegistrationStatus(STATUS_CONFIG.COMPLETE_FACILITY_OWNERSHIP.text);
+      return;
+    }
+    
+        // Step 3: Check if Application has been submitted
+        if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.APPLICATION_SUBMITTED, "true")) {
+          console.log("📝 Setting status: Submit for review");
+          setRegistrationStatus(STATUS_CONFIG.SUBMIT_FOR_REVIEW.text);
+      return;
+    }
+    
+        // Step 4: Check MOH Screening status
+        const passedMOH = hasFacilityOwnershipDataValue(DATA_ELEMENTS.PASSED_MOH_SCREENING, "true");
+        const compliedLicensing = hasFacilityOwnershipDataValue(DATA_ELEMENTS.COMPLIED_FOR_LICENSING, "true");
+        
+        if (!passedMOH) {
+          console.log("📝 Setting status: Under Screening Review");
+          setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_REVIEW.text);
+      return;
+    }
+    
+        if (!compliedLicensing) {
+          console.log("📝 Setting status: Under Screening Compliance");
+          setRegistrationStatus(STATUS_CONFIG.UNDER_SCREENING_COMPLIANCE.text);
+      return;
+    }
+    
+        // Step 5: Permission granted - check remaining steps
+        if (passedMOH && compliedLicensing) {
+          // Check if all required steps (3-5) are complete
+          const stepsComplete = tabValidationStates.employeeRegistration && 
+                               tabValidationStates.servicesOffered && 
+                               tabValidationStates.statutoryCompliance && 
+                               tabValidationStates.equipmentMachinery;
+          
+          if (!stepsComplete) {
+            console.log("📝 Setting status: Permission Granted - Complete Steps 3-5");
+            setRegistrationStatus(STATUS_CONFIG.PERMISSION_GRANTED.text);
+      return;
+    }
+    
+          // Step 6: Check Pre-Inspection
+    if (!hasTabData('inspectionSchedule')) {
+            console.log("📝 Setting status: Complete Pre-Inspection");
+            setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
+      return;
+    }
+    
+          // Step 7: Check if preferred facility inspection date is set
+          const isDateRangeSet = dateRange && dateRange[0] && dateRange[1];
+          if (isDateRangeSet) {
+            console.log("📝 Setting status: Inspections Underway");
+            setRegistrationStatus(STATUS_CONFIG.INSPECTIONS_UNDERWAY.text);
+            return;
+          }
+    
+          // Step 8: All conditions met but no date set
+          console.log("📝 Setting status: Please Conduct a pre-inspection");
+          setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
           return;
         }
-
-        // Step 6: Check self assessment
-        if (!hasTabData("inspectionSchedule")) {
-          console.log("📝 Setting status: Complete Pre-Inspection");
-          setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
-          return;
-        }
-
-        // Step 7: Check if preferred facility inspection date is set
-        const isDateRangeSet = dateRange && dateRange[0] && dateRange[1];
-        if (isDateRangeSet) {
-          console.log("📝 Setting status: Inspections Underway");
-          setRegistrationStatus(STATUS_CONFIG.INSPECTIONS_UNDERWAY.text);
-          return;
-        }
-
-        // Step 8: All conditions met but no date set
-        console.log("📝 Setting status: Please Conduct a pre-inspection");
-        setRegistrationStatus(STATUS_CONFIG.SELECT_INSPECTION_DATE.text);
-        return;
-      }
+      
     } catch (error) {
       console.error("❌ Error in status determination:", error);
       setRegistrationStatus("Status determination error - please refresh");
     }
-  }, [completeApplicationStatus, tabValidationStates, events, inspectionEvents, dateRange]);
+  }, [
+    completeApplicationStatus,
+    tabValidationStates,
+    events,
+    inspectionEvents,
+    dateRange
+  ]);
+  
+  // Handle tab click with validation and restrictions
+  // const handleTabClick = (tabKey) => {
+  //   console.log("=== TAB CLICKED ===", tabKey);
+  //   console.log("- completeApplicationStatus:", completeApplicationStatus);
+    
+  //   // If Complete Application is not complete and trying to access another tab, don't allow it
+  //   if (!completeApplicationStatus && tabKey !== 'completeApplication') {
+  //     console.log("- Tab click blocked - application not complete");
+  //     return; // Don't change tabs
+  //   }
+    
+  //   // Disable certain tabs unless application is submitted OR permission is granted
+  //   const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+  //   const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+  //   if (!isApplicationSubmitted && !hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
+  //     console.log("- Tab click blocked - application not submitted for review and no permission granted");
+  //     return;
+  //   }
+    
+  //   console.log("- Setting active tab to:", tabKey);
+  //   setActiveTab(tabKey);
+    
+  //   // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+  //   if (tabKey === 'equipmentMachinery') {
+  //     console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+  //     fetchEquipmentData();
+  //   }
+    
+  //   // Manually trigger fetch for Pre-Inspection data when clicking on inspectionSchedule tab
+  //   if (tabKey === 'inspectionSchedule') {
+  //     console.log("- Manually triggering fetchInspectionData for Situational Analysis tab");
+  //     fetchInspectionData();
+  //   }
+    
+  //   // Manually trigger fetch for facility ownership data when clicking on facilityOwnership tab
+  //   if (tabKey === 'facilityOwnership') {
+  //     console.log("🏢 === FACILITY OWNERSHIP TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      
+  //     // Always fetch fresh data from DHIS2 when Facility Ownership tab is clicked
+  //     console.log("🔄 Force refreshing Facility Ownership data from DHIS2");
+  //     fetchFacilityOwnershipData();
+      
+  //     // Directly fetch organization unit from API instead of localStorage
+  //     const fetchOrgUnitAndTrackedEntity = async () => {
+  //       try {
+  //         const credentials = await StorageService.get('userCredentials');
+  //         if (!credentials) {
+  //           console.error('❌ No credentials found in localStorage');
+  //           return;
+  //         }
+          
+  //         console.log('📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY');
+  //         const orgUnitResponse = await fetch(`/api/me?fields=organisationUnits[displayName,id]`, {
+  //           headers: {
+  //             'Authorization': `Basic ${credentials}`
+  //           }
+  //         });
+          
+  //         if (!orgUnitResponse.ok) {
+  //           console.error('❌ Failed to fetch organization unit data:', orgUnitResponse.status);
+  //           return;
+  //         }
+          
+  //         const orgData = await orgUnitResponse.json();
+  //         console.log('- Organization API Response:', orgData);
+          
+  //         if (!orgData.organisationUnits || orgData.organisationUnits.length === 0) {
+  //           console.error('❌ No organization units found in response');
+  //           return;
+  //         }
+          
+  //         const orgUnitId = orgData.organisationUnits[0].id;
+  //         const orgUnitName = orgData.organisationUnits[0].displayName;
+          
+  //         console.log('✅ ORGANIZATION UNIT DATA:');
+  //         console.log('- Name:', orgUnitName);
+  //         console.log('- ID:', orgUnitId);
+          
+  //         // Now fetch the trackedEntityInstanceId using this organization unit ID
+  //         console.log('🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID');
+  //         const teiUrl = `/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
+  //         console.log('- API URL:', teiUrl);
+          
+  //         const teiResponse = await fetch(teiUrl, {
+  //           headers: {
+  //             'Authorization': `Basic ${credentials}`,
+  //             'Content-Type': 'application/json'
+  //           }
+  //         });
+          
+  //         if (!teiResponse.ok) {
+  //           console.error('❌ Failed to fetch tracked entity instance:', teiResponse.status);
+  //           return;
+  //         }
+          
+  //         const teiData = await teiResponse.json();
+  //         console.log('- Tracked Entity API Response:', teiData);
+          
+  //         if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
+  //           const teiId = teiData.trackedEntityInstances[0].trackedEntityInstance;
+  //           console.log('✅ Found trackedEntityInstanceId:', teiId);
+            
+  //           // Store for future use
+  //           localStorage.setItem('tempTrackedEntityInstanceId', teiId);
+            
+  //           // CRITICAL FIX: Force a refresh to use the new trackedEntityInstanceId
+  //           // This is a workaround since we can't directly update the parent's prop
+  //           console.log('🔄 FORCING PAGE REFRESH TO USE NEW TRACKED ENTITY INSTANCE ID');
+  //           // window.location.reload(); // Removing this to avoid blank screen
+            
+  //           // Instead, update local state directly
+  //           // setLocalTrackedEntityInstanceId removed
+            
+  //           // Now fetch the facility ownership data with this ID
+  //           console.log('🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID');
+  //           fetchFacilityOwnershipData(teiId, orgUnitId);
+  //         } else {
+  //           console.log('❌ No tracked entity instances found in response');
+  //         }
+  //       } catch (error) {
+  //         console.error('❌ Error in fetchOrgUnitAndTrackedEntity:', error);
+  //       }
+  //     };
+      
+  //     // Execute the function
+  //     fetchOrgUnitAndTrackedEntity();
+  //   }
+    
+  //   // Manually trigger fetch for employee data when clicking on employeeRegistration tab
+  //   if (tabKey === 'employeeRegistration') {
+  //     console.log("👥 === EMPLOYEE REGISTRATION TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchEmployeeData for Employee Registration tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchEmployeeData();
+  //   }
+    
+  //   // Manually trigger fetch for services data when clicking on servicesOffered tab
+  //   if (tabKey === 'servicesOffered') {
+  //     console.log("🏥 === SERVICES OFFERED TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchServiceData for Services Offered tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchServiceData();
+  //   }
+    
+  //   // Manually trigger fetch for statutory compliance data when clicking on statutoryCompliance tab
+  //   if (tabKey === 'statutoryCompliance') {
+  //     console.log("📋 === STATUTORY COMPLIANCE TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchStatutoryComplianceData();
+  //   }
+    
+  //   // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+  //   if (tabKey === 'equipmentMachinery') {
+  //     console.log("⚙️ === EQUIPMENT & MACHINERY TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchEquipmentData();
+  //   }
+  // };
 
-  // Handle tab click with validation
+  // Handle tab click without restrictions
   const handleTabClick = (tabKey) => {
     console.log("=== TAB CLICKED ===", tabKey);
     console.log("- completeApplicationStatus:", completeApplicationStatus);
-
+    
     // If Complete Application is not complete and trying to access another tab, don't allow it
-    if (!completeApplicationStatus && tabKey !== "completeApplication") {
+    if (!completeApplicationStatus && tabKey !== 'completeApplication') {
       console.log("- Tab click blocked - application not complete");
       return; // Don't change tabs
     }
-
+    
     // Disable certain tabs unless application is submitted OR permission is granted
-    const restrictedTabs = [
-      "employeeRegistration",
-      "servicesOffered",
-      "statutoryCompliance",
-      "equipmentMachinery",
-    ];
+    const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
     const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
-
+    
     if (!isApplicationSubmitted && !hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
-      console.log(
-        "- Tab click blocked - application not submitted for review and no permission granted"
-      );
+      console.log("- Tab click blocked - application not submitted for review and no permission granted");
       return;
     }
-
+    
     console.log("- Setting active tab to:", tabKey);
     setActiveTab(tabKey);
-
+    
     // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
-    if (tabKey === "equipmentMachinery") {
+    if (tabKey === 'equipmentMachinery') {
       console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
       fetchEquipmentData();
     }
-
+    
     // Manually trigger fetch for self assessment data when clicking on inspectionSchedule tab
-    if (tabKey === "inspectionSchedule") {
+    if (tabKey === 'inspectionSchedule') {
       console.log("- Manually triggering fetchInspectionData for Pre-Inspection tab");
       fetchInspectionData();
     }
-
+    
     // Manually trigger fetch for facility ownership data when clicking on facilityOwnership tab
-    if (tabKey === "facilityOwnership") {
+    if (tabKey === 'facilityOwnership') {
       console.log("🏢 === FACILITY OWNERSHIP TAB CLICKED ===");
       console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
-
+      
       // Always fetch fresh data from DHIS2 when Facility Ownership tab is clicked
       console.log("🔄 Force refreshing Facility Ownership data from DHIS2");
       fetchFacilityOwnershipData();
-
+      
       // Directly fetch organization unit from API instead of localStorage
       const fetchOrgUnitAndTrackedEntity = async () => {
         try {
-          const credentials = await StorageService.get("userCredentials");
+          const credentials = await StorageService.get('userCredentials');
           if (!credentials) {
-            console.error("❌ No credentials found in localStorage");
+            console.error('❌ No credentials found in localStorage');
             return;
           }
-
-          console.log("📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY");
+          
+          console.log('📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY');
           const orgUnitResponse = await fetch(`/api/me?fields=organisationUnits[displayName,id]`, {
             headers: {
-              Authorization: `Basic ${credentials}`,
-            },
+              'Authorization': `Basic ${credentials}`
+            }
           });
-
+          
           if (!orgUnitResponse.ok) {
-            console.error("❌ Failed to fetch organization unit data:", orgUnitResponse.status);
+            console.error('❌ Failed to fetch organization unit data:', orgUnitResponse.status);
             return;
           }
-
+          
           const orgData = await orgUnitResponse.json();
-          console.log("- Organization API Response:", orgData);
-
+          console.log('- Organization API Response:', orgData);
+          
           if (!orgData.organisationUnits || orgData.organisationUnits.length === 0) {
-            console.error("❌ No organization units found in response");
+            console.error('❌ No organization units found in response');
             return;
           }
-
+          
           const orgUnitId = orgData.organisationUnits[0].id;
           const orgUnitName = orgData.organisationUnits[0].displayName;
-
-          console.log("✅ ORGANIZATION UNIT DATA:");
-          console.log("- Name:", orgUnitName);
-          console.log("- ID:", orgUnitId);
-
+          
+          console.log('✅ ORGANIZATION UNIT DATA:');
+          console.log('- Name:', orgUnitName);
+          console.log('- ID:', orgUnitId);
+          
           // Now fetch the trackedEntityInstanceId using this organization unit ID
-          console.log("🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID");
+          console.log('🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID');
           const teiUrl = `/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
-          console.log("- API URL:", teiUrl);
-
+          console.log('- API URL:', teiUrl);
+          
           const teiResponse = await fetch(teiUrl, {
             headers: {
-              Authorization: `Basic ${credentials}`,
-              "Content-Type": "application/json",
-            },
+              'Authorization': `Basic ${credentials}`,
+              'Content-Type': 'application/json'
+            }
           });
-
+          
           if (!teiResponse.ok) {
-            console.error("❌ Failed to fetch tracked entity instance:", teiResponse.status);
+            console.error('❌ Failed to fetch tracked entity instance:', teiResponse.status);
             return;
           }
-
+          
           const teiData = await teiResponse.json();
-          console.log("- Tracked Entity API Response:", teiData);
-
+          console.log('- Tracked Entity API Response:', teiData);
+          
           if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
             const teiId = teiData.trackedEntityInstances[0].trackedEntityInstance;
-            console.log("✅ Found trackedEntityInstanceId:", teiId);
-
+            console.log('✅ Found trackedEntityInstanceId:', teiId);
+            
             // Store for future use
-            localStorage.setItem("tempTrackedEntityInstanceId", teiId);
-
+            localStorage.setItem('tempTrackedEntityInstanceId', teiId);
+            
             // CRITICAL FIX: Force a refresh to use the new trackedEntityInstanceId
             // This is a workaround since we can't directly update the parent's prop
-            console.log("🔄 FORCING PAGE REFRESH TO USE NEW TRACKED ENTITY INSTANCE ID");
+            console.log('🔄 FORCING PAGE REFRESH TO USE NEW TRACKED ENTITY INSTANCE ID');
             // window.location.reload(); // Removing this to avoid blank screen
-
+            
             // Instead, update local state directly
             // setLocalTrackedEntityInstanceId removed
-
+            
             // Now fetch the facility ownership data with this ID
-            console.log("🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID");
+            console.log('🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID');
             fetchFacilityOwnershipData(teiId, orgUnitId);
           } else {
-            console.log("❌ No tracked entity instances found in response");
+            console.log('❌ No tracked entity instances found in response');
           }
         } catch (error) {
-          console.error("❌ Error in fetchOrgUnitAndTrackedEntity:", error);
+          console.error('❌ Error in fetchOrgUnitAndTrackedEntity:', error);
         }
       };
-
+      
       // Execute the function
       fetchOrgUnitAndTrackedEntity();
     }
-
+    
     // Manually trigger fetch for employee data when clicking on employeeRegistration tab
-    if (tabKey === "employeeRegistration") {
+    if (tabKey === 'employeeRegistration') {
       console.log("👥 === EMPLOYEE REGISTRATION TAB CLICKED ===");
       console.log("- Manually triggering fetchEmployeeData for Employee Registration tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
       fetchEmployeeData();
     }
-
+    
     // Manually trigger fetch for services data when clicking on servicesOffered tab
-    if (tabKey === "servicesOffered") {
+    if (tabKey === 'servicesOffered') {
       console.log("🏥 === SERVICES OFFERED TAB CLICKED ===");
       console.log("- Manually triggering fetchServiceData for Services Offered tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
       fetchServiceData();
     }
-
+    
     // Manually trigger fetch for statutory compliance data when clicking on statutoryCompliance tab
-    if (tabKey === "statutoryCompliance") {
+    if (tabKey === 'statutoryCompliance') {
       console.log("📋 === STATUTORY COMPLIANCE TAB CLICKED ===");
-      console.log(
-        "- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab"
-      );
+      console.log("- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
       fetchStatutoryComplianceData();
     }
-
+    
     // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
-    if (tabKey === "equipmentMachinery") {
+    if (tabKey === 'equipmentMachinery') {
       console.log("⚙️ === EQUIPMENT & MACHINERY TAB CLICKED ===");
       console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
       console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
@@ -917,25 +1025,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     }
   };
 
+
+
   const fetchFacilityOwnershipData = async (teiId, orgUnitId) => {
     console.log("🔄 === STARTING FACILITY OWNERSHIP DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
     console.log("- Force refresh from DHIS2");
-
+    
     // Use parameters if provided, otherwise use centralized function
     const effectiveTeiId = teiId || getCurrentTrackedEntityInstanceId();
-    const effectiveOrgUnitId = orgUnitId || localStorage.getItem("userOrgUnitId");
-
+    const effectiveOrgUnitId = orgUnitId || localStorage.getItem('userOrgUnitId');
+    
     console.log("- Using trackedEntityInstanceId:", effectiveTeiId);
     console.log("- Using organizationUnitId:", effectiveOrgUnitId);
-
+    
     if (!effectiveTeiId) {
       console.log("❌ No trackedEntityInstanceId provided, aborting fetch");
       setIsLoading(false);
       return;
     }
-
-    const credentials = await StorageService.get("userCredentials");
+    
+    const credentials = await StorageService.get('userCredentials');
 
     console.log("🔐 Auth & Config Check:");
     console.log("- Has credentials:", Boolean(credentials));
@@ -951,11 +1061,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
     try {
       setIsLoading(true);
-
+      
       // Add cache-busting parameter to ensure fresh data
       const timestamp = new Date().getTime();
-      const url = `/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false&_t=${timestamp}`;
-
+              const url = `/api/trackedEntityInstances/${effectiveTeiId}?ou=${effectiveOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=MuJubgTzJrY&paging=false&_t=${timestamp}`;
+      
       console.log("🚀 === FACILITY OWNERSHIP API REQUEST ===");
       console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
@@ -975,14 +1085,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -998,7 +1108,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("📊 === FACILITY OWNERSHIP DATA PROCESSING ===");
       console.log("- Raw API Response:", data);
       console.log("- Enrollments found:", data.enrollments?.length || 0);
-
+      
       // Process the events data
       let allEvents = [];
       if (data.enrollments && data.enrollments.length > 0) {
@@ -1014,54 +1124,55 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       } else {
         console.log("❌ NO ENROLLMENTS FOUND");
       }
-
+      
       console.log("- Total events processed:", allEvents.length);
       console.log("- Processed events:", allEvents);
 
       // Sort events by created date (newest first)
       allEvents.sort((a, b) => new Date(b.created) - new Date(a.created));
-
+      
       // Update state with the events data
       setEvents(allEvents);
       setIsLoading(false);
-
+      
       // Update validation state after data is loaded
       const facilityOwnershipComplete = validateFacilityOwnership(allEvents);
       console.log("🔍 === VALIDATION RESULT ===");
       console.log("- Facility Ownership Complete:", facilityOwnershipComplete);
-
-      setTabValidationStates((prev) => ({
+      
+      setTabValidationStates(prev => ({
         ...prev,
-        facilityOwnership: facilityOwnershipComplete,
+        facilityOwnership: facilityOwnershipComplete
       }));
-
+      
       // Store facility ownership status in localStorage for Header component access
-      localStorage.setItem("facilityOwnershipComplete", JSON.stringify(facilityOwnershipComplete));
-
+      localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
+      
       // Dispatch event to refresh organization unit data
-      const refreshOrgUnitEvent = new CustomEvent("refreshOrgUnitData");
+      const refreshOrgUnitEvent = new CustomEvent('refreshOrgUnitData');
       window.dispatchEvent(refreshOrgUnitEvent);
-
-      console.log("✅ DISPATCHED refreshOrgUnitData EVENT");
-
+      
+      console.log('✅ DISPATCHED refreshOrgUnitData EVENT');
+      
       // Store events in localStorage for Dashboard component
-      localStorage.setItem("facilityOwnershipEvents", JSON.stringify(allEvents));
-
+      localStorage.setItem('facilityOwnershipEvents', JSON.stringify(allEvents));
+      
       // Force status recalculation after data update
       console.log("🔄 Triggering status recalculation after data update");
       setTimeout(() => {
-        const event = new CustomEvent("forceStatusRecalculation");
+        const event = new CustomEvent('forceStatusRecalculation');
         window.dispatchEvent(event);
       }, 100);
+      
     } catch (error) {
       console.error("❌ Error fetching facility ownership data:", error);
       console.error("❌ Error details:", {
         message: error.message,
         stack: error.stack,
-        name: error.name,
+        name: error.name
       });
       setIsLoading(false);
-
+      
       // Show user-friendly error message
       setRegistrationStatus("Error loading data - please refresh the page");
     }
@@ -1071,7 +1182,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const checkCompleteApplicationStatus = () => {
       try {
-        const status = localStorage.getItem("completeApplicationFormStatus");
+        const status = localStorage.getItem('completeApplicationFormStatus');
         if (status) {
           setCompleteApplicationStatus(JSON.parse(status));
         }
@@ -1079,39 +1190,39 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         console.error("Error reading form status from localStorage:", error);
       }
     };
-
+    
     checkCompleteApplicationStatus();
-
+    
     // Set up an interval to check for status changes
     const intervalId = setInterval(checkCompleteApplicationStatus, 2000);
-
+    
     return () => clearInterval(intervalId);
   }, []);
-
+  
   // Auto-navigate to View Pre-Inspection when both Complete Application and Facility Ownership are complete
   useEffect(() => {
     const checkAndNavigateToInspections = () => {
       try {
-        const completeApplicationStatus = localStorage.getItem("completeApplicationFormStatus");
-        const facilityOwnershipStatus = localStorage.getItem("facilityOwnershipComplete");
-
-        const isCompleteApplicationDone = completeApplicationStatus === "true";
-        const isFacilityOwnershipDone = facilityOwnershipStatus === "true";
-
+        const completeApplicationStatus = localStorage.getItem('completeApplicationFormStatus');
+        const facilityOwnershipStatus = localStorage.getItem('facilityOwnershipComplete');
+        
+        const isCompleteApplicationDone = completeApplicationStatus === 'true';
+        const isFacilityOwnershipDone = facilityOwnershipStatus === 'true';
+        
         if (isCompleteApplicationDone && isFacilityOwnershipDone) {
           // Navigate to View Pre-Inspection tab
-          const event = new CustomEvent("switchToTab", { detail: "inspections" });
+          const event = new CustomEvent('switchToTab', { detail: 'inspections' });
           window.dispatchEvent(event);
         }
       } catch (error) {
         console.error("Error checking completion status for auto-navigation:", error);
       }
     };
-
+    
     // Only check on component mount (login) and when facility ownership dialog closes
     checkAndNavigateToInspections();
   }, []);
-
+  
   useEffect(() => {
     if (trackedEntityInstanceId) {
       fetchFacilityOwnershipData();
@@ -1126,10 +1237,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       // The status logic will automatically run due to the useEffect dependencies
     };
 
-    window.addEventListener("forceStatusRecalculation", handleForceStatusRecalculation);
-
+    window.addEventListener('forceStatusRecalculation', handleForceStatusRecalculation);
+    
     return () => {
-      window.removeEventListener("forceStatusRecalculation", handleForceStatusRecalculation);
+      window.removeEventListener('forceStatusRecalculation', handleForceStatusRecalculation);
     };
   }, []);
 
@@ -1141,7 +1252,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchServiceData = async () => {
     console.log("🔄 === STARTING SERVICE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-
+    
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     if (!currentTeiId) {
       console.log("❌ No trackedEntityInstanceId available for service data fetch");
@@ -1149,8 +1260,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = await StorageService.get("userCredentials");
-    const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+    const credentials = await StorageService.get('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
       console.log("❌ Missing credentials or userOrgUnitId for service data fetch");
@@ -1165,7 +1276,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       // Add cache-busting parameter to ensure fresh data
       const timestamp = new Date().getTime();
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=uL262bA2IP3&paging=false&_t=${timestamp}`;
-
+      
       console.log("🚀 === SERVICES OFFERED API REQUEST ===");
       console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
@@ -1180,14 +1291,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -1195,54 +1306,47 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
       const data = await response.json();
-
+      
       console.log("Services Offered API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
-
+      
       let fetchedEvents = [];
 
       if (data.enrollments && data.enrollments.length > 0) {
         console.log("- Processing service enrollments...");
         data.enrollments.forEach((enrollment, index) => {
-          console.log(`  - Service Enrollment #${index + 1} ID:`, enrollment.enrollment);
-          console.log(
-            `  - Events in service enrollment #${index + 1}:`,
-            enrollment.events?.length || 0
-          );
+          console.log(`  - Service Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in service enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
             console.log(`  - First service event programStage:`, enrollment.events[0].programStage);
             // Filter events to only include Services Offered program stage (uL262bA2IP3)
-            const serviceOfferingEvents = enrollment.events.filter(
-              (event) => event.programStage === "uL262bA2IP3"
-            );
-            console.log(
-              `  - Filtered service offering events (uL262bA2IP3):`,
-              serviceOfferingEvents.length
-            );
+            const serviceOfferingEvents = enrollment.events.filter(event => event.programStage === "uL262bA2IP3");
+            console.log(`  - Filtered service offering events (uL262bA2IP3):`, serviceOfferingEvents.length);
             fetchedEvents = fetchedEvents.concat(serviceOfferingEvents);
           }
         });
       }
-
+      
       console.log("- Total service events extracted (uL262bA2IP3 only):", fetchedEvents.length);
 
       setServiceEvents(fetchedEvents);
       setIsLoadingServices(false);
-
+      
       // Update services validation state after data is loaded
       const validationResult = validateServicesOffered(fetchedEvents);
-      setTabValidationStates((prev) => ({
+      setTabValidationStates(prev => ({
         ...prev,
-        servicesOffered: validationResult.isValid,
+        servicesOffered: validationResult.isValid
+      }));
+      
+      // Store validation details for debugging
+      setValidationDetails(prev => ({
+        ...prev,
+        servicesOffered: validationResult
       }));
 
-      // Store validation details for debugging
-      setValidationDetails((prev) => ({
-        ...prev,
-        servicesOffered: validationResult,
-      }));
     } catch (error) {
       console.error("Error fetching service data:", error);
       setIsLoadingServices(false);
@@ -1270,19 +1374,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   const handleAddEmployee = (e) => {
-    console.log("Add employee button clicked");
+    console.log('Add employee button clicked');
     e.preventDefault();
     e.stopPropagation();
     setOpenEmployeeDialog(true);
   };
 
   const handleCloseEmployeeDialog = () => {
-    console.log("Closing employee dialog");
+    console.log('Closing employee dialog');
     setOpenEmployeeDialog(false);
   };
 
   const handleEmployeeAddSuccess = () => {
-    console.log("Employee added successfully");
+    console.log('Employee added successfully');
     setOpenEmployeeDialog(false);
     fetchEmployeeData();
   };
@@ -1290,7 +1394,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchEmployeeData = async () => {
     console.log("🔄 === STARTING EMPLOYEE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-
+    
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     if (!currentTeiId) {
       console.log("❌ No trackedEntityInstanceId available for employee data fetch");
@@ -1298,8 +1402,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = await StorageService.get("userCredentials");
-    const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+    const credentials = await StorageService.get('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
       console.log("❌ Missing credentials or userOrgUnitId for employee data fetch");
@@ -1312,7 +1416,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     try {
       setIsLoadingEmployees(true);
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=xjhA4eEHyhw&paging=false`;
-
+      
       // Log the endpoint and parameters for debugging
       console.log("Employee Registration API Request:");
       console.log("- Full URL:", url);
@@ -1332,51 +1436,41 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
       const data = await response.json();
-
+      
       // Log response structure for debugging
       console.log("Employee Registration API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
-
+      
       let fetchedEvents = [];
 
       if (data.enrollments && data.enrollments.length > 0) {
         console.log("- Processing employee enrollments...");
         data.enrollments.forEach((enrollment, index) => {
-          console.log(`  - Employee Enrollment #${index + 1} ID:`, enrollment.enrollment);
-          console.log(
-            `  - Events in employee enrollment #${index + 1}:`,
-            enrollment.events?.length || 0
-          );
+          console.log(`  - Employee Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in employee enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
-            console.log(
-              `  - First employee event programStage:`,
-              enrollment.events[0].programStage
-            );
+            console.log(`  - First employee event programStage:`, enrollment.events[0].programStage);
             // Filter events to only include Employee Registration program stage (xjhA4eEHyhw)
-            const employeeRegistrationEvents = enrollment.events.filter(
-              (event) => event.programStage === "xjhA4eEHyhw"
-            );
-            console.log(
-              `  - Filtered employee registration events (xjhA4eEHyhw):`,
-              employeeRegistrationEvents.length
-            );
+            const employeeRegistrationEvents = enrollment.events.filter(event => event.programStage === "xjhA4eEHyhw");
+            console.log(`  - Filtered employee registration events (xjhA4eEHyhw):`, employeeRegistrationEvents.length);
             fetchedEvents = fetchedEvents.concat(employeeRegistrationEvents);
           }
         });
       }
-
+      
       console.log("- Total employee events extracted (xjhA4eEHyhw only):", fetchedEvents.length);
 
       setEmployeeEvents(fetchedEvents);
       setIsLoadingEmployees(false);
-
+      
       // Update employee validation state after data is loaded
-      setTabValidationStates((prev) => ({
+      setTabValidationStates(prev => ({
         ...prev,
-        employeeRegistration: validateEmployeeRegistration(fetchedEvents),
+        employeeRegistration: validateEmployeeRegistration(fetchedEvents)
       }));
+
     } catch (error) {
       console.error("Error fetching employee data:", error);
       setIsLoadingEmployees(false);
@@ -1386,20 +1480,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchInspectionData = async () => {
     console.log("🔄 === STARTING PRE-INSPECTION DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-
+    
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     console.log("- trackedEntityInstanceId:", currentTeiId);
-    console.log("- userCredentials exists:", !!StorageService.get("userCredentials"));
-    console.log("- userOrgUnitId:", localStorage.getItem("userOrgUnitId"));
-
+    console.log("- userCredentials exists:", !!StorageService.get('userCredentials'));
+    console.log("- userOrgUnitId:", localStorage.getItem('userOrgUnitId'));
+    
     if (!currentTeiId) {
       console.log("- EARLY RETURN: No trackedEntityInstanceId");
       setIsLoadingInspections(false);
       return;
     }
 
-    const credentials = await StorageService.get("userCredentials");
-    const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+    const credentials = await StorageService.get('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
       console.log("- EARLY RETURN: Missing credentials or userOrgUnitId");
@@ -1413,7 +1507,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setIsLoadingInspections(true);
       // Use the correct program stage ID for Pre-Inspection (Inspection)
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
-
+      
       console.log("Pre-Inspection API Request:");
       console.log("- Full URL:", url);
       console.log("- trackedEntityInstanceId:", currentTeiId);
@@ -1432,39 +1526,31 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
       const data = await response.json();
-
+      
       console.log("Pre-Inspection API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
-
+      
       let fetchedEvents = [];
 
       if (data.enrollments && data.enrollments.length > 0) {
         console.log("- Processing inspection enrollments...");
         data.enrollments.forEach((enrollment, index) => {
-          console.log(`  - Inspection Enrollment #${index + 1} ID:`, enrollment.enrollment);
-          console.log(
-            `  - Events in inspection enrollment #${index + 1}:`,
-            enrollment.events?.length || 0
-          );
+          console.log(`  - Inspection Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in inspection enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
-            console.log(
-              `  - First inspection event programStage:`,
-              enrollment.events[0].programStage
-            );
+            console.log(`  - First inspection event programStage:`, enrollment.events[0].programStage);
             // Filter events to only include Pre-Inspection program stage (Eupjm3J0dt2)
-            const inspectionEvents = enrollment.events.filter(
-              (event) => event.programStage === "Eupjm3J0dt2"
-            );
+            const inspectionEvents = enrollment.events.filter(event => event.programStage === "Eupjm3J0dt2");
             console.log(`  - Filtered inspection events (Eupjm3J0dt2):`, inspectionEvents.length);
             fetchedEvents = fetchedEvents.concat(inspectionEvents);
           }
         });
       }
-
+      
       console.log("- Total inspection events extracted (Eupjm3J0dt2 only):", fetchedEvents.length);
-
+      
       // Enhanced debugging - log the actual events
       if (fetchedEvents.length > 0) {
         console.log("- Sample inspection event:", fetchedEvents[0]);
@@ -1479,7 +1565,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   event: event.event,
                   programStage: event.programStage,
                   status: event.status,
-                  eventDate: event.eventDate,
+                  eventDate: event.eventDate
                 });
               });
             }
@@ -1494,30 +1580,22 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("#3 Users inspection period");
       if (fetchedEvents.length > 0) {
         fetchedEvents.forEach((event, idx) => {
-          const facility = event.orgUnitName || event.facility || "Unknown Facility";
-          const inspector =
-            event.inspector ||
-            (event.dataValues &&
-              event.dataValues.find((dv) => dv.dataElement === "inspector")?.value) ||
-            "Unknown Inspector";
-          const period = event.inspectionPeriod || {
-            startDate: event.eventDate || event.dueDate,
-            endDate: event.eventDate || event.dueDate,
-          };
+          const facility = event.orgUnitName || event.facility || 'Unknown Facility';
+          const inspector = event.inspector || (event.dataValues && event.dataValues.find(dv => dv.dataElement === 'inspector')?.value) || 'Unknown Inspector';
+          const period = event.inspectionPeriod || { startDate: event.eventDate || event.dueDate, endDate: event.eventDate || event.dueDate };
           console.log(`Assignment #${idx + 1}:`);
           console.log(`  Facility: ${facility}`);
           console.log(`  Inspector: ${inspector}`);
           if (period && (period.startDate || period.endDate)) {
-            console.log(
-              `  Inspection Period: ${period.startDate || "N/A"} to ${period.endDate || "N/A"}`
-            );
+            console.log(`  Inspection Period: ${period.startDate || 'N/A'} to ${period.endDate || 'N/A'}`);
           } else {
-            console.log("  Inspection Period: Not available");
+            console.log('  Inspection Period: Not available');
           }
         });
       } else {
-        console.log("No inspection assignments found.");
+        console.log('No inspection assignments found.');
       }
+
     } catch (error) {
       console.error("Error fetching pre-inspection data:", error);
       setIsLoadingInspections(false);
@@ -1527,18 +1605,18 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const fetchEquipmentData = async () => {
     console.log("🔄 === STARTING EQUIPMENT DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-
+    
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     console.log("- trackedEntityInstanceId:", currentTeiId);
-
+    
     if (!currentTeiId) {
       console.log("- EARLY RETURN: No trackedEntityInstanceId");
       setIsLoadingEquipment(false);
       return;
     }
 
-    const credentials = await StorageService.get("userCredentials");
-    const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+    const credentials = await StorageService.get('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
       console.log("- EARLY RETURN: Missing credentials or userOrgUnitId");
@@ -1550,7 +1628,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       setIsLoadingEquipment(true);
       // Using the correct program stage ID for Equipment & Machinery
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]&paging=false`;
-
+      
       console.log("Equipment API Request:");
       console.log("- Full URL:", url);
       console.log("- trackedEntityInstanceId:", currentTeiId);
@@ -1569,37 +1647,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
       const data = await response.json();
-
+      
       console.log("Equipment API Response:");
       console.log("- Response data:", data);
-
+      
       let fetchedEvents = [];
 
       if (data.enrollments && data.enrollments.length > 0) {
         console.log("- Processing equipment enrollments...");
         data.enrollments.forEach((enrollment, index) => {
-          console.log(`  - Equipment Enrollment #${index + 1} ID:`, enrollment.enrollment);
+          console.log(`  - Equipment Enrollment #${index+1} ID:`, enrollment.enrollment);
           if (enrollment.events && enrollment.events.length > 0) {
             // Filter events to only include Equipment & Machinery program stage (chlbXjBiIup)
-            const equipmentEvents = enrollment.events.filter(
-              (event) => event.programStage === "chlbXjBiIup"
-            );
+            const equipmentEvents = enrollment.events.filter(event => event.programStage === "chlbXjBiIup");
             console.log(`  - Filtered equipment events (chlbXjBiIup):`, equipmentEvents.length);
             fetchedEvents = fetchedEvents.concat(equipmentEvents);
           }
         });
       }
-
+      
       console.log("- Total equipment events extracted:", fetchedEvents.length);
-
+      
       setEquipmentEvents(fetchedEvents);
       setIsLoadingEquipment(false);
-
+      
       // Update equipment validation state after data is loaded
-      setTabValidationStates((prev) => ({
+      setTabValidationStates(prev => ({
         ...prev,
-        equipmentMachinery: validateEquipmentMachinery(fetchedEvents),
+        equipmentMachinery: validateEquipmentMachinery(fetchedEvents)
       }));
+
     } catch (error) {
       console.error("Error fetching equipment data:", error);
       setIsLoadingEquipment(false);
@@ -1607,7 +1684,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   };
 
   // Add fetch function for service offerings
-  // Add useEffect to fetch service data
+    // Add useEffect to fetch service data
   useEffect(() => {
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     if (currentTeiId) {
@@ -1616,36 +1693,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       fetchStatutoryComplianceData();
     }
   }, [trackedEntityInstanceId]);
-
+  
   // Add useEffect to check for and handle the automatic tab switching flag
   useEffect(() => {
     const checkSwitchToFacilityOwnership = () => {
       try {
         // Check for the original switch flag
-        const switchFlag = localStorage.getItem("switchToFacilityOwnership");
-        if (switchFlag === "true" && completeApplicationStatus) {
+        const switchFlag = localStorage.getItem('switchToFacilityOwnership');
+        if (switchFlag === 'true' && completeApplicationStatus) {
           // Clear the flag first to avoid repeated triggering
-          localStorage.removeItem("switchToFacilityOwnership");
-
+          localStorage.removeItem('switchToFacilityOwnership');
+          
           // Switch to the Facility Ownership tab
-          setActiveTab("facilityOwnership");
+          setActiveTab('facilityOwnership');
           return; // Exit early if we've already switched tabs
         }
-
+        
         // Check for the new autoSelectTab flag from TrackerEventDetails
-        const autoSelectTab = localStorage.getItem("autoSelectTab");
+        const autoSelectTab = localStorage.getItem('autoSelectTab');
         if (autoSelectTab) {
           // Clear the flag first to avoid repeated triggering
-          localStorage.removeItem("autoSelectTab");
-
+          localStorage.removeItem('autoSelectTab');
+          
           console.log(`Auto-selecting tab: ${autoSelectTab}`);
-
+          
           // Switch to the specified tab
           setActiveTab(autoSelectTab);
-
+          
           // If switching to facility ownership tab, also fetch the data
-          if (autoSelectTab === "facilityOwnership") {
-            console.log("Auto-fetching facility ownership data");
+          if (autoSelectTab === 'facilityOwnership') {
+            console.log('Auto-fetching facility ownership data');
             fetchFacilityOwnershipData();
           }
         }
@@ -1653,21 +1730,21 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         console.error("Error checking for tab switch flag:", error);
       }
     };
-
+    
     // Check on component load and whenever completeApplicationStatus changes
     checkSwitchToFacilityOwnership();
-
+    
     // Set up an interval to check for status changes
     const intervalId = setInterval(checkSwitchToFacilityOwnership, 1000);
-
+    
     return () => clearInterval(intervalId);
   }, [completeApplicationStatus]);
 
   // Add event listeners for custom events from TrackerEventDetails
   useEffect(() => {
     const handleRefreshApplicationData = (event) => {
-      console.log("Received refreshApplicationData event:", event.detail);
-
+      console.log('Received refreshApplicationData event:', event.detail);
+      
       // Refresh all data from localStorage and re-fetch from API
       try {
         // Clear any cached data
@@ -1677,20 +1754,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         setInspectionEvents([]);
         setStatutoryComplianceEvents([]);
         setEquipmentEvents([]);
-
+        
         // Re-fetch all data
-        console.log("Refreshing all application data...");
+        console.log('Refreshing all application data...');
         fetchFacilityOwnershipData();
         fetchEmployeeData();
         fetchServiceData();
         fetchInspectionData();
         fetchStatutoryComplianceData();
         fetchEquipmentData();
-
+        
         // Also refresh the complete application status
         const checkCompleteApplicationStatus = () => {
           try {
-            const status = localStorage.getItem("completeApplicationFormStatus");
+            const status = localStorage.getItem('completeApplicationFormStatus');
             if (status) {
               setCompleteApplicationStatus(JSON.parse(status));
             }
@@ -1699,35 +1776,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           }
         };
         checkCompleteApplicationStatus();
+        
       } catch (error) {
-        console.error("Error refreshing application data:", error);
+        console.error('Error refreshing application data:', error);
       }
     };
 
     const handleSwitchToTab = (event) => {
-      console.log("Received switchToTab event:", event.detail);
-
+      console.log('Received switchToTab event:', event.detail);
+      
       const { tab } = event.detail;
       if (tab) {
         console.log(`Switching to tab: ${tab}`);
         setActiveTab(tab);
-
+        
         // If switching to facility ownership tab, also fetch the data
-        if (tab === "facilityOwnership") {
-          console.log("Auto-fetching facility ownership data");
+        if (tab === 'facilityOwnership') {
+          console.log('Auto-fetching facility ownership data');
           fetchFacilityOwnershipData();
         }
       }
     };
 
     // Add event listeners
-    window.addEventListener("refreshApplicationData", handleRefreshApplicationData);
-    window.addEventListener("switchToTab", handleSwitchToTab);
+    window.addEventListener('refreshApplicationData', handleRefreshApplicationData);
+    window.addEventListener('switchToTab', handleSwitchToTab);
 
     // Cleanup event listeners on component unmount
     return () => {
-      window.removeEventListener("refreshApplicationData", handleRefreshApplicationData);
-      window.removeEventListener("switchToTab", handleSwitchToTab);
+      window.removeEventListener('refreshApplicationData', handleRefreshApplicationData);
+      window.removeEventListener('switchToTab', handleSwitchToTab);
     };
   }, []);
 
@@ -1745,7 +1823,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     setOpenServiceDialog(false);
     fetchServiceData();
   };
-
+  
   const handleAddInspection = () => {
     console.log("Opening inspection dialog...");
     setOpenInspectionDialog(true);
@@ -1807,11 +1885,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     setShowEditEquipmentDialog(true);
   };
 
+
+
   // Fetch statutory compliance data
   const fetchStatutoryComplianceData = async () => {
     console.log("🔄 === STARTING STATUTORY COMPLIANCE DATA FETCH ===");
     console.log("- Timestamp:", new Date().toISOString());
-
+    
     const currentTeiId = getCurrentTrackedEntityInstanceId();
     if (!currentTeiId) {
       console.log("❌ No trackedEntityInstanceId available for statutory compliance data fetch");
@@ -1819,8 +1899,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
 
-    const credentials = await StorageService.get("userCredentials");
-    const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+    const credentials = await StorageService.get('userCredentials');
+    const userOrgUnitId = localStorage.getItem('userOrgUnitId');
 
     if (!credentials || !userOrgUnitId) {
       console.log("❌ Missing credentials or userOrgUnitId for statutory compliance data fetch");
@@ -1835,7 +1915,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       // Add cache-busting parameter to ensure fresh data
       const timestamp = new Date().getTime();
       const url = `/api/trackedEntityInstances/${currentTeiId}?ou=${userOrgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=enrollments[events]!programStage=vyv7zncjCmV&paging=false&_t=${timestamp}`;
-
+      
       console.log("🚀 === STATUTORY COMPLIANCE API REQUEST ===");
       console.log("- HTTP Method: GET");
       console.log("- Full URL:", url);
@@ -1850,14 +1930,14 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Cache-Control: no-cache");
 
       const response = await fetch(url, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          Authorization: `Basic ${credentials}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -1865,56 +1945,40 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       }
 
       const data = await response.json();
-
+      
       console.log("Statutory Compliance API Response:");
       console.log("- Response data:", data);
       console.log("- Has enrollments:", Boolean(data.enrollments));
       console.log("- Number of enrollments:", data.enrollments?.length || 0);
-
+      
       let fetchedEvents = [];
 
       if (data.enrollments && data.enrollments.length > 0) {
         console.log("- Processing statutory compliance enrollments...");
         data.enrollments.forEach((enrollment, index) => {
-          console.log(
-            `  - Statutory Compliance Enrollment #${index + 1} ID:`,
-            enrollment.enrollment
-          );
-          console.log(
-            `  - Events in statutory compliance enrollment #${index + 1}:`,
-            enrollment.events?.length || 0
-          );
+          console.log(`  - Statutory Compliance Enrollment #${index+1} ID:`, enrollment.enrollment);
+          console.log(`  - Events in statutory compliance enrollment #${index+1}:`, enrollment.events?.length || 0);
           if (enrollment.events && enrollment.events.length > 0) {
-            console.log(
-              `  - First statutory compliance event programStage:`,
-              enrollment.events[0].programStage
-            );
+            console.log(`  - First statutory compliance event programStage:`, enrollment.events[0].programStage);
             // Filter events to only include Statutory Compliance program stage (vyv7zncjCmV)
-            const complianceEvents = enrollment.events.filter(
-              (event) => event.programStage === "vyv7zncjCmV"
-            );
-            console.log(
-              `  - Filtered statutory compliance events (vyv7zncjCmV):`,
-              complianceEvents.length
-            );
+            const complianceEvents = enrollment.events.filter(event => event.programStage === "vyv7zncjCmV");
+            console.log(`  - Filtered statutory compliance events (vyv7zncjCmV):`, complianceEvents.length);
             fetchedEvents = fetchedEvents.concat(complianceEvents);
           }
         });
       }
-
-      console.log(
-        "- Total statutory compliance events extracted (vyv7zncjCmV only):",
-        fetchedEvents.length
-      );
+      
+      console.log("- Total statutory compliance events extracted (vyv7zncjCmV only):", fetchedEvents.length);
 
       setStatutoryComplianceEvents(fetchedEvents);
       setIsLoadingStatutoryCompliance(false);
-
+      
       // Update statutory compliance validation state after data is loaded
-      setTabValidationStates((prev) => ({
+      setTabValidationStates(prev => ({
         ...prev,
-        statutoryCompliance: validateStatutoryCompliance(fetchedEvents),
+        statutoryCompliance: validateStatutoryCompliance(fetchedEvents)
       }));
+
     } catch (error) {
       console.error("Error fetching statutory compliance data:", error);
       setIsLoadingStatutoryCompliance(false);
@@ -1930,33 +1994,31 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       try {
         // Get credentials using the helper with fallbacks
         const credentials = await getCredentials();
-
+        
         if (!credentials) {
-          console.error("❌ No credentials available for fetching metadata");
+          console.error('❌ No credentials available for fetching metadata');
           setFacilityOwnershipMetadata(null);
           return;
         }
-
+        
         console.log("🔐 Credentials available for metadata fetch:", !!credentials);
-
+        
         const response = await fetch(
-          `${
-            import.meta.env.VITE_DHIS2_URL
-          }/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
+          `${import.meta.env.VITE_DHIS2_URL}/api/programStages/MuJubgTzJrY?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
           {
             headers: { Authorization: `Basic ${credentials}` },
           }
         );
 
         if (!response.ok) {
-          console.error("❌ Failed to fetch metadata:", response.status);
-          throw new Error("Failed to fetch metadata");
+          console.error('❌ Failed to fetch metadata:', response.status);
+          throw new Error('Failed to fetch metadata');
         }
-
+        
         const metadata = await response.json();
         setFacilityOwnershipMetadata(metadata);
       } catch (error) {
-        console.error("❌ Error fetching metadata:", error);
+        console.error('❌ Error fetching metadata:', error);
         setFacilityOwnershipMetadata(null);
       }
     };
@@ -1964,40 +2026,35 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   }, []);
 
   // Add state for user info
-  const [userInfo, setUserInfo] = useState({ id: "", organisationUnits: [] });
+  const [userInfo, setUserInfo] = useState({ id: '', organisationUnits: [] });
 
   // Fetch user info when Facility Ownership tab is active
   useEffect(() => {
-    if (activeTab === "facilityOwnership") {
+    if (activeTab === 'facilityOwnership') {
       // Get credentials using the helper with fallbacks
-      getCredentials().then((credentials) => {
+      getCredentials().then(credentials => {
         if (credentials) {
-          console.log("🔐 Fetching user info with credentials");
-          fetch(
-            `${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`,
-            {
-              headers: { Authorization: `Basic ${credentials}` },
-            }
-          )
-            .then((res) => {
+          console.log('🔐 Fetching user info with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/me?fields=id,organisationUnits[id,displayName]`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
+          })
+            .then(res => {
               if (!res.ok) {
-                console.error("❌ Failed to fetch user info:", res.status);
-                throw new Error("Failed to fetch user info");
+                console.error('❌ Failed to fetch user info:', res.status);
+                throw new Error('Failed to fetch user info');
               }
               return res.json();
             })
-            .then((data) =>
-              setUserInfo({
-                id: data.id,
-                organisationUnits: data.organisationUnits || [],
-              })
-            )
+            .then(data => setUserInfo({
+              id: data.id,
+              organisationUnits: data.organisationUnits || []
+            }))
             .catch((error) => {
-              console.error("❌ Error fetching user info:", error);
-              setUserInfo({ id: "Error", organisationUnits: [] });
+              console.error('❌ Error fetching user info:', error);
+              setUserInfo({ id: 'Error', organisationUnits: [] });
             });
         } else {
-          console.error("❌ No credentials available for fetching user info");
+          console.error('❌ No credentials available for fetching user info');
         }
       });
     }
@@ -2008,27 +2065,22 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Fetch trackedEntityInstanceId when Facility Ownership tab loads
   useEffect(() => {
-    if (activeTab === "facilityOwnership") {
+    if (activeTab === 'facilityOwnership') {
       // Get credentials using the helper with fallbacks
-      getCredentials().then((credentials) => {
+      getCredentials().then(credentials => {
         if (credentials) {
-          console.log("🔐 Fetching tracked entity instances with credentials");
-          fetch(
-            `${
-              import.meta.env.VITE_DHIS2_URL
-            }/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`,
-            {
-              headers: { Authorization: `Basic ${credentials}` },
-            }
-          )
-            .then((res) => {
+          console.log('🔐 Fetching tracked entity instances with credentials');
+          fetch(`${import.meta.env.VITE_DHIS2_URL}/api/trackedEntityInstances.json?ou=WP8ZE42FJCZ&program=EE8yeLVo6cN&fields=trackedEntityInstance`, {
+            headers: { 'Authorization': `Basic ${credentials}` }
+          })
+            .then(res => {
               if (!res.ok) {
-                console.error("❌ Failed to fetch tracked entity instances:", res.status);
-                throw new Error("Failed to fetch tracked entity instances");
+                console.error('❌ Failed to fetch tracked entity instances:', res.status);
+                throw new Error('Failed to fetch tracked entity instances');
               }
               return res.json();
             })
-            .then((data) => {
+            .then(data => {
               if (data.trackedEntityInstances && data.trackedEntityInstances.length > 0) {
                 setFacilityOwnershipTeiId(data.trackedEntityInstances[0].trackedEntityInstance);
               } else {
@@ -2036,11 +2088,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               }
             })
             .catch((error) => {
-              console.error("❌ Error fetching tracked entity instances:", error);
+              console.error('❌ Error fetching tracked entity instances:', error);
               setFacilityOwnershipTeiId(null);
             });
         } else {
-          console.error("❌ No credentials available for fetching tracked entity instances");
+          console.error('❌ No credentials available for fetching tracked entity instances');
         }
       });
     }
@@ -2048,11 +2100,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Prepare variables used globally in component and dialogs
   const effectiveTrackedEntityInstanceId = facilityOwnershipTeiId || trackedEntityInstanceId;
-  const facilityOwnershipEvents = Array.isArray(events)
-    ? events.filter((e) => e.programStage === "MuJubgTzJrY")
-    : [];
-  const facilityOwnershipEvent =
-    facilityOwnershipEvents.length > 0 ? facilityOwnershipEvents[0] : undefined;
+  const facilityOwnershipEvents = Array.isArray(events) ? events.filter(e => e.programStage === 'MuJubgTzJrY') : [];
+  const facilityOwnershipEvent = facilityOwnershipEvents.length > 0 ? facilityOwnershipEvents[0] : undefined;
 
   const [statutoryComplianceMetadata, setStatutoryComplianceMetadata] = useState(null);
 
@@ -2063,12 +2112,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         const credentials = await getCredentials();
         if (!credentials) return;
         const response = await fetch(
-          `${
-            import.meta.env.VITE_DHIS2_URL
-          }/api/programStages/vyv7zncjCmV?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
+          `${import.meta.env.VITE_DHIS2_URL}/api/programStages/vyv7zncjCmV?fields=name,programStageSections[name,id,dataElements[displayFormName,id,valueType,compulsory]]`,
           { headers: { Authorization: `Basic ${credentials}` } }
         );
-        if (!response.ok) throw new Error("Failed to fetch statutory compliance metadata");
+        if (!response.ok) throw new Error('Failed to fetch statutory compliance metadata');
         const metadata = await response.json();
         setStatutoryComplianceMetadata(metadata);
       } catch (error) {
@@ -2080,16 +2127,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "completeApplication":
+      case 'completeApplication':
         return (
           <div className="tab-content">
             <div className="complete-application-details">
               {/* <h2>Admin User & Facility Details</h2> */}
-              <TrackerEventDetails
+              <TrackerEventDetails 
                 onFormStatusChange={handleFormStatusChange}
                 onUpdateSuccess={handleApplicationUpdateSuccess}
                 onEventDataFetched={(eventData) => {
-                  console.log("Event data fetched in Admin User & Facility Details:", eventData);
+                  console.log('Event data fetched in Admin User & Facility Details:', eventData);
                   // Store the event data for use in other tabs
                   setCompleteApplicationEvent(eventData);
                 }}
@@ -2097,36 +2144,38 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
-      case "facilityOwnership":
-        // Inside the Facility Ownership tab render logic, before any use of 'events':
+      case 'facilityOwnership':
 
+        
+        // Inside the Facility Ownership tab render logic, before any use of 'events':
+        
         return (
           <div className="tab-content">
             <div className="facility-ownership-details">
-              <h2
+              <h2 
                 style={{
                   ...(facilityOwnershipEvents.length === 0 && {
-                    animation: "blink 1.5s infinite",
-                    color: "#dc3545",
-                    fontWeight: "bold",
-                  }),
+                    animation: 'blink 1.5s infinite',
+                    color: '#dc3545',
+                    fontWeight: 'bold'
+                  })
                 }}
               >
                 Facility Ownership
-                <button
-                  className="add-icon"
+                <button 
+                  className="add-icon" 
                   onClick={() => {
-                    console.log("+ button clicked - opening facility ownership dialog");
+                    console.log('+ button clicked - opening facility ownership dialog');
                     setOpenAddDialog(true);
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: facilityOwnershipEvents.length === 0 ? "#dc3545" : "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: facilityOwnershipEvents.length === 0 ? '#dc3545' : '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
@@ -2142,104 +2191,75 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   }
                 `}
               </style>
-
+              
               {isLoading ? (
                 <p>Loading facility ownership data...</p>
               ) : facilityOwnershipEvents.length > 0 ? (
                 <div
                   style={{
-                    background: "#e2f0ff",
-                    borderRadius: "8px",
-                    padding: "24px",
-                    margin: "24px 0",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-                    maxWidth: "340px",
-                    minWidth: "220px",
-                    fontSize: "0.98rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                    cursor: "pointer",
-                    transition: "box-shadow 0.2s",
+                    background: '#e2f0ff',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    margin: '24px 0',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                    maxWidth: '340px',
+                    minWidth: '220px',
+                    fontSize: '0.98rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    cursor: 'pointer',
+                    transition: 'box-shadow 0.2s',
                   }}
                   onClick={() => setOpenAddDialog(true)}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.13)")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.07)")
-                  }
+                  onMouseOver={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.13)'}
+                  onMouseOut={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
                   title="Click to add or edit Facility Ownership event"
                 >
-                  <h3 style={{ marginBottom: "12px", fontSize: "1.08rem" }}>
-                    Compliance Section (Read Only)
-                  </h3>
-                  {facilityOwnershipMetadata && facilityOwnershipMetadata.programStageSections ? (
-                    facilityOwnershipMetadata.programStageSections
-                      .filter(
-                        (section) =>
-                          section.name && section.name.toLowerCase().includes("compliance")
-                      )
-                      .map((section) => (
-                        <div key={section.id} style={{ marginBottom: "18px" }}>
-                          <h4 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "10px" }}>
-                            {section.name}
-                          </h4>
-                          {section.dataElements.map((de) => {
-                            const value = (facilityOwnershipEvents[0].dataValues || []).find(
-                              (dv) => dv.dataElement === de.id
-                            )?.value;
+                  <h3 style={{marginBottom: '12px', fontSize: '1.08rem'}}>Compliance Section (Read Only)</h3>
+                  {facilityOwnershipMetadata && facilityOwnershipMetadata.programStageSections
+                    ? facilityOwnershipMetadata.programStageSections.filter(section =>
+                        section.name && section.name.toLowerCase().includes('compliance')
+                      ).map(section => (
+                        <div key={section.id} style={{marginBottom: '18px'}}>
+                          <h4 style={{fontSize: '1.1rem', fontWeight: 600, marginBottom: '10px'}}>{section.name}</h4>
+                          {section.dataElements.map(de => {
+                            const value = (facilityOwnershipEvents[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
                             return (
-                              <div key={de.id} style={{ marginBottom: "10px" }}>
-                                <strong>{de.displayFormName}:</strong>{" "}
-                                {value || (
-                                  <span style={{ color: "#888", fontStyle: "italic" }}>
-                                    Not provided
-                                  </span>
-                                )}
+                              <div key={de.id} style={{marginBottom: '10px'}}>
+                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>Not provided</span>}
                               </div>
                             );
                           })}
                         </div>
                       ))
-                  ) : (
-                    <p>Loading compliance section metadata...</p>
-                  )}
+                    : <p>Loading compliance section metadata...</p>}
                 </div>
               ) : showReviewDialog && facilityOwnershipEvents.length === 0 ? (
                 <div>
-                  <div
-                    style={{
-                      padding: "20px",
-                      backgroundColor: "#f8d7da",
-                      borderRadius: "5px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <h4 style={{ color: "#721c24", marginTop: 0 }}>
-                      Reloading Facility Ownership Data
-                    </h4>
-                    <p style={{ color: "#721c24" }}>
+                  <div style={{ padding: '20px', backgroundColor: '#f8d7da', borderRadius: '5px', marginBottom: '20px' }}>
+                    <h4 style={{ color: '#721c24', marginTop: 0 }}>Reloading Facility Ownership Data</h4>
+                    <p style={{ color: '#721c24' }}>
                       We're refreshing your facility ownership information. Please wait a moment.
                     </p>
-                    <button
+                    <button 
                       onClick={() => {
                         // Force a full data reload
                         fetchFacilityOwnershipData();
                         // Ensure we're on the correct tab
-                        setActiveTab("facilityOwnership");
-                      }}
+                        setActiveTab('facilityOwnership');
+                      }} 
                       style={{
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        border: "none",
-                        padding: "8px 16px",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        marginTop: "10px",
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        marginTop: '10px'
                       }}
                     >
                       Retry Loading
@@ -2251,26 +2271,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   <p>No facility ownership records found.</p>
                 </div>
               ) : null}
+
             </div>
           </div>
         );
-      case "employeeRegistration":
+      case 'employeeRegistration':
         return (
           <div className="tab-content">
             <div className="employee-registration-details">
               <h2>
-                Employee Registration Details
-                <button
-                  className="add-icon"
+                Employee Registration Details 
+                <button 
+                  className="add-icon" 
                   onClick={handleAddEmployee}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
@@ -2299,17 +2320,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         {employeeEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(
-                              (dv) => dv.dataElement === dataElementId
-                            );
-                            return dataValue ? dataValue.value : "None";
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           return (
-                            <tr
+                            <tr 
                               key={event.event || index}
                               onClick={() => handleEmployeeRowClick(event)}
-                              style={{ cursor: "pointer" }}
+                              style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
                               <td>{getFormattedValue("IIxbad41cH6")}</td>
@@ -2328,28 +2347,29 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
-      case "servicesOffered":
+      case 'servicesOffered':
         return (
           <div className="tab-content">
             <div className="services-offered-details">
               <h2>
-                Services Offered Details
-                <button
-                  className="add-icon"
+                Services Offered Details 
+                <button 
+                  className="add-icon" 
                   onClick={handleAddService}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
                 </button>
               </h2>
+              
 
               {isLoadingServices ? (
                 <p>Loading services data...</p>
@@ -2373,15 +2393,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         {serviceEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(
-                              (dv) => dv.dataElement === dataElementId
-                            );
-                            return dataValue ? dataValue.value : "None";
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to check if service type is offered
                           const isServiceOffered = (dataElementId) => {
-                            return getFormattedValue(dataElementId) === "true";
+                            return getFormattedValue(dataElementId) === 'true';
                           };
 
                           // Aggregate services by category
@@ -2390,19 +2408,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             isServiceOffered("ECjGkIq0Deq") ? "General Practice" : "",
                             isServiceOffered("aM41KiGDJAs") ? "Treatment & Care" : "",
                             isServiceOffered("flzyZUlf30v") ? "Urgent Care" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
-
+                          ].filter(Boolean).join(", ");
+                          
                           const specialisedServices = [
                             isServiceOffered("y9QSgKRoc6L") ? "Maternity & Reproductive" : "",
                             isServiceOffered("yZhlCTgamq0") ? "Mental Health" : "",
                             isServiceOffered("RCvjFJQUaPV") ? "Radiology" : "",
                             isServiceOffered("uxcdCPnaqWL") ? "Rehabilitation" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
-
+                          ].filter(Boolean).join(", ");
+                          
                           const supportServices = [
                             isServiceOffered("r76ODkNZv43") ? "Ambulatory Care" : "",
                             isServiceOffered("E7OMKr09N0R") ? "Dialysis" : "",
@@ -2412,23 +2426,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             isServiceOffered("w86r0XZCLCr") ? "Outpatient" : "",
                             isServiceOffered("m8Kl585eWSK") ? "Transportation" : "",
                             isServiceOffered("yecnkdC7HtM") ? "Pharmacy" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
-
+                          ].filter(Boolean).join(", ");
+                          
                           const additionalServices = [
                             isServiceOffered("SMvKa2EWeBO") ? "Health Education" : "",
                             isServiceOffered("i0QXYWMOUjy") ? "Counseling" : "",
                             isServiceOffered("e48W7983nBs") ? "Community-Based" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                          ].filter(Boolean).join(", ");
 
                           return (
-                            <tr
+                            <tr 
                               key={event.event || index}
                               onClick={() => handleServiceRowClick(event)}
-                              style={{ cursor: "pointer" }}
+                              style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
                               <td>{coreServices || "None"}</td>
@@ -2446,23 +2456,23 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
-      case "equipmentMachinery":
+      case 'equipmentMachinery':
         return (
           <div className="tab-content">
             <div className="equipment-machinery-details">
               <h2>
-                Equipment & Machinery
-                <button
-                  className="add-icon"
+                Equipment & Machinery 
+                <button 
+                  className="add-icon" 
                   onClick={handleAddEquipment}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
@@ -2492,73 +2502,59 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         {equipmentEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(
-                              (dv) => dv.dataElement === dataElementId
-                            );
-                            return dataValue ? dataValue.value : "None";
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format boolean values
                           const formatBoolean = (value) => {
-                            if (value === "true") return "Yes";
-                            if (value === "false") return "No";
-                            return "None";
+                            if (value === 'true') return 'Yes';
+                            if (value === 'false') return 'No';
+                            return 'None';
                           };
 
                           // Aggregate emergency equipment
                           const emergencyEquipment = [
-                            getFormattedValue("Ldkhcngpzm0") === "true" ? "Defibrillator" : "",
-                            getFormattedValue("Dpzjb4f4zie") === "true" ? "Ambulance" : "",
-                            getFormattedValue("iBa0EKW8Rs4") === "true" ? "Oxygen Supply" : "",
-                            getFormattedValue("BBk59Ex46rC") === "true" ? "Resuscitation Beds" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                            getFormattedValue("Ldkhcngpzm0") === 'true' ? "Defibrillator" : "",
+                            getFormattedValue("Dpzjb4f4zie") === 'true' ? "Ambulance" : "",
+                            getFormattedValue("iBa0EKW8Rs4") === 'true' ? "Oxygen Supply" : "",
+                            getFormattedValue("BBk59Ex46rC") === 'true' ? "Resuscitation Beds" : "",
+                          ].filter(Boolean).join(", ");
 
                           // Aggregate general practice equipment
                           const generalPracticeEquipment = [
-                            getFormattedValue("mBr9e3ecOze") === "true" ? "BP Machines" : "",
-                            getFormattedValue("ftukRsNTA80") === "true" ? "Examination Beds" : "",
-                            getFormattedValue("yA7QpYbNo7s") === "true" ? "Thermometers" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                            getFormattedValue("mBr9e3ecOze") === 'true' ? "BP Machines" : "",
+                            getFormattedValue("ftukRsNTA80") === 'true' ? "Examination Beds" : "",
+                            getFormattedValue("yA7QpYbNo7s") === 'true' ? "Thermometers" : "",
+                          ].filter(Boolean).join(", ");
 
                           // Aggregate laboratory equipment
                           const labEquipment = [
-                            getFormattedValue("K2Wj7GjneQq") === "true" ? "Analyzers" : "",
-                            getFormattedValue("RzTeaeV0dKS") === "true" ? "Centrifuge" : "",
-                            getFormattedValue("tlh2pkI5qro") === "true" ? "Fridges" : "",
-                            getFormattedValue("H5zk9T4UZgr") === "true" ? "Microscopes" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                            getFormattedValue("K2Wj7GjneQq") === 'true' ? "Analyzers" : "",
+                            getFormattedValue("RzTeaeV0dKS") === 'true' ? "Centrifuge" : "",
+                            getFormattedValue("tlh2pkI5qro") === 'true' ? "Fridges" : "",
+                            getFormattedValue("H5zk9T4UZgr") === 'true' ? "Microscopes" : "",
+                          ].filter(Boolean).join(", ");
 
                           // Aggregate radiology equipment
                           const radiologyEquipment = [
-                            getFormattedValue("nh6jg8mhDpC") === "true" ? "CT Scanner" : "",
-                            getFormattedValue("BDdXSCIVk5J") === "true" ? "MRI" : "",
-                            getFormattedValue("SuvRvDmUtN6") === "true" ? "PACS Systems" : "",
-                            getFormattedValue("OR7j7sVr19a") === "true" ? "X-Ray" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                            getFormattedValue("nh6jg8mhDpC") === 'true' ? "CT Scanner" : "",
+                            getFormattedValue("BDdXSCIVk5J") === 'true' ? "MRI" : "",
+                            getFormattedValue("SuvRvDmUtN6") === 'true' ? "PACS Systems" : "",
+                            getFormattedValue("OR7j7sVr19a") === 'true' ? "X-Ray" : "",
+                          ].filter(Boolean).join(", ");
 
                           // Aggregate pharmacy equipment
                           const pharmacyEquipment = [
-                            getFormattedValue("bDw85eij2QA") === "true"
-                              ? "Dispensing Counters"
-                              : "",
-                            getFormattedValue("VCWdWq5cnqo") === "true" ? "Inventory Software" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(", ");
+                            getFormattedValue("bDw85eij2QA") === 'true' ? "Dispensing Counters" : "",
+                            getFormattedValue("VCWdWq5cnqo") === 'true' ? "Inventory Software" : "",
+                          ].filter(Boolean).join(", ");
 
                           return (
-                            <tr
+                            <tr 
                               key={event.event || index}
                               onClick={() => handleEquipmentRowClick(event)}
-                              style={{ cursor: "pointer" }}
+                              style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
                               <td>{emergencyEquipment || "None"}</td>
@@ -2567,6 +2563,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                               <td>{radiologyEquipment || "None"}</td>
                               <td>{pharmacyEquipment || "None"}</td>
                               <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
+
                             </tr>
                           );
                         })}
@@ -2578,23 +2575,23 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
-      case "inspectionSchedule":
+      case 'inspectionSchedule':
         return (
           <div className="tab-content">
             <div className="inspection-schedule-details">
               <h2>
-                Pre-Inspection
-                <button
-                  className="add-icon"
+                Pre-Inspection 
+                <button 
+                  className="add-icon" 
                   onClick={handleAddInspection}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
@@ -2625,15 +2622,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         {inspectionEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
                           const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(
-                              (dv) => dv.dataElement === dataElementId
-                            );
-                            return dataValue ? dataValue.value : "None";
+                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
+                            return dataValue ? dataValue.value : 'None';
                           };
 
                           // Helper function to format date
                           const formatDate = (dateString) => {
-                            if (!dateString) return "None";
+                            if (!dateString) return 'None';
                             try {
                               return new Date(dateString).toLocaleDateString();
                             } catch {
@@ -2643,26 +2638,20 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
                           // Helper function to format boolean values
                           const formatBoolean = (value) => {
-                            if (value === "true") return "Yes";
-                            if (value === "false") return "No";
-                            return "None";
+                            if (value === 'true') return 'Yes';
+                            if (value === 'false') return 'No';
+                            return 'None';
                           };
 
                           // Aggregate policy compliance
                           const patientPolicies = [
                             getFormattedValue("pCxcolinfQ0"), // hasPoliciesForPatientAssessment
                             getFormattedValue("D6yET9Rm3Ql"), // hasPoliciesForPatientReferral
-                            getFormattedValue("qxWs7aK3qGZ"), // hasPoliciesForPatientConsent
+                            getFormattedValue("qxWs7aK3qGZ")  // hasPoliciesForPatientConsent
                           ];
-                          const policiesCompliant = patientPolicies.filter(
-                            (p) => p === "true"
-                          ).length;
-                          const policiesStatus =
-                            policiesCompliant === 3
-                              ? "All Compliant"
-                              : policiesCompliant > 0
-                              ? `${policiesCompliant}/3 Compliant`
-                              : "Not Compliant";
+                          const policiesCompliant = patientPolicies.filter(p => p === 'true').length;
+                          const policiesStatus = policiesCompliant === 3 ? 'All Compliant' : 
+                                               policiesCompliant > 0 ? `${policiesCompliant}/3 Compliant` : 'Not Compliant';
 
                           // Aggregate facility environment
                           const facilityChecks = [
@@ -2670,23 +2659,17 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             getFormattedValue("uiwrRhfPUX9"), // isFencedAndSecure
                             getFormattedValue("bWVuvn0rN0W"), // hasAdequateParking
                             getFormattedValue("mE0keb9FteW"), // isCleanAndNeat
-                            getFormattedValue("K3me4A3CyVO"), // hasAdequateLighting
+                            getFormattedValue("K3me4A3CyVO")  // hasAdequateLighting
                           ];
-                          const facilityCompliant = facilityChecks.filter(
-                            (f) => f === "true"
-                          ).length;
-                          const facilityStatus =
-                            facilityCompliant >= 4
-                              ? "Compliant"
-                              : facilityCompliant >= 2
-                              ? "Partial"
-                              : "Non-Compliant";
+                          const facilityCompliant = facilityChecks.filter(f => f === 'true').length;
+                          const facilityStatus = facilityCompliant >= 4 ? 'Compliant' : 
+                                               facilityCompliant >= 2 ? 'Partial' : 'Non-Compliant';
 
-                          return (
-                            <tr
+                                                  return (
+                            <tr 
                               key={event.event || index}
                               onClick={() => handleInspectionRowClick(event)}
-                              style={{ cursor: "pointer" }}
+                              style={{ cursor: 'pointer' }}
                               className="hover-row"
                             >
                               <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
@@ -2707,7 +2690,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
-      case "statutoryCompliance":
+      case 'statutoryCompliance':
         return (
           <div className="tab-content">
             <div className="statutory-compliance-details">
@@ -2717,13 +2700,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   className="add-icon"
                   onClick={handleAddStatutoryCompliance}
                   style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "28px",
-                    color: "#28a745",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    padding: "0 5px",
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '28px',
+                    color: '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: '0 5px'
                   }}
                 >
                   +
@@ -2736,14 +2719,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                   <p>No statutory compliance records found.</p>
                 </div>
               ) : (
-                statutoryComplianceMetadata &&
-                statutoryComplianceMetadata.programStageSections && (
+                statutoryComplianceMetadata && statutoryComplianceMetadata.programStageSections && (
                   <div className="table-responsive">
                     <table className="table table-hover">
                       <thead>
                         <tr>
-                          {statutoryComplianceMetadata.programStageSections.flatMap((section) =>
-                            section.dataElements.map((de) => (
+                          {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                            section.dataElements.map(de => (
                               <th key={de.id}>{de.displayFormName}</th>
                             ))
                           )}
@@ -2753,26 +2735,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                         {statutoryComplianceEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
                           return (
-                            <tr
-                              key={event.event || index}
-                              className="hover-row"
-                              style={{ cursor: "pointer" }}
-                              onClick={() => handleStatutoryComplianceRowClick(event)}
-                            >
-                              {statutoryComplianceMetadata.programStageSections.flatMap((section) =>
-                                section.dataElements.map((de) => {
-                                  const value = dataValues.find(
-                                    (dv) => dv.dataElement === de.id
-                                  )?.value;
-                                  if (de.valueType === "FILE_RESOURCE") {
-                                    return <td key={de.id}>{value ? "Submitted" : "None"}</td>;
+                            <tr key={event.event || index} className="hover-row" style={{ cursor: 'pointer' }} onClick={() => handleStatutoryComplianceRowClick(event)}>
+                              {statutoryComplianceMetadata.programStageSections.flatMap(section =>
+                                section.dataElements.map(de => {
+                                  const value = dataValues.find(dv => dv.dataElement === de.id)?.value;
+                                  if (de.valueType === 'FILE_RESOURCE') {
+                                    return <td key={de.id}>{value ? 'Submitted' : 'None'}</td>;
                                   }
-                                  if (de.valueType === "BOOLEAN" || de.valueType === "TRUE_ONLY") {
-                                    if (value === "true") return <td key={de.id}>Yes</td>;
-                                    if (value === "false") return <td key={de.id}>No</td>;
+                                  if (de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
+                                    if (value === 'true') return <td key={de.id}>Yes</td>;
+                                    if (value === 'false') return <td key={de.id}>No</td>;
                                     return <td key={de.id}>None</td>;
                                   }
-                                  return <td key={de.id}>{value || "None"}</td>;
+                                  return <td key={de.id}>{value || 'None'}</td>;
                                 })
                               )}
                             </tr>
@@ -2793,21 +2768,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Helper to determine if a tab should be disabled
   const isTabDisabled = (tabKey) => {
-    const restrictedTabs = [
-      "employeeRegistration",
-      "servicesOffered",
-      "statutoryCompliance",
-      "equipmentMachinery",
-    ];
-
+    const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    
     // Check if permission to establish is granted
     const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
-
+    
     // If permission is granted, tabs 3-6 should not be disabled
     if (hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
       return false;
     }
-
+    
     // Otherwise, apply the original logic
     if (restrictedTabs.includes(tabKey) && !isApplicationSubmitted) return true;
     return false;
@@ -2817,15 +2787,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   const calculateProgress = () => {
     const totalSteps = 7;
     let completedSteps = 0;
-
+    
     if (completeApplicationStatus) completedSteps++;
     if (tabValidationStates.facilityOwnership) completedSteps++;
     if (tabValidationStates.employeeRegistration) completedSteps++;
     if (tabValidationStates.servicesOffered) completedSteps++;
     if (tabValidationStates.statutoryCompliance) completedSteps++;
     if (tabValidationStates.equipmentMachinery) completedSteps++;
-    if (hasTabData("inspectionSchedule")) completedSteps++;
-
+    if (hasTabData('inspectionSchedule')) completedSteps++;
+    
     return Math.round((completedSteps / totalSteps) * 100);
   };
 
@@ -2846,15 +2816,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     if (!hasFacilityOwnershipDataValue(DATA_ELEMENTS.COMPLIED_FOR_LICENSING, "true")) {
       return "Wait for licensing compliance review";
     }
-    if (
-      !tabValidationStates.employeeRegistration ||
-      !tabValidationStates.servicesOffered ||
-      !tabValidationStates.statutoryCompliance ||
-      !tabValidationStates.equipmentMachinery
-    ) {
+    if (!tabValidationStates.employeeRegistration || !tabValidationStates.servicesOffered || 
+        !tabValidationStates.statutoryCompliance || !tabValidationStates.equipmentMachinery) {
       return "Complete remaining registration steps (3-6)";
     }
-    if (!hasTabData("inspectionSchedule")) {
+    if (!hasTabData('inspectionSchedule')) {
       return "Complete self-inspection";
     }
     return "Select inspection date";
@@ -2863,16 +2829,16 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Add a special effect to check for trackedEntityInstanceId in localStorage
   // This is a workaround for when the parent component's prop doesn't update
   // Note: localTrackedEntityInstanceId removed as it's no longer needed
-
+  
   useEffect(() => {
     // Check if we have a trackedEntityInstanceId in localStorage
-    const tempId = localStorage.getItem("tempTrackedEntityInstanceId");
+    const tempId = localStorage.getItem('tempTrackedEntityInstanceId');
     if (tempId && !trackedEntityInstanceId) {
       console.log("🔍 Using trackedEntityInstanceId from localStorage:", tempId);
       // setLocalTrackedEntityInstanceId removed
-
+      
       // Also fetch facility ownership data with this ID
-      const userOrgUnitId = localStorage.getItem("userOrgUnitId");
+      const userOrgUnitId = localStorage.getItem('userOrgUnitId');
       if (userOrgUnitId) {
         console.log("🔄 Fetching facility ownership data with localStorage ID");
         fetchFacilityOwnershipData(tempId, userOrgUnitId);
@@ -2882,12 +2848,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       // setLocalTrackedEntityInstanceId removed
     }
   }, [trackedEntityInstanceId]);
-
+  
   // Check localStorage for completeApplicationStatus on component mount and when tab changes
   useEffect(() => {
     const checkCompleteApplicationStatus = () => {
       try {
-        const status = localStorage.getItem("completeApplicationFormStatus");
+        const status = localStorage.getItem('completeApplicationFormStatus');
         if (status) {
           setCompleteApplicationStatus(JSON.parse(status));
         }
@@ -2895,17 +2861,18 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         console.error("Error reading form status from localStorage:", error);
       }
     };
-
+    
     checkCompleteApplicationStatus();
-
+    
     // Set up an interval to check for status changes
     const intervalId = setInterval(checkCompleteApplicationStatus, 2000);
-
+    
     return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
-    if (activeTab === "facilityOwnership" && events.length === 0) {
+    if (activeTab === 'facilityOwnership' && events.length === 0) {
+      
     }
   }, [activeTab, events.length]);
 
@@ -2913,8 +2880,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   useEffect(() => {
     const autoRetryFacilityOwnershipData = () => {
       // Only attempt retry if we're on the facility ownership tab and have no events
-      if (activeTab === "facilityOwnership" && events.length === 0 && !isLoading) {
-        console.log("🔄 Automatically retrying facility ownership data fetch");
+      if (activeTab === 'facilityOwnership' && events.length === 0 && !isLoading) {
+        console.log('🔄 Automatically retrying facility ownership data fetch');
         fetchFacilityOwnershipData();
       }
     };
@@ -2927,42 +2894,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Log events.length for debugging
   useEffect(() => {
-    console.log("🔍 FACILITY OWNERSHIP EVENTS CHECK");
-    console.log("- events.length:", events.length);
-    console.log("- Should blink:", events.length === 0);
+    console.log('🔍 FACILITY OWNERSHIP EVENTS CHECK');
+    console.log('- events.length:', events.length);
+    console.log('- Should blink:', events.length === 0);
   }, [events.length]);
 
   // Log events details whenever events change
   useEffect(() => {
-    console.group("🏥 FACILITY OWNERSHIP EVENTS DETAILS");
-    console.log("Current Events:", events);
-    console.log("Events Length:", events.length);
-
+    console.group('🏥 FACILITY OWNERSHIP EVENTS DETAILS');
+    console.log('Current Events:', events);
+    console.log('Events Length:', events.length);
+    
     // Additional detailed logging
     if (events.length > 0) {
-      console.log("First Event Details:", events[0]);
-      console.log(
-        "Event IDs:",
-        events.map((event) => event.event)
-      );
-      console.log(
-        "Event Program Stages:",
-        events.map((event) => event.programStage)
-      );
+      console.log('First Event Details:', events[0]);
+      console.log('Event IDs:', events.map(event => event.event));
+      console.log('Event Program Stages:', events.map(event => event.programStage));
     }
-
+    
     console.groupEnd();
   }, [events]);
 
   useEffect(() => {
-    console.log("[Debug Information]", {
-      "trackedEntityInstanceId (prop)": trackedEntityInstanceId || "null",
-      // 'localTrackedEntityInstanceId removed
+    console.log('[Debug Information]', {
+      'trackedEntityInstanceId (prop)': trackedEntityInstanceId || 'null',
+              // 'localTrackedEntityInstanceId removed
       // 'effectiveTrackedEntityInstanceId': effectiveTrackedEntityInstanceId || 'null', // Removed to fix ReferenceError
-      "events.length": events.length,
-      isLoading: isLoading,
-      showReviewDialog: showReviewDialog,
-      "localStorage TEI": localStorage.getItem("tempTrackedEntityInstanceId") || "null",
+      'events.length': events.length,
+      'isLoading': isLoading,
+      'showReviewDialog': showReviewDialog,
+      'localStorage TEI': localStorage.getItem('tempTrackedEntityInstanceId') || 'null',
     });
   }, [trackedEntityInstanceId, events.length, isLoading, showReviewDialog]); // Removed localTrackedEntityInstanceId and effectiveTrackedEntityInstanceId from dependencies
 
@@ -2971,15 +2932,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     if (events.length > 0) {
       console.log("🔄 === FORCING ALL PROGRAM STAGES RE-VALIDATION ===");
       console.log("- Total events loaded:", events.length);
-
+      
       // Filter events by program stage
-      const facilityOwnershipEvents = events.filter((e) => e.programStage === "MuJubgTzJrY");
-      const employeeEvents = events.filter((e) => e.programStage === "xjhA4eEHyhw");
-      const serviceEvents = events.filter((e) => e.programStage === "uL262bA2IP3");
-      const statutoryComplianceEvents = events.filter((e) => e.programStage === "vyv7zncjCmV");
-      const equipmentEvents = events.filter((e) => e.programStage === "chlbXjBiIup");
-      const inspectionEvents = events.filter((e) => e.programStage === "Eupjm3J0dt2");
-
+      const facilityOwnershipEvents = events.filter(e => e.programStage === 'MuJubgTzJrY');
+      const employeeEvents = events.filter(e => e.programStage === 'xjhA4eEHyhw');
+      const serviceEvents = events.filter(e => e.programStage === 'uL262bA2IP3');
+      const statutoryComplianceEvents = events.filter(e => e.programStage === 'vyv7zncjCmV');
+      const equipmentEvents = events.filter(e => e.programStage === 'chlbXjBiIup');
+      const inspectionEvents = events.filter(e => e.programStage === 'Eupjm3J0dt2');
+      
       console.log("- Events by program stage:");
       console.log("  • Facility Ownership:", facilityOwnershipEvents.length);
       console.log("  • Employee Registration:", employeeEvents.length);
@@ -2987,7 +2948,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Statutory Compliance:", statutoryComplianceEvents.length);
       console.log("  • Equipment & Machinery:", equipmentEvents.length);
       console.log("  • Pre-Inspection:", inspectionEvents.length);
-
+      
       // Validate all program stages
       const facilityOwnershipComplete = validateFacilityOwnership(facilityOwnershipEvents);
       const employeeRegistrationComplete = validateEmployeeRegistration(employeeEvents);
@@ -2995,7 +2956,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       const statutoryComplianceComplete = validateStatutoryCompliance(statutoryComplianceEvents);
       const equipmentMachineryComplete = validateEquipmentMachinery(equipmentEvents);
       const inspectionScheduleComplete = inspectionEvents.length > 0;
-
+      
       console.log("- Validation results:");
       console.log("  • Facility Ownership:", facilityOwnershipComplete);
       console.log("  • Employee Registration:", employeeRegistrationComplete);
@@ -3003,7 +2964,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       console.log("  • Statutory Compliance:", statutoryComplianceComplete);
       console.log("  • Equipment & Machinery:", equipmentMachineryComplete);
       console.log("  • Pre-Inspection:", inspectionScheduleComplete);
-
+      
       // Update all validation states
       setTabValidationStates({
         facilityOwnership: facilityOwnershipComplete,
@@ -3011,11 +2972,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         servicesOffered: servicesOfferedComplete,
         statutoryCompliance: statutoryComplianceComplete,
         equipmentMachinery: equipmentMachineryComplete,
-        inspectionSchedule: inspectionScheduleComplete,
+        inspectionSchedule: inspectionScheduleComplete
       });
-
+      
       // Store facility ownership status in localStorage for Header component access
-      localStorage.setItem("facilityOwnershipComplete", JSON.stringify(facilityOwnershipComplete));
+      localStorage.setItem('facilityOwnershipComplete', JSON.stringify(facilityOwnershipComplete));
     }
   }, [events]);
 
@@ -3025,48 +2986,45 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   return (
     <div className="registration-details-container">
-      <Box sx={{ width: "100%" }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: "bold" }}>
+      <Box sx={{ width: '100%' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 0, mr: 2, fontWeight: 'bold' }}>
               Registration Details
             </Typography>
             {(() => {
               // Find the status configuration based on current status text
-              const currentStatusConfig =
-                Object.values(STATUS_CONFIG).find((config) => config.text === registrationStatus) ||
-                STATUS_CONFIG.COMPLETE_ADMIN_INFO;
-
+              const currentStatusConfig = Object.values(STATUS_CONFIG).find(
+                config => config.text === registrationStatus
+              ) || STATUS_CONFIG.COMPLETE_ADMIN_INFO;
+              
               return (
-                <span
-                  className="status-indicator"
-                  style={{
+                <span 
+                  className="status-indicator" 
+                  style={{ 
                     backgroundColor: currentStatusConfig.bgColor,
                     color: currentStatusConfig.color,
                     border: `2px solid ${currentStatusConfig.borderColor}`,
-                    padding: "10px 20px",
-                    borderRadius: "25px",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "inline-block",
-                    marginLeft: "20px",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    transition: "all 0.3s ease",
+                    padding: '10px 20px', 
+                    borderRadius: '25px', 
+              fontSize: '14px', 
+              fontWeight: 'bold',
+              display: 'inline-block',
+                    marginLeft: '20px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    transition: 'all 0.3s ease'
                   }}
                 >
                   📋 Status: {registrationStatus}
-                </span>
+            </span>
               );
             })()}
-
+            
             {/* Date Range Picker - Only show when Pre-Inspection has events */}
             {inspectionEvents.length > 0 && (
               <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 3 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: "bold", color: "text.secondary", whiteSpace: "nowrap" }}
-                  >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 3 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', whiteSpace: 'nowrap' }}>
                     Preferred Facility Inspection Date:
                   </Typography>
                   <DateRangePicker
@@ -3075,173 +3033,203 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                     disabled={!datePickerEnabled}
                     slotProps={{
                       textField: {
-                        size: "small",
-                        sx: {
-                          width: "280px",
-                          "& .MuiInputBase-input": {
-                            fontSize: "12px",
-                            padding: "8px 12px",
-                          },
-                        },
-                      },
+                        size: 'small',
+                        sx: { 
+                          width: '280px',
+                          '& .MuiInputBase-input': {
+                            fontSize: '12px',
+                            padding: '8px 12px'
+                          }
+                        }
+                      }
                     }}
                   />
                 </Box>
               </LocalizationProvider>
             )}
           </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, position: "relative" }}>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
             {/* Progress indicator */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: "bold", color: "text.secondary" }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
                 Progress: {calculateProgress()}%
               </Typography>
-              <Box
-                sx={{
-                  width: 100,
-                  height: 8,
-                  backgroundColor: "#e0e0e0",
-                  borderRadius: 4,
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: `${calculateProgress()}%`,
-                    height: "100%",
-                    backgroundColor: "#28a745",
-                    transition: "width 0.5s ease",
-                  }}
-                />
+              <Box sx={{ 
+                width: 100, 
+                height: 8, 
+                backgroundColor: '#e0e0e0', 
+                borderRadius: 4,
+                overflow: 'hidden'
+              }}>
+                <Box sx={{ 
+                  width: `${calculateProgress()}%`, 
+                  height: '100%', 
+                  backgroundColor: '#28a745',
+                  transition: 'width 0.5s ease'
+                }} />
               </Box>
             </Box>
           </Box>
         </Box>
-
+        
         {/* Next Action Card */}
-        <Box
-          sx={{
-            mb: 3,
-            p: 2,
-            backgroundColor: "#f8f9fa",
-            borderRadius: 2,
-            border: "1px solid #dee2e6",
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1, color: "#495057" }}>
+        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #dee2e6' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
             🎯 Next Action Required:
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6c757d" }}>
+          <Typography variant="body2" sx={{ color: '#6c757d' }}>
             {getNextAction()}
           </Typography>
         </Box>
+        
 
-        <StepContainer
-          style={{
-            justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true")
-              ? "space-between"
-              : "flex-start",
-          }}
-        >
+        {/* Control which tabs appear */}
+        {/* <StepContainer style={{ 
+                justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
+              }}>
           {(() => {
             const allSteps = [
-              { number: 1, title: "Admin User & Facility Details", key: "completeApplication" },
-              { number: 2, title: "Facility Ownership", key: "facilityOwnership" },
-              { number: 3, title: "Employee Registration", key: "employeeRegistration" },
-              { number: 4, title: "Services Offered", key: "servicesOffered" },
-              { number: 5, title: "Statutory Compliance", key: "statutoryCompliance" },
-              { number: 6, title: "Equipment & Machinery", key: "equipmentMachinery" },
-              { number: 7, title: "Pre-Inspection", key: "inspectionSchedule" },
+              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
+              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
             ];
-
+            
             // Check if "Passed MOH Screening" is true (status shows permission message)
             const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
-
+            
             // Check if tabs 3-6 are all green (validated)
-            const tabs3To6Validated =
-              tabValidationStates.employeeRegistration &&
-              tabValidationStates.servicesOffered &&
-              tabValidationStates.statutoryCompliance &&
-              tabValidationStates.equipmentMachinery;
-
+            const tabs3To6Validated = tabValidationStates.employeeRegistration && 
+                                     tabValidationStates.servicesOffered && 
+                                     tabValidationStates.statutoryCompliance && 
+                                     tabValidationStates.equipmentMachinery;
+            
             // Filter steps based on permission
-            const visibleSteps = hasPermissionToEstablish ? allSteps : allSteps.slice(0, 2); // Only show first 2 steps if no permission
-
-            return visibleSteps.map((step, index) => {
+            const visibleSteps = hasPermissionToEstablish 
+              ? allSteps 
+              : allSteps.slice(0, 2); // Only show first 2 steps if no permission
+            
+                        return visibleSteps.map((step, index) => {
               // Determine if the tab should be disabled
-              const isDisabled = !completeApplicationStatus && step.key !== "completeApplication";
-
+              const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+              
               // Center the Facility Ownership tab when only 2 tabs are visible
-              const shouldCenter = !hasPermissionToEstablish && step.key === "facilityOwnership";
-
+              const shouldCenter = !hasPermissionToEstablish && step.key === 'facilityOwnership';
+              
               // Make tabs 3-6 active and clickable when all tabs (3-7) are visible
               const isTab3To6 = step.number >= 3 && step.number <= 6;
               const shouldBeActive = hasPermissionToEstablish && isTab3To6;
               const shouldBeClickable = hasPermissionToEstablish && isTab3To6;
-
+              
               // Enable Pre-Inspection tab when tabs 3-6 are all validated
-              const isSituationalAnalysisEnabled =
-                step.key === "inspectionSchedule" && tabs3To6Validated;
-
+              const isSituationalAnalysisEnabled = step.key === 'inspectionSchedule' && tabs3To6Validated;
+              
               // Override disabled state for tabs 3-6 when permission is granted, and Pre-Inspection when tabs 3-6 are validated
-              const finalDisabled = shouldBeClickable
-                ? false
-                : isDisabled ||
-                  (!isSituationalAnalysisEnabled && step.key === "inspectionSchedule") ||
-                  isTabDisabled(step.key);
-
+              const finalDisabled = shouldBeClickable ? false : (isDisabled || (!isSituationalAnalysisEnabled && step.key === 'inspectionSchedule') || isTabDisabled(step.key));
+              
               return (
                 <React.Fragment key={step.number}>
                   <Tooltip
                     title={
-                      step.key === "inspectionSchedule"
-                        ? tabs3To6Validated
+                      step.key === 'inspectionSchedule'
+                        ? tabs3To6Validated 
                           ? "Click to access Pre-Inspection"
                           : "Complete all previous steps (Employee Registration, Services Offered, Statutory Compliance, and Equipment & Machinery) to access Pre-Inspection"
                         : shouldBeClickable
-                        ? `Click to access ${step.title}`
-                        : isTabDisabled(step.key)
-                        ? "Submit Application For review under Facility Ownership"
-                        : isDisabled
-                        ? "Complete the Application details first"
-                        : ""
+                          ? `Click to access ${step.title}`
+                          : isTabDisabled(step.key)
+                            ? "Submit Application For review under Facility Ownership"
+                            : (isDisabled ? "Complete the Application details first" : "")
                     }
                     arrow
                     placement="top"
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginLeft: shouldCenter ? "25%" : "0",
-                        marginRight: shouldCenter ? "25%" : "0",
-                      }}
-                    >
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      marginLeft: shouldCenter ? '25%' : '0',
+                      marginRight: shouldCenter ? '25%' : '0'
+                    }}>
                       <Step
                         active={activeTab === step.key || shouldBeActive}
                         hasdata={hasTabData(step.key)}
                         disabled={finalDisabled}
                         onClick={() => {
-                          if (
-                            shouldBeClickable ||
-                            isSituationalAnalysisEnabled ||
-                            (step.key !== "inspectionSchedule" && !finalDisabled)
-                          ) {
+                          if (shouldBeClickable || isSituationalAnalysisEnabled || (step.key !== 'inspectionSchedule' && !finalDisabled)) {
                             handleTabClick(step.key);
                           }
                         }}
                       >
+                      <span className="step-number">{step.number}</span>
+                      <Typography
+                        variant="subtitle1"
+                        className={`step-title${step.title === 'Pre-Inspection' && !(isDisabled || step.key === 'inspectionSchedule') ? ' blink-orange' : ''}`}
+                      >
+                        {step.title}
+                      </Typography>
+                      <span
+                        className="completion-indicator"
+                        style={{
+                          color: hasTabData(step.key)
+                            ? theme.palette.success.main
+                            : theme.palette.error.main
+                        }}
+                      >
+                        {hasTabData(step.key) ? '✓' : '✗'}
+                      </span>
+                    </Step>
+                  </div>
+                </Tooltip>
+                {index < (visibleSteps.length - 1) && <StyledDivider disabled={isDisabled} />}
+              </React.Fragment>
+            );
+          });
+        })()}
+        </StepContainer> */}
+
+        <StepContainer style={{ justifyContent: 'space-between' }}>
+          {(() => {
+            const allSteps = [
+              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
+              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
+            ];
+
+            // The filtering logic has been REMOVED.
+            // We now map directly over `allSteps` to ensure all 7 are always rendered.
+
+            return allSteps.map((step, index) => {
+              // Logic to disable tabs remains, but it no longer hides them.
+              // const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+              // const isDisabled = (step.number >= 3 && !hasTabData('facilityOwnership')) ||
+              // (!completeApplicationStatus && step.key !== 'completeApplication');
+              const isDisabled = false; // Force all tabs to be clickable
+
+              return (
+                <React.Fragment key={step.number}>
+                  <Tooltip
+                    title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
+                    arrow
+                    placement="top"
+                  >
+                    {/* The div wrapper is important for the Tooltip when the child is disabled */}
+                    <div>
+                      <Step
+                        active={activeTab === step.key}
+                        hasdata={hasTabData(step.key)}
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && handleTabClick(step.key)}
+                      >
                         <span className="step-number">{step.number}</span>
-                        <Typography
-                          variant="subtitle1"
-                          className={`step-title${
-                            step.title === "Pre-Inspection" &&
-                            !(isDisabled || step.key === "inspectionSchedule")
-                              ? " blink-orange"
-                              : ""
-                          }`}
-                        >
+                        <Typography variant="subtitle1" className="step-title">
                           {step.title}
                         </Typography>
                         <span
@@ -3249,15 +3237,15 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           style={{
                             color: hasTabData(step.key)
                               ? theme.palette.success.main
-                              : theme.palette.error.main,
+                              : theme.palette.error.main
                           }}
                         >
-                          {hasTabData(step.key) ? "✓" : "✗"}
+                          {hasTabData(step.key) ? '✓' : '✗'}
                         </span>
                       </Step>
                     </div>
                   </Tooltip>
-                  {index < visibleSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
+                  {index < allSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
                 </React.Fragment>
               );
             });
@@ -3290,16 +3278,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <EditFacilityOwnershipDialog
           open={showEditDialog}
           onClose={() => {
-            console.log(
-              "FacilityOwnershipDialog onClose called - reloading facility ownership data"
-            );
+            console.log("FacilityOwnershipDialog onClose called - reloading facility ownership data");
             setShowEditDialog(false);
             fetchFacilityOwnershipData(); // Always reload data when dialog closes
           }}
           onUpdateSuccess={() => {
-            console.log(
-              "FacilityOwnershipDialog onUpdateSuccess called - reloading facility ownership data"
-            );
+            console.log("FacilityOwnershipDialog onUpdateSuccess called - reloading facility ownership data");
             setShowEditDialog(false);
             fetchFacilityOwnershipData();
           }}
@@ -3333,9 +3317,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             fetchEmployeeData(); // Always reload data when dialog closes
           }}
           onSuccess={() => {
-            console.log(
-              "EditEmployeeRegistrationDialog onSuccess called - reloading employee data"
-            );
+            console.log("EditEmployeeRegistrationDialog onSuccess called - reloading employee data");
             setShowEditEmployeeDialog(false);
             fetchEmployeeData();
           }}
@@ -3413,9 +3395,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddStatutoryComplianceDialog
           open={openStatutoryComplianceDialog}
           onClose={() => {
-            console.log(
-              "AddStatutoryComplianceDialog onClose called - reloading statutory compliance data"
-            );
+            console.log("AddStatutoryComplianceDialog onClose called - reloading statutory compliance data");
             handleCloseStatutoryComplianceDialog();
             fetchStatutoryComplianceData(); // Always reload data when dialog closes
           }}
@@ -3429,16 +3409,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         <AddStatutoryComplianceDialog
           open={showEditStatutoryComplianceDialog}
           onClose={() => {
-            console.log(
-              "EditStatutoryComplianceDialog onClose called - reloading statutory compliance data"
-            );
+            console.log("EditStatutoryComplianceDialog onClose called - reloading statutory compliance data");
             setShowEditStatutoryComplianceDialog(false);
             fetchStatutoryComplianceData(); // Always reload data when dialog closes
           }}
           onSuccess={() => {
-            console.log(
-              "EditStatutoryComplianceDialog onSuccess called - reloading statutory compliance data"
-            );
+            console.log("EditStatutoryComplianceDialog onSuccess called - reloading statutory compliance data");
             setShowEditStatutoryComplianceDialog(false);
             fetchStatutoryComplianceData();
           }}

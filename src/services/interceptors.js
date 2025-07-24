@@ -95,10 +95,10 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
                 isRefreshing = true;
 
                 try {
-                    const refreshToken = StorageService.get(STORAGE_KEYS.REFRESH_TOKEN);
+                    const refreshToken = await StorageService.get(STORAGE_KEYS.REFRESH_TOKEN);
                     const { token } = await AuthService.refreshToken(refreshToken);
 
-                    setAuthToken(token);
+                    await setAuthToken(token);
                     processQueue(null, token);
                     return httpService(originalRequest);
                 } catch (refreshError) {
@@ -130,6 +130,10 @@ export const setupInterceptors = (instance, temporaryHeaders) => {
                 const {message} = JSON.parse(error.request.responseText);
                 if(message)
                     error.message = message;
+            }
+            else if(error.response.data && error.response.data.error) {
+                window.console.log("got message 1", error.response);
+                error.message = error.response.data.error;
             }
 
             return Promise.reject(error);

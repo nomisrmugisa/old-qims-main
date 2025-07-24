@@ -50,3 +50,12 @@ export const toggle = (val, selected, onChange) => {
         onChange([...selected, val]);
     }
 };
+
+export const extractDataElementValues = (events, dataElementId) => {
+    return events.map(event => {
+        const dataValue = event.dataValues.find(
+            dv => dv.dataElement === dataElementId
+        );
+        return dataValue ? dataValue.value : null;
+    });
+};
