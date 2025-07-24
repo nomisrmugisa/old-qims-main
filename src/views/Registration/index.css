@@ -1,12 +1,21 @@
 /* src/styles/Registration.css */
+/* Default padding for small screens (mobile-first) */
 .registration-container {
-    min-height: 100vh;
-    padding: 0;
+    /*padding-top: 50px;*/
+    /*padding-bottom: 50px;*/
+}
+
+/* On large screens (992px and up), change the padding */
+@media (min-width: 992px) {
+    /*.registration-container {*/
+    /*    padding-top: 100px;*/
+    /*    padding-bottom: 100px;*/
+    /*}*/
 }
 
 .form-column {
     padding: 2rem;
-    background-color: #f8f9fa;
+    /*background-color: #f8f9fa;*/
 }
 
 .registration-card {
