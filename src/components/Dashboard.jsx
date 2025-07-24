@@ -911,7 +911,7 @@ const Dashboard = ({ activeSection, setActiveSection, trackedEntityInstanceId })
                         className={activeSection === 'registration' ? 'active' : ''}
                     >
                         <Building size={18} />
-                        Registration & Permission to Establish
+                        Registration & Permission To Practice
                     </button>
 
                     <button
