@@ -76,7 +76,7 @@ export const DHIS2_PROGRAMS = {
     },
     FACILITY_USER_ENROLLMENT_MAP: {
         ID: "b7wdiBqcml5",
-        STAGE: "programStage",
+        STAGE: "hczvoscj8Ce",
         DATA_ELEMENTS: {
             USER_ID: {
                 name: "userID",

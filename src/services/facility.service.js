@@ -145,7 +145,7 @@ const FacilityService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
-    approveEnrolmentRequest: async (data) => {
+    approveEnrolmentMap: async (data) => {
         const method = "enrolmentRequest";
         window.console.log(method, data);
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
@@ -155,6 +155,73 @@ const FacilityService = {
             let now = new Date();
 
             const programData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_MAP;
+            return await FacilityService.updateUserTrackerEvent({
+                events:[
+                    {
+                        //status : "COMPLETED",
+                        program : programData.ID,
+                        programStage : programData.STAGE,
+                        orgUnit: `${data.facilityId}`,
+                        occurredAt: now.toISOString(),
+                        dataValues:[
+                            { dataElement : programData.DATA_ELEMENTS.USER_ID.id, value: data.userId}, //userId
+                            { dataElement:programData.DATA_ELEMENTS.FACILITY_ID.id, value:data.facilityId}, //facilytId
+                            { dataElement : programData.DATA_ELEMENTS.STATUS.id, value:"active"}, //status
+                            { dataElement: programData.DATA_ELEMENTS.START_DATE.id, value:now.toISOString()}, //startDate
+                            { dataElement: programData.DATA_ELEMENTS.END_DATE.id, value:null}, //endDate
+                            { dataElement:programData.DATA_ELEMENTS.TYPE.id, value:data.type}, //type
+                            { dataElement:programData.DATA_ELEMENTS.ROLE.id, value:data.role}, //role
+                            { dataElement:programData.DATA_ELEMENTS.CREATED_BY.id, value:userData.id}, //createdBy
+                            { dataElement:programData.DATA_ELEMENTS.UPDATED_BY.id, value:null}, //updatedBy
+                        ]
+                    }
+                ]
+            });
+            /*const response = await httpService.post(`/40/tracker?async=false`, {
+                    events:[
+                        {
+                            //status : "COMPLETED",
+                            program : programData.ID,
+                            programStage : programData.STAGE,
+                            orgUnit: `${data.facilityId}`,
+                            occurredAt: now.toISOString(),
+                            dataValues:[
+                                { dataElement : programData.DATA_ELEMENTS.USER_ID.id, value: data.userId}, //userId
+                                { dataElement:programData.DATA_ELEMENTS.FACILITY_ID.id, value:data.facilityId}, //facilytId
+                                { dataElement : programData.DATA_ELEMENTS.STATUS.id, value:"active"}, //status
+                                { dataElement: programData.DATA_ELEMENTS.START_DATE.id, value:now.toISOString()}, //startDate
+                                { dataElement: programData.DATA_ELEMENTS.END_DATE.id, value:null}, //endDate
+                                { dataElement:programData.DATA_ELEMENTS.TYPE.id, value:data.type}, //type
+                                { dataElement:programData.DATA_ELEMENTS.ROLE.id, value:data.role}, //role
+                                { dataElement:programData.DATA_ELEMENTS.CREATED_BY.id, value:userData.id}, //createdBy
+                                { dataElement:programData.DATA_ELEMENTS.UPDATED_BY.id, value:null}, //updatedBy
+                            ]
+                        }
+                    ]
+                },
+                {
+                    headers: {
+                        'Authorization': `Basic ${token}`
+                    }
+                });
+            return response;*/
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    approveEnrolmentRequest: async (data) => {
+        const method = "enrolmentRequest";
+        window.console.log(method, data);
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let userData = await StorageService.getUserData();
+            window.console.log('userData', userData);
+            let now = new Date();
+
+            const programData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST;
             return await FacilityService.updateUserTrackerEvent({
                 events:[
                     {
@@ -235,6 +302,7 @@ const FacilityService = {
         const method = "closeEnrollmentRequest";
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
+            window.console.log(`${method} data:`, data);
             let now = new Date();
             let token = await getAuthToken('Basic');
             let userData = await StorageService.getUserData();
@@ -243,11 +311,15 @@ const FacilityService = {
                 dataValues: [
                     {
                     dataElement: `${programData.DATA_ELEMENTS.STATUS.id}`,
-                    value: "approved"
+                    value: `${data.status}`
                 },
                     {
                         dataElement: `${programData.DATA_ELEMENTS.DECISION_BY.id}`,
                         value: userData.id
+                    },
+                    {
+                        dataElement: `${programData.DATA_ELEMENTS.DECISION_NOTES.id}`,
+                        value: `${data.notes}`
                     },
                     {
                         dataElement: `${programData.DATA_ELEMENTS.DECISION_AT.id}`,

@@ -24,7 +24,7 @@ import {
 import { eventBus, EVENTS } from '../../../../events';
 import {FacilityService, UserService, StorageService} from '../../../../services';
 import {DHIS2_PROGRAMS, USER_ROLES} from '../../../../services/constants';
-import {extractDataElementValues} from '../../../../utils/helpers';
+import {extractDataElementValues, findIdByName, findNameById} from '../../../../utils/helpers';
 import enrolmentApplicationData from '../../../../data/enrolmentApplicationData.json';
 
 const EnrolmentApplicationReview = () => {
@@ -46,7 +46,9 @@ const EnrolmentApplicationReview = () => {
     const [primaryRoles, setPrimaryRoles] = useState(null);
     const [locumRoles, setLocumRoles] = useState(null);
     const [selectedRole, setSelectedRole] = useState('');
+    const [selectedRoleId, setSelectedRoleId] = useState('');
     const [roleGroup, setRoleGroup] = useState('primary');
+    const [selectedUserData, setSelectedUserData] = useState(null);
 
     const getFacilityPrimaryRoles = async() => {
         try {
@@ -164,7 +166,7 @@ const EnrolmentApplicationReview = () => {
 
     const getDataElementValue = (dataElements, key) => {
         for(let i=0;i<dataElements.length;i++)
-            if(d.dataElements[i].dataElement === key)
+            if(dataElements[i].dataElement === key)
                 return dataElements[i].value;
         return "Unknown";
     };
@@ -175,7 +177,6 @@ const EnrolmentApplicationReview = () => {
         getEnrolmentListApplications();
         getFacilityPrimaryRoles();
         getFacilityLocumRoles();
-        checkUserRole(USER_ROLES.FACILITY.PRIMARY.ADMIN.ID);
         /*setTimeout(() => {
             setApplications(enrolmentApplicationData);
             setFilteredApplications(enrolmentApplicationData);
@@ -212,9 +213,28 @@ const EnrolmentApplicationReview = () => {
 
     // Handle action buttons
     const handleAction = async (app, action) => {
-        setSelectedApp(app);
-        setActionType(action);
-        setShowModal(true);
+
+        try {
+            const requestProgramData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS;
+            const selectedUserId = getDataElementValue(app.dataValues, requestProgramData.USER_ID.id);
+            let data = await UserService.findById(selectedUserId);
+            setSelectedUserData(data);
+            window.console.log('selectedUser', selectedUserData);
+            setSelectedApp(app);
+            setActionType(action);
+            setShowModal(true);
+        }
+        catch(error) {
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                title: 'Error',
+                message: error.message || 'Operation failed. Please try again.',
+                type: 'error'
+            });
+        }
+        finally {
+
+        }
+
     };
 
     // Confirm action
@@ -223,26 +243,51 @@ const EnrolmentApplicationReview = () => {
 
             try {
                 let response;
+                let successMessageDiff;
                 if(actionType === 'approve') {
-
-                    if(!selectedRole || !roleGroup)
+                    successMessageDiff = "approved";
+                    if(!selectedRole || !roleGroup || !selectedRoleId)
                         throw new Error("Please select assigned role.");
 
-                    //Update Enrollment request
-                    const requestProgramData = DHIS2_PROGRAMS.FACILITY_USER_ENROLLMENT_REQUEST.DATA_ELEMENTS;
-                    response = await FacilityService.approveEnrolmentRequest({
-                        facilityId: app.orgUnit,
-                        userId: getDataElementValue(app.dataValues, requestProgramData.USER_ID.id),
-                        role: selectedRole,
-                        type: roleGroup,
-                    });
-                    window.console.log("update enrollment request");
-                    window.console.log(response);
 
-                    //TODO: Check role and update user roles, then add assignment
+
+
+                    //Update Enrollment request
+
+
+                    let found = selectedUserData.userRoles.find(r => r.id === selectedRoleId);
+                    if(!found) {
+
+                        let user_roles = selectedUserData.userRoles;
+                        user_roles.push({id: selectedRoleId});
+
+                        await UserService.updateUser(selectedUserData.id, {
+                            userRoles: user_roles
+                        });
+                    }
+                    else {
+                        window.console.log(`user role found`, found);
+                    }
+
+                    response = await FacilityService.approveEnrolmentMap({
+                        facilityId: selectedApp.orgUnit,
+                        userId: selectedUserData.id,
+                        type: roleGroup,
+                        role: selectedRole,
+                    });
+                    window.console.log("approveEnrolmentMap", response);
+
+                    response = await FacilityService.closeEnrollmentRequest({
+                        id: selectedApp.event,
+                        status: actionType,
+                        notes: "",
+                    });
+                    window.console.log("closeEnrollmentRequest", response);
+
 
                 }
                 else if(actionType === 'reject') {
+                    successMessageDiff = "rejected";
                     response = await FacilityService.rejectEnrolmentRequest(app);
                 }
                 window.console.log(`${actionType}: response: `, response);
@@ -258,7 +303,7 @@ const EnrolmentApplicationReview = () => {
 
                     eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                         title: 'Success',
-                        message: `Successfully submitted`,
+                        message: `Successfully ${successMessageDiff} application #${selectedApp.event}`,
                         type: 'success'
                     });
                 }, 500);
@@ -515,18 +560,26 @@ const EnrolmentApplicationReview = () => {
 
                             <select
                                 className="form-select"
-                                value={selectedRole}
-                                onChange={(e) => setSelectedRole(e.target.value)}
+                                /*value={selectedRole}*/
+                                onChange={(e) => {
+                                    let res = e.target.value.split("__");
+                                    if(res && res.length === 2) {
+                                        setSelectedRole(res[1]);
+                                        setSelectedRoleId(res[0]);
+                                    }
+                                    //setSelectedRole(e.target.value);
+
+                                }}
                                 required
                             >
                                 <option value="">Select a role</option>
                                 {roleGroup === 'primary' && primaryRoles.map(role => (
-                                    <option key={role.id} value={role.id}>
+                                    <option key={role.id} value={`${role.id}__${role.name}`}>
                                         {role.name}
                                     </option>
                                 ))}
                                 {roleGroup === 'locum' && locumRoles.map(role => (
-                                    <option key={role.id} value={role.id}>
+                                    <option key={role.id} value={`${role.id}__${role.name}`}>
                                         {role.name}
                                     </option>
                                 ))}
