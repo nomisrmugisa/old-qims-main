@@ -664,7 +664,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       return;
     }
     
-          // Step 6: Check self assessment
+          // Step 6: Check Pre-Inspection
     if (!hasTabData('inspectionSchedule')) {
             console.log("📝 Setting status: Complete Pre-Inspection");
             setRegistrationStatus(STATUS_CONFIG.COMPLETE_SELF_INSPECTION.text);
@@ -697,7 +697,171 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     dateRange
   ]);
   
-  // Handle tab click with validation
+  // Handle tab click with validation and restrictions
+  // const handleTabClick = (tabKey) => {
+  //   console.log("=== TAB CLICKED ===", tabKey);
+  //   console.log("- completeApplicationStatus:", completeApplicationStatus);
+    
+  //   // If Complete Application is not complete and trying to access another tab, don't allow it
+  //   if (!completeApplicationStatus && tabKey !== 'completeApplication') {
+  //     console.log("- Tab click blocked - application not complete");
+  //     return; // Don't change tabs
+  //   }
+    
+  //   // Disable certain tabs unless application is submitted OR permission is granted
+  //   const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+  //   const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+  //   if (!isApplicationSubmitted && !hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
+  //     console.log("- Tab click blocked - application not submitted for review and no permission granted");
+  //     return;
+  //   }
+    
+  //   console.log("- Setting active tab to:", tabKey);
+  //   setActiveTab(tabKey);
+    
+  //   // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+  //   if (tabKey === 'equipmentMachinery') {
+  //     console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+  //     fetchEquipmentData();
+  //   }
+    
+  //   // Manually trigger fetch for Pre-Inspection data when clicking on inspectionSchedule tab
+  //   if (tabKey === 'inspectionSchedule') {
+  //     console.log("- Manually triggering fetchInspectionData for Situational Analysis tab");
+  //     fetchInspectionData();
+  //   }
+    
+  //   // Manually trigger fetch for facility ownership data when clicking on facilityOwnership tab
+  //   if (tabKey === 'facilityOwnership') {
+  //     console.log("🏢 === FACILITY OWNERSHIP TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchFacilityOwnershipData for Facility Ownership tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+      
+  //     // Always fetch fresh data from DHIS2 when Facility Ownership tab is clicked
+  //     console.log("🔄 Force refreshing Facility Ownership data from DHIS2");
+  //     fetchFacilityOwnershipData();
+      
+  //     // Directly fetch organization unit from API instead of localStorage
+  //     const fetchOrgUnitAndTrackedEntity = async () => {
+  //       try {
+  //         const credentials = await StorageService.get('userCredentials');
+  //         if (!credentials) {
+  //           console.error('❌ No credentials found in localStorage');
+  //           return;
+  //         }
+          
+  //         console.log('📊 FETCHING ORGANIZATION UNIT DATA DIRECTLY');
+  //         const orgUnitResponse = await fetch(`/api/me?fields=organisationUnits[displayName,id]`, {
+  //           headers: {
+  //             'Authorization': `Basic ${credentials}`
+  //           }
+  //         });
+          
+  //         if (!orgUnitResponse.ok) {
+  //           console.error('❌ Failed to fetch organization unit data:', orgUnitResponse.status);
+  //           return;
+  //         }
+          
+  //         const orgData = await orgUnitResponse.json();
+  //         console.log('- Organization API Response:', orgData);
+          
+  //         if (!orgData.organisationUnits || orgData.organisationUnits.length === 0) {
+  //           console.error('❌ No organization units found in response');
+  //           return;
+  //         }
+          
+  //         const orgUnitId = orgData.organisationUnits[0].id;
+  //         const orgUnitName = orgData.organisationUnits[0].displayName;
+          
+  //         console.log('✅ ORGANIZATION UNIT DATA:');
+  //         console.log('- Name:', orgUnitName);
+  //         console.log('- ID:', orgUnitId);
+          
+  //         // Now fetch the trackedEntityInstanceId using this organization unit ID
+  //         console.log('🔄 FETCHING TRACKED ENTITY INSTANCE WITH FRESH ORG UNIT ID');
+  //         const teiUrl = `/api/trackedEntityInstances?ou=${orgUnitId}&ouMode=SELECTED&program=EE8yeLVo6cN&fields=trackedEntityInstance&paging=false`;
+  //         console.log('- API URL:', teiUrl);
+          
+  //         const teiResponse = await fetch(teiUrl, {
+  //           headers: {
+  //             'Authorization': `Basic ${credentials}`,
+  //             'Content-Type': 'application/json'
+  //           }
+  //         });
+          
+  //         if (!teiResponse.ok) {
+  //           console.error('❌ Failed to fetch tracked entity instance:', teiResponse.status);
+  //           return;
+  //         }
+          
+  //         const teiData = await teiResponse.json();
+  //         console.log('- Tracked Entity API Response:', teiData);
+          
+  //         if (teiData.trackedEntityInstances && teiData.trackedEntityInstances.length > 0) {
+  //           const teiId = teiData.trackedEntityInstances[0].trackedEntityInstance;
+  //           console.log('✅ Found trackedEntityInstanceId:', teiId);
+            
+  //           // Store for future use
+  //           localStorage.setItem('tempTrackedEntityInstanceId', teiId);
+            
+  //           // CRITICAL FIX: Force a refresh to use the new trackedEntityInstanceId
+  //           // This is a workaround since we can't directly update the parent's prop
+  //           console.log('🔄 FORCING PAGE REFRESH TO USE NEW TRACKED ENTITY INSTANCE ID');
+  //           // window.location.reload(); // Removing this to avoid blank screen
+            
+  //           // Instead, update local state directly
+  //           // setLocalTrackedEntityInstanceId removed
+            
+  //           // Now fetch the facility ownership data with this ID
+  //           console.log('🔄 FETCHING FACILITY OWNERSHIP DATA WITH FRESH TEI ID');
+  //           fetchFacilityOwnershipData(teiId, orgUnitId);
+  //         } else {
+  //           console.log('❌ No tracked entity instances found in response');
+  //         }
+  //       } catch (error) {
+  //         console.error('❌ Error in fetchOrgUnitAndTrackedEntity:', error);
+  //       }
+  //     };
+      
+  //     // Execute the function
+  //     fetchOrgUnitAndTrackedEntity();
+  //   }
+    
+  //   // Manually trigger fetch for employee data when clicking on employeeRegistration tab
+  //   if (tabKey === 'employeeRegistration') {
+  //     console.log("👥 === EMPLOYEE REGISTRATION TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchEmployeeData for Employee Registration tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchEmployeeData();
+  //   }
+    
+  //   // Manually trigger fetch for services data when clicking on servicesOffered tab
+  //   if (tabKey === 'servicesOffered') {
+  //     console.log("🏥 === SERVICES OFFERED TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchServiceData for Services Offered tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchServiceData();
+  //   }
+    
+  //   // Manually trigger fetch for statutory compliance data when clicking on statutoryCompliance tab
+  //   if (tabKey === 'statutoryCompliance') {
+  //     console.log("📋 === STATUTORY COMPLIANCE TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchStatutoryComplianceData for Statutory Compliance tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchStatutoryComplianceData();
+  //   }
+    
+  //   // Manually trigger fetch for equipment data when clicking on equipmentMachinery tab
+  //   if (tabKey === 'equipmentMachinery') {
+  //     console.log("⚙️ === EQUIPMENT & MACHINERY TAB CLICKED ===");
+  //     console.log("- Manually triggering fetchEquipmentData for Equipment & Machinery tab");
+  //     console.log("- Current trackedEntityInstanceId:", trackedEntityInstanceId);
+  //     fetchEquipmentData();
+  //   }
+  // };
+
+  // Handle tab click without restrictions
   const handleTabClick = (tabKey) => {
     console.log("=== TAB CLICKED ===", tabKey);
     console.log("- completeApplicationStatus:", completeApplicationStatus);
@@ -2920,10 +3084,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         </Box>
         
 
-        
-        <StepContainer style={{ 
-          justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
-        }}>
+        {/* Control which tabs appear */}
+        {/* <StepContainer style={{ 
+                justifyContent: hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'space-between' : 'flex-start' 
+              }}>
           {(() => {
             const allSteps = [
               { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
@@ -3025,6 +3189,67 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             );
           });
         })()}
+        </StepContainer> */}
+
+        <StepContainer style={{ justifyContent: 'space-between' }}>
+          {(() => {
+            const allSteps = [
+              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
+              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
+            ];
+
+            // The filtering logic has been REMOVED.
+            // We now map directly over `allSteps` to ensure all 7 are always rendered.
+
+            return allSteps.map((step, index) => {
+              // Logic to disable tabs remains, but it no longer hides them.
+              // const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+              // const isDisabled = (step.number >= 3 && !hasTabData('facilityOwnership')) ||
+              // (!completeApplicationStatus && step.key !== 'completeApplication');
+              const isDisabled = false; // Force all tabs to be clickable
+
+              return (
+                <React.Fragment key={step.number}>
+                  <Tooltip
+                    title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
+                    arrow
+                    placement="top"
+                  >
+                    {/* The div wrapper is important for the Tooltip when the child is disabled */}
+                    <div>
+                      <Step
+                        active={activeTab === step.key}
+                        hasdata={hasTabData(step.key)}
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && handleTabClick(step.key)}
+                      >
+                        <span className="step-number">{step.number}</span>
+                        <Typography variant="subtitle1" className="step-title">
+                          {step.title}
+                        </Typography>
+                        <span
+                          className="completion-indicator"
+                          style={{
+                            color: hasTabData(step.key)
+                              ? theme.palette.success.main
+                              : theme.palette.error.main
+                          }}
+                        >
+                          {hasTabData(step.key) ? '✓' : '✗'}
+                        </span>
+                      </Step>
+                    </div>
+                  </Tooltip>
+                  {index < allSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
+                </React.Fragment>
+              );
+            });
+          })()}
         </StepContainer>
 
         {renderTabContent()}

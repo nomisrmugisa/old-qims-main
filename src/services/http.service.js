@@ -50,7 +50,7 @@ export const clearTemporaryHeaders = () => {
 // Setup interceptors
 setupInterceptors(httpService, temporaryHeaders);
 
-export const setAuthToken = (token, type) => {
+export const setAuthToken = async(token, type) => {
 
     let key = STORAGE_KEYS.USER_KEY;
     if(!type) {
@@ -60,16 +60,16 @@ export const setAuthToken = (token, type) => {
 
     if (token) {
         httpService.defaults.headers.common['Authorization'] = `${type} ${token}`;
-        StorageService.set(key, token);
+        await StorageService.set(key, token);
     } else {
         delete httpService.defaults.headers.common['Authorization'];
-        StorageService.remove(key);
+        await StorageService.remove(key);
     }
 };
 
-export const getAuthToken = (type) => {
+export const getAuthToken = async (type) => {
     let key = (!type)? STORAGE_KEYS.AUTH_TOKEN: STORAGE_KEYS.USER_KEY;
-    return StorageService.get(key);
+    return await StorageService.get(key);
 };
 
 export const clearAuth = () => {

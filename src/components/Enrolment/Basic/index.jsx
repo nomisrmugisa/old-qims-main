@@ -16,6 +16,7 @@ const EnrolmentBasic = () => {
     const [userFacilitiesInfo, setUserFacilitiesInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [canApply, setCanApply] = useState(true);
+    const [listEnrollmentApplications, setListEnrollmentApplications] = useState(null);
 
     const getUserFacilities = async () => {
 
@@ -36,11 +37,30 @@ const EnrolmentBasic = () => {
 
     };
 
+    const getAuthEnrollmentApplications = async() => {
+
+        try {
+            const response = await FacilityService.listAuthPendingEnrolmentRequest();
+            setListEnrollmentApplications(response);
+        }
+        catch(error) {
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+                title: 'Error',
+                message: error.message || 'Operation failed. Please try again.',
+                type: 'error'
+            });
+        }
+
+    };
+
     // Reset states when switching tabs
     useEffect(() => {
+        getAuthEnrollmentApplications();
         getUserFacilities();
         setFacilities([]);
     }, []);
+
+
 
     const handleFacilitySearch = async (query) => {
         try {
@@ -80,8 +100,11 @@ const EnrolmentBasic = () => {
             response = await FacilityService.enrolmentRequest(facilityInfo);
             window.console.log("enrolmentRequest", response);
 
-            response = await UserService.deleteOldSettings();
+            /*response = await UserService.deleteOldSettings();
             window.console.log("deleteOldSettings", response);
+
+            response = await UserService.refreshMe();
+            window.console.log("refreshMe", response);*/
 
             setCanApply(false);
             eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
@@ -108,7 +131,7 @@ const EnrolmentBasic = () => {
                 Search for a facility and request to gain access.
             </p>
 
-            {canApply ? (
+            {(listEnrollmentApplications<= 0 && canApply) ? (
                 <>
                 <FacilitySearchForm
                     onSearch={handleFacilitySearch}
@@ -125,7 +148,7 @@ const EnrolmentBasic = () => {
             ) : (
                 <div>
                     <Alert variant="danger">
-                        We are waiting on your enrolment application, you can only proceed apply again if it was not successful.
+                        We are waiting on your enrollment application, you can only apply after it has been resolved.
                     </Alert>
                 </div>
             )}

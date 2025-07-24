@@ -36,6 +36,9 @@ otpService.interceptors.response.use(
                 },
             };
         }
+        else if(error.response.data && error.response.data.error) {
+            error.message = error.response.data.error;
+        }
 
         return Promise.reject(error);
     }

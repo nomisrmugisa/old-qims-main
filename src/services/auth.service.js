@@ -73,7 +73,7 @@ const AuthService = {
         delete httpService.defaults.headers.common['Authorization'];
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
-            const response = await httpService.post('/auth/forgotPassword', credentials, {
+            const response = await httpService.post('/userCredentials/forgotPassword/', credentials, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -171,7 +171,7 @@ const AuthService = {
 
             const response = await Promise.race([responsePromise, timeoutPromise]);
 
-            setAuthToken(authorization_creds, 'Basic');
+            await setAuthToken(authorization_creds, 'Basic');
             // Set credentials using helper for consistency
             await import('../utils/credentialHelper').then(module => 
               module.setCredentials(authorization_creds)
@@ -341,7 +341,7 @@ const AuthService = {
     success2StepAuth: async() => {
         const credentials = await StorageService.get(STORAGE_KEYS.KEY_2STEP);
         const authorization_creds = generateAuthToken(credentials.username, credentials.password);
-        setAuthToken(authorization_creds, 'Basic');
+        await setAuthToken(authorization_creds, 'Basic');
         // Set credentials using helper for consistency
         await import('../utils/credentialHelper').then(module => 
           module.setCredentials(authorization_creds)
