@@ -337,11 +337,7 @@ const EditFacilityOwnershipDialog = ({
           .map(([dataElement, value]) => ({
             dataElement,
             value: value.toString(),
-          })),
-        {
-          dataElement: 'N3bVE3GRqdf',
-          value: 'true',
-        }
+          }))
       ];
 
       console.log(`Prepared ${dataValues.length} data values for submission`);
@@ -993,7 +989,7 @@ const EditFacilityOwnershipDialog = ({
                         color: '#333',
                         fontSize: '0.95rem'
                       }}>
-                        {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                        {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>False</span>}
                       </div>
                     )
                   ) : (

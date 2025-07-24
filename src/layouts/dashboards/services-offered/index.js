@@ -66,6 +66,7 @@ function ServicesOffered() {
   const [trackedEntityInstanceId, setTrackedEntityInstanceId] = useState(null);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [serviceEvents, setServiceEvents] = useState([]); // State for services offered events
+  const [events, setEvents] = useState([]);
   const credentials = localStorage.getItem("userCredentials");
   const orgUnitId = localStorage.getItem("userOrgUnitId");
   // Assuming the same program ID as Employee Registration for now, needs confirmation if different
@@ -94,6 +95,11 @@ function ServicesOffered() {
     additionalCounseling: false, // i0QXYWMOUjy - TRUE_ONLY
     additionalCommunityBased: false, // e48W7983nBs - TRUE_ONLY
   });
+
+  // Compute compliedLicensing from events
+  const compliedLicensing = events.some(event =>
+    event.dataValues && event.dataValues.some(dv => dv.dataElement === "SIq5ADQjCEM" && dv.value === "true")
+  );
 
   // Fetch option sets from DHIS2 - No longer needed for removed fields
   useEffect(() => {
@@ -276,7 +282,7 @@ function ServicesOffered() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <TabsNavBar />
+      <TabsNavBar compliedLicensing={compliedLicensing} />
       <MDBox py={3}>
           <Grid container spacing={3}>
           <Grid item xs={12}>

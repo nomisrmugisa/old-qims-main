@@ -3,16 +3,21 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useNavigate, useLocation } from "react-router-dom";
 
-function TabsNavBar() {
+function TabsNavBar({ compliedLicensing = false }) {
+  console.log("TabsNavBar compliedLicensing:", compliedLicensing);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const tabRoutes = [
-    "/dashboards/facility-ownership",
-    "/dashboards/employee-registration",
-    "/dashboards/service-offered",
-    "/dashboards/inspection-schedule",
-  ];
+  // Only show all tabs if compliedLicensing is true
+  const tabRoutes = compliedLicensing
+    ? [
+        "/dashboards/facility-ownership",
+        "/dashboards/service-offered",
+        "/dashboards/inspection-schedule",
+      ]
+    : [
+        "/dashboards/facility-ownership",
+      ];
 
   const currentTabIndex = tabRoutes.indexOf(location.pathname);
   const tabIndex = currentTabIndex === -1 ? 0 : currentTabIndex;
@@ -24,12 +29,10 @@ function TabsNavBar() {
   return (
     <Tabs value={tabIndex} onChange={handleTabChange} centered>
       <Tab label="Facility Ownership" />
-      <Tab label="Employee Registration" />
-      <Tab label="Services Offered" />
-      <Tab label="Inspection Schedule" />
+      {compliedLicensing && <Tab label="Services Offered" />}
+      {compliedLicensing && <Tab label="Inspection Schedule" />}
     </Tabs>
   );
 }
 
-export default TabsNavBar;
-
+export default TabsNavBar; 

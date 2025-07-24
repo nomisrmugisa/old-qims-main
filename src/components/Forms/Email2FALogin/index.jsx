@@ -175,11 +175,47 @@ const LoginForm = () => {
             }, 1000);
 
         } catch (error) {
-            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+            /*eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
                 title: 'Error',
                 message: error.message,
                 type: 'error'
+            });*/
+
+          console.error('Registration error:', error);
+
+          if (error.status === 400 || error.code === 'ERR_BAD_REQUEST') {
+            // Handle 400 Bad Request - likely Invalid OTP
+            setErrors({
+              otp: 'The verification code you entered is incorrect or has expired. Please check and try again.'
             });
+
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Invalid Verification Code',
+              message: 'The verification code is incorrect or has expired. Please try again.',
+              type: 'error'
+            });
+          } else if (error.error === 'Invalid OTP' || error.message === 'Invalid OTP') {
+            // Handle Invalid OTP error (fallback)
+            setErrors({
+              otp: 'The verification code you entered is incorrect. Please check and try again.'
+            });
+
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Invalid Verification Code',
+              message: 'The verification code is incorrect. Please check and try again.',
+              type: 'error'
+            });
+          } else {
+            // Handle all other errors (keep your existing logic)
+            eventBus.emit(EVENTS.NOTIFICATION_SHOW, {
+              title: 'Error',
+              message: error.message || error.error || 'An unexpected error occurred.',
+              type: 'error'
+            });
+          }
+
+          // Scroll to top on error as well
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }

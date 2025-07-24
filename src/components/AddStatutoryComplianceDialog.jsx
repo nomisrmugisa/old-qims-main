@@ -307,7 +307,7 @@ const AddStatutoryComplianceDialog = ({ open, onClose, onSuccess, onAddSuccess, 
   
   return (
     <ModalPortal open={open} onClose={onClose}>
-      <div className="modal-content" style={{ padding: '0', maxWidth: '800px' }}>
+      <div className="modal-content" style={{ padding: '20px', maxWidth: '800px' }}>
         <div className="modal-header">
           <h5 className="modal-title">{isEditMode ? 'Edit Statutory Compliance Documents' : 'Add Statutory Compliance Documents'}</h5>
           <button 

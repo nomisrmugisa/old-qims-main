@@ -178,7 +178,7 @@ const AddInspectionDialog = ({ open, onClose, onSuccess, trackedEntityInstanceId
   
   return (
     <ModalPortal open={open} onClose={onClose}>
-      <div className="modal-content" style={{ padding: '0', maxWidth: '900px' }}>
+      <div className="modal-content" style={{ padding: '20px', maxWidth: '900px' }}>
         <div className="modal-header">
           <h5 className="modal-title">Pre-Inspection</h5>
           <button type="button" className="close-btn" onClick={onClose} disabled={isSubmitting}>&times;</button>

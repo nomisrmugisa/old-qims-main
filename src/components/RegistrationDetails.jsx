@@ -514,6 +514,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return tabValidationStates.equipmentMachinery; // Use validation state that checks both record existence and data completeness
       case 'inspectionSchedule':
         return inspectionEvents.length > 0;
+      case 'inspectionDate':
+        return dateRange && dateRange[0] && dateRange[1]; // Check if both start and end dates are selected
       default:
         return false;
     }
@@ -2230,7 +2232,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             const value = (facilityOwnershipEvents[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
                             return (
                               <div key={de.id} style={{marginBottom: '10px'}}>
-                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>Not provided</span>}
+                                <strong>{de.displayFormName}:</strong> {value || <span style={{color:'#888', fontStyle:'italic'}}>False</span>}
                               </div>
                             );
                           })}
@@ -2761,6 +2763,52 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             </div>
           </div>
         );
+      case 'inspectionDate':
+        return (
+          <div className="tab-content">
+            <div className="inspection-date-details">
+              <h2>Preferred Facility Inspection Date</h2>
+              <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', margin: '20px 0' }}>
+                <Typography variant="body1" sx={{ marginBottom: '16px', color: 'text.secondary' }}>
+                  Please select your preferred date range for facility inspection. This helps us schedule the inspection at a convenient time for your facility.
+                </Typography>
+                
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      Preferred Facility Inspection Date:
+                    </Typography>
+                    <DateRangePicker
+                      value={dateRange}
+                      onChange={(newValue) => setDateRange(newValue)}
+                      disabled={!datePickerEnabled}
+                      slotProps={{
+                        textField: {
+                          size: 'small',
+                          sx: { 
+                            width: '280px',
+                            '& .MuiInputBase-input': {
+                              fontSize: '12px',
+                              padding: '8px 12px'
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </Box>
+                </LocalizationProvider>
+                
+                {dateRange && dateRange[0] && dateRange[1] && (
+                  <Box sx={{ marginTop: '16px', padding: '12px', background: '#e8f5e8', borderRadius: '4px' }}>
+                    <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 'medium' }}>
+                      ✓ Date range selected: {dateRange[0].toLocaleDateString()} - {dateRange[1].toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                )}
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -2769,11 +2817,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
   // Helper to determine if a tab should be disabled
   const isTabDisabled = (tabKey) => {
     const restrictedTabs = ['employeeRegistration', 'servicesOffered', 'statutoryCompliance', 'equipmentMachinery'];
+    const inspectionDateTab = 'inspectionDate';
     
     // Check if permission to establish is granted
     const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
     
-    // If permission is granted, tabs 3-6 should not be disabled
+    // Special logic for inspection date tab - only enable if Pre-Inspection is completed
+    if (tabKey === inspectionDateTab) {
+      if (!hasPermissionToEstablish) return true;
+      if (!hasTabData('inspectionSchedule')) return true;
+      return false;
+    }
+    
+    // For other restricted tabs, apply normal logic
     if (hasPermissionToEstablish && restrictedTabs.includes(tabKey)) {
       return false;
     }
@@ -2785,16 +2841,35 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Calculate overall progress percentage
   const calculateProgress = () => {
-    const totalSteps = 7;
+    // Check if "Passed MOH Screening" is true (permission granted)
+    const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+    // Determine total steps based on permission and Pre-Inspection completion
+    let totalSteps;
+    if (!hasPermissionToEstablish) {
+      totalSteps = 2;
+    } else if (hasTabData('inspectionSchedule')) {
+      totalSteps = 7; // Include Preferred Facility Inspection Date
+    } else {
+      totalSteps = 6; // Don't include Preferred Facility Inspection Date yet
+    }
+    
     let completedSteps = 0;
     
     if (completeApplicationStatus) completedSteps++;
     if (tabValidationStates.facilityOwnership) completedSteps++;
-    if (tabValidationStates.employeeRegistration) completedSteps++;
-    if (tabValidationStates.servicesOffered) completedSteps++;
-    if (tabValidationStates.statutoryCompliance) completedSteps++;
-    if (tabValidationStates.equipmentMachinery) completedSteps++;
-    if (hasTabData('inspectionSchedule')) completedSteps++;
+    
+    // Only count steps 3-6 if permission is granted
+    if (hasPermissionToEstablish) {
+      if (tabValidationStates.servicesOffered) completedSteps++;
+      if (tabValidationStates.statutoryCompliance) completedSteps++;
+      if (tabValidationStates.equipmentMachinery) completedSteps++;
+      if (hasTabData('inspectionSchedule')) completedSteps++;
+      // Only count step 7 if Pre-Inspection is completed
+      if (hasTabData('inspectionSchedule') && dateRange && dateRange[0] && dateRange[1]) {
+        completedSteps++;
+      }
+    }
     
     return Math.round((completedSteps / totalSteps) * 100);
   };
@@ -2823,7 +2898,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
     if (!hasTabData('inspectionSchedule')) {
       return "Complete self-inspection";
     }
-    return "Select inspection date";
+    if (!dateRange || !dateRange[0] || !dateRange[1]) {
+      return "Select preferred inspection date";
+    }
+    return "All steps completed";
   };
 
   // Add a special effect to check for trackedEntityInstanceId in localStorage
@@ -3021,32 +3099,7 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             })()}
             
             {/* Date Range Picker - Only show when Pre-Inspection has events */}
-            {inspectionEvents.length > 0 && (
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 3 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                    Preferred Facility Inspection Date:
-                  </Typography>
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={(newValue) => setDateRange(newValue)}
-                    disabled={!datePickerEnabled}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: { 
-                          width: '280px',
-                          '& .MuiInputBase-input': {
-                            fontSize: '12px',
-                            padding: '8px 12px'
-                          }
-                        }
-                      }
-                    }}
-                  />
-                </Box>
-              </LocalizationProvider>
-            )}
+
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
@@ -3092,11 +3145,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             const allSteps = [
               { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
               { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
+              { number: 3, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 4, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 5, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 6, title: 'Pre-Inspection', key: 'inspectionSchedule' },
+              { number: 7, title: 'Preferred Facility Inspection Date', key: 'inspectionDate' }
             ];
             
             // Check if "Passed MOH Screening" is true (status shows permission message)
@@ -3191,66 +3244,80 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         })()}
         </StepContainer> */}
 
-        <StepContainer style={{ justifyContent: 'space-between' }}>
-          {(() => {
-            const allSteps = [
-              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
-              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
-            ];
+        {(() => {
+          // Check if "Passed MOH Screening" is true (permission granted)
+          const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+          
+          const allSteps = [
+            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+            { number: 3, title: 'Services Offered', key: 'servicesOffered' },
+            { number: 4, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+            { number: 5, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+            { number: 6, title: 'Pre-Inspection', key: 'inspectionSchedule' },
+            { number: 7, title: 'Preferred Facility Inspection Date', key: 'inspectionDate' }
+          ];
 
-            // The filtering logic has been REMOVED.
-            // We now map directly over `allSteps` to ensure all 7 are always rendered.
+                      // Filter steps based on permission and Pre-Inspection completion
+            let visibleSteps;
+            if (!hasPermissionToEstablish) {
+              // Only show first 2 steps if no permission
+              visibleSteps = allSteps.slice(0, 2);
+            } else if (hasTabData('inspectionSchedule')) {
+              // Show all steps if Pre-Inspection is completed
+              visibleSteps = allSteps;
+            } else {
+              // Show steps 1-6 if permission granted but Pre-Inspection not completed
+              visibleSteps = allSteps.slice(0, 6);
+            }
 
-            return allSteps.map((step, index) => {
-              // Logic to disable tabs remains, but it no longer hides them.
-              // const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
-              // const isDisabled = (step.number >= 3 && !hasTabData('facilityOwnership')) ||
-              // (!completeApplicationStatus && step.key !== 'completeApplication');
-              const isDisabled = false; // Force all tabs to be clickable
+          return (
+            <StepContainer style={{ 
+              justifyContent: hasPermissionToEstablish ? 'space-between' : 'flex-start' 
+            }}>
+              {visibleSteps.map((step, index) => {
+            
+                const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
 
-              return (
-                <React.Fragment key={step.number}>
-                  <Tooltip
-                    title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
-                    arrow
-                    placement="top"
-                  >
-                    {/* The div wrapper is important for the Tooltip when the child is disabled */}
-                    <div>
-                      <Step
-                        active={activeTab === step.key}
-                        hasdata={hasTabData(step.key)}
-                        disabled={isDisabled}
-                        onClick={() => !isDisabled && handleTabClick(step.key)}
-                      >
-                        <span className="step-number">{step.number}</span>
-                        <Typography variant="subtitle1" className="step-title">
-                          {step.title}
-                        </Typography>
-                        <span
-                          className="completion-indicator"
-                          style={{
-                            color: hasTabData(step.key)
-                              ? theme.palette.success.main
-                              : theme.palette.error.main
-                          }}
+                return (
+                  <React.Fragment key={step.number}>
+                    <Tooltip
+                      title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
+                      arrow
+                      placement="top"
+                    >
+                      {/* The div wrapper is important for the Tooltip when the child is disabled */}
+                      <div>
+                        <Step
+                          active={activeTab === step.key}
+                          hasdata={hasTabData(step.key)}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && handleTabClick(step.key)}
                         >
-                          {hasTabData(step.key) ? '✓' : '✗'}
-                        </span>
-                      </Step>
-                    </div>
-                  </Tooltip>
-                  {index < allSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
-                </React.Fragment>
-              );
-            });
-          })()}
-        </StepContainer>
+                          <span className="step-number">{step.number}</span>
+                          <Typography variant="subtitle1" className="step-title">
+                            {step.title}
+                          </Typography>
+                          <span
+                            className="completion-indicator"
+                            style={{
+                              color: hasTabData(step.key)
+                                ? theme.palette.success.main
+                                : theme.palette.error.main
+                            }}
+                          >
+                            {hasTabData(step.key) ? '✓' : '✗'}
+                          </span>
+                        </Step>
+                      </div>
+                    </Tooltip>
+                    {index < visibleSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
+                  </React.Fragment>
+                );
+              })}
+            </StepContainer>
+          );
+        })()}
 
         {renderTabContent()}
       </Box>
