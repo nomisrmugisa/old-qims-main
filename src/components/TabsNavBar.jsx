@@ -12,13 +12,11 @@ function TabsNavBar({ compliedLicensing = false }) {
   const tabRoutes = compliedLicensing
     ? [
         "/dashboards/facility-ownership",
-        "/dashboards/employee-registration",
         "/dashboards/service-offered",
         "/dashboards/inspection-schedule",
       ]
     : [
         "/dashboards/facility-ownership",
-        "/dashboards/employee-registration",
       ];
 
   const currentTabIndex = tabRoutes.indexOf(location.pathname);
@@ -31,7 +29,6 @@ function TabsNavBar({ compliedLicensing = false }) {
   return (
     <Tabs value={tabIndex} onChange={handleTabChange} centered>
       <Tab label="Facility Ownership" />
-      <Tab label="Employee Registration" />
       {compliedLicensing && <Tab label="Services Offered" />}
       {compliedLicensing && <Tab label="Inspection Schedule" />}
     </Tabs>

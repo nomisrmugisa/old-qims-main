@@ -2785,16 +2785,23 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
   // Calculate overall progress percentage
   const calculateProgress = () => {
-    const totalSteps = 7;
+    // Check if "Passed MOH Screening" is true (permission granted)
+    const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+    
+    // Determine total steps based on permission
+    const totalSteps = hasPermissionToEstablish ? 6 : 2;
     let completedSteps = 0;
     
     if (completeApplicationStatus) completedSteps++;
     if (tabValidationStates.facilityOwnership) completedSteps++;
-    if (tabValidationStates.employeeRegistration) completedSteps++;
-    if (tabValidationStates.servicesOffered) completedSteps++;
-    if (tabValidationStates.statutoryCompliance) completedSteps++;
-    if (tabValidationStates.equipmentMachinery) completedSteps++;
-    if (hasTabData('inspectionSchedule')) completedSteps++;
+    
+    // Only count steps 3-6 if permission is granted
+    if (hasPermissionToEstablish) {
+      if (tabValidationStates.servicesOffered) completedSteps++;
+      if (tabValidationStates.statutoryCompliance) completedSteps++;
+      if (tabValidationStates.equipmentMachinery) completedSteps++;
+      if (hasTabData('inspectionSchedule')) completedSteps++;
+    }
     
     return Math.round((completedSteps / totalSteps) * 100);
   };
@@ -3092,11 +3099,10 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             const allSteps = [
               { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
               { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
+              { number: 3, title: 'Services Offered', key: 'servicesOffered' },
+              { number: 4, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+              { number: 5, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+              { number: 6, title: 'Pre-Inspection', key: 'inspectionSchedule' }
             ];
             
             // Check if "Passed MOH Screening" is true (status shows permission message)
@@ -3191,66 +3197,71 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         })()}
         </StepContainer> */}
 
-        <StepContainer style={{ justifyContent: 'space-between' }}>
-          {(() => {
-            const allSteps = [
-              { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
-              { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-              { number: 3, title: 'Employee Registration', key: 'employeeRegistration' },
-              { number: 4, title: 'Services Offered', key: 'servicesOffered' },
-              { number: 5, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-              { number: 6, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-              { number: 7, title: 'Pre-Inspection', key: 'inspectionSchedule' }
-            ];
+        {(() => {
+          // Check if "Passed MOH Screening" is true (permission granted)
+          const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+          
+          const allSteps = [
+            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
+            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
+            { number: 3, title: 'Services Offered', key: 'servicesOffered' },
+            { number: 4, title: 'Statutory Compliance', key: 'statutoryCompliance' },
+            { number: 5, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
+            { number: 6, title: 'Pre-Inspection', key: 'inspectionSchedule' }
+          ];
 
-            // The filtering logic has been REMOVED.
-            // We now map directly over `allSteps` to ensure all 7 are always rendered.
+          // Filter steps based on permission - only show tabs 3-6 if permission is granted
+          const visibleSteps = hasPermissionToEstablish 
+            ? allSteps 
+            : allSteps.slice(0, 2); // Only show first 2 steps if no permission
 
-            return allSteps.map((step, index) => {
-              // Logic to disable tabs remains, but it no longer hides them.
-              // const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
-              // const isDisabled = (step.number >= 3 && !hasTabData('facilityOwnership')) ||
-              // (!completeApplicationStatus && step.key !== 'completeApplication');
-              const isDisabled = false; // Force all tabs to be clickable
+          return (
+            <StepContainer style={{ 
+              justifyContent: hasPermissionToEstablish ? 'space-between' : 'flex-start' 
+            }}>
+              {visibleSteps.map((step, index) => {
+            
+                const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
 
-              return (
-                <React.Fragment key={step.number}>
-                  <Tooltip
-                    title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
-                    arrow
-                    placement="top"
-                  >
-                    {/* The div wrapper is important for the Tooltip when the child is disabled */}
-                    <div>
-                      <Step
-                        active={activeTab === step.key}
-                        hasdata={hasTabData(step.key)}
-                        disabled={isDisabled}
-                        onClick={() => !isDisabled && handleTabClick(step.key)}
-                      >
-                        <span className="step-number">{step.number}</span>
-                        <Typography variant="subtitle1" className="step-title">
-                          {step.title}
-                        </Typography>
-                        <span
-                          className="completion-indicator"
-                          style={{
-                            color: hasTabData(step.key)
-                              ? theme.palette.success.main
-                              : theme.palette.error.main
-                          }}
+                return (
+                  <React.Fragment key={step.number}>
+                    <Tooltip
+                      title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
+                      arrow
+                      placement="top"
+                    >
+                      {/* The div wrapper is important for the Tooltip when the child is disabled */}
+                      <div>
+                        <Step
+                          active={activeTab === step.key}
+                          hasdata={hasTabData(step.key)}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && handleTabClick(step.key)}
                         >
-                          {hasTabData(step.key) ? '✓' : '✗'}
-                        </span>
-                      </Step>
-                    </div>
-                  </Tooltip>
-                  {index < allSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
-                </React.Fragment>
-              );
-            });
-          })()}
-        </StepContainer>
+                          <span className="step-number">{step.number}</span>
+                          <Typography variant="subtitle1" className="step-title">
+                            {step.title}
+                          </Typography>
+                          <span
+                            className="completion-indicator"
+                            style={{
+                              color: hasTabData(step.key)
+                                ? theme.palette.success.main
+                                : theme.palette.error.main
+                            }}
+                          >
+                            {hasTabData(step.key) ? '✓' : '✗'}
+                          </span>
+                        </Step>
+                      </div>
+                    </Tooltip>
+                    {index < visibleSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
+                  </React.Fragment>
+                );
+              })}
+            </StepContainer>
+          );
+        })()}
 
         {renderTabContent()}
       </Box>
