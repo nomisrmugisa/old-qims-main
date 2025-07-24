@@ -32,6 +32,7 @@ import EnrolmentApplicationReviewPage from './views/Facility/User/Enrolment/Appl
 import FacilityUserEnrolmentApplicationPage from './views/Facility/User/Enrolment/ApplicationPage';
 import FacilityUserDashboardPage from './views/Facility/User/DashboardPage';
 import FacilityUserManagementPage from './views/Facility/User/ManagementPage';
+import FacilityRegistrationPage from './views/Facility/RegistrationPage';
 import PasswordChangePage from './views/ChangePassword';
 import FacilityCalendarPage from './views/Facility/Calendar';
 import UserProfileModal from './components/User/ProfileModal';
@@ -307,6 +308,8 @@ function App() {
               <Route path="/facility-calendar" element={<FacilityCalendarPage />} />
               <Route path="/facility-calendar-advanced" element={<FacilityCalendarPage />} />
               <Route path="/enrolment/application-review" element={<EnrolmentApplicationReviewPage />} />
+              <Route path="/facility/registration" element={<FacilityRegistrationPage />} />
+
 
               {/* You can add more routes here for other dashboard sections if needed */}
           </Routes>

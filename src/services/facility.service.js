@@ -5,7 +5,7 @@ import httpService from './http.service';
 import {getAuthToken} from './http.service';
 import StorageService from './storage.service';
 import {eventBus, EVENTS } from '../events';
-import {DHIS2_PROGRAMS, USER_ROLES} from './constants';
+import {DHIS2_PROGRAMS, USER_ROLES, BW_ORGANISATION_UNIT_ID} from './constants';
 
 const svc_name = "inspection_service";
 const FacilityService = {
@@ -510,13 +510,13 @@ const FacilityService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
-    getOrganisationUnitFilter: async() => {
+    getOrganisationUnitFilter: async(level) => {
         const method = "getOrganisationUnitFilter";
         eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
         try {
             let token = await getAuthToken('Basic');
             window.console.log("token", token);
-            const response = await httpService.get(`/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`, {
+            const response = await httpService.get(`/organisationUnits.json?filter=level:eq:${level}&fields=id,displayName,parent&paging=false`, {
                 headers: {
                     'Authorization': `Basic ${token}`
                 }
@@ -590,6 +590,29 @@ const FacilityService = {
             eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
         }
     },
+    getOrganisationUnitsByParentId: async(parent_id) => {
+        const method = "getOrganisationUnitFilter";
+        eventBus.emit(EVENTS.LOADING_SHOW, { source: svc_name, method: method});
+        try {
+            let token = await getAuthToken('Basic');
+            window.console.log("token", token);
+            const response = await httpService.get(`/organisationUnits.json?filter=parent.id:eq:${parent_id}&order=displayName:asc&fields=id,displayName,parent&paging=false`, {
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+            window.console.log(method, response);
+            return response.organisationUnits;
+        } catch (error) {
+            throw error;
+        }
+        finally {
+            eventBus.emit(EVENTS.LOADING_HIDE, { source: svc_name, method: method});
+        }
+    },
+    getDistrictOrganisationUnits: async() => {
+        return await FacilityService.getOrganisationUnitsByParentId(BW_ORGANISATION_UNIT_ID);
+    }
 
 
 

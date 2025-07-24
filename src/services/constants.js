@@ -499,3 +499,31 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
 
     }
 };
+
+export const BW_ORGANISATION_UNIT_ID = `${import.meta.env.VITE_FACILITY_BW_ORG_UNIT_ID}`;
+
+export const FACILITY_REGISTRATION_FORM = {
+    REQUIRED_FIELDS: [
+        {
+            name: "Private Practice Number",
+            id: 'aMFg2iq9VIg', // Private Practice Number
+        },
+        {
+            name: "Name of the License Holder",
+            id: 'HMk4LZ9ESOq', // Name of the License Holder
+        },
+        {
+            name: "Surname of License Holder",
+            id: 'ykwhsQQPVH0', // Surname of License Holder
+        },
+        {
+            name: "Name of Facility to be Registered",
+            id: 'PdtizqOqE6Q', // Name of Facility to be Registered
+        },
+        {
+            name: "Location in Botswana",
+            id: 'VJzk8OdFJKA'  // Location in Botswana
+        },
+
+    ]
+}
