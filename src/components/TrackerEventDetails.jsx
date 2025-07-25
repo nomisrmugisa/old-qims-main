@@ -58,6 +58,8 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
   const [locationName, setLocationName] = useState('');
   const [credentials, setCredentials] = useState(null);
+  const [selectedLocationInfo, setSelectedLocationInfo] = useState(null);
+  const [isLoadingLocationInfo, setIsLoadingLocationInfo] = useState(false);
 
   // Add state for progress
   const [progress, setProgress] = useState(0);
@@ -303,9 +305,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         }
 
         console.log('Fetching org unit name for ID:', formValues['VJzk8OdFJKA']);
-        console.log('Full API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`);
+        console.log('Full API URL:', `${import.meta.env.VITE_DHIS2_URL}/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name,parent[name]`);
 
-        const response = await fetch(`/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name`, {
+        const response = await fetch(`/api/organisationUnits/${formValues['VJzk8OdFJKA']}?fields=name,parent[name]`, {
           headers: {
             Authorization: `Basic ${effectiveCredentials}`,
           },
@@ -322,12 +324,20 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         console.log('Received data:', data);
 
         if (data && data.name) {
-          // Update selectedOrgUnit with the fetched name
+          // Create enhanced display name with parent information
+          const enhancedDisplayName = data.parent && data.parent.name 
+            ? `${data.name} (${data.parent.name})`
+            : data.name;
+          
+          // Update selectedOrgUnit with the enhanced display name
           setSelectedOrgUnit({
             id: formValues['VJzk8OdFJKA'],
-            displayName: data.name
+            displayName: enhancedDisplayName
           });
-          console.log('Updated selectedOrgUnit with name:', data.name);
+          // Also set the selectedLocationInfo for enhanced display
+          setSelectedLocationInfo(data);
+          console.log('Updated selectedOrgUnit with enhanced name:', enhancedDisplayName);
+          console.log('Updated selectedLocationInfo with parent data:', data);
         } else {
           console.warn('No name found in the response:', data);
         }
@@ -454,7 +464,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       console.log('🌐 VITE_DHIS2_URL:', import.meta.env.VITE_DHIS2_URL);
       // Use the proxy configuration instead of full URL
-      const url = `/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false`;
+      const url = `/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName,parent[name]&paging=false`;
       console.log('🔗 API URL (using proxy):', url);
       console.log('🔐 Credentials available:', !!credentials);
 
@@ -474,10 +484,18 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       console.log('📊 Response data:', data);
       console.log('🏢 Number of org units:', data.organisationUnits?.length || 0);
       
-      setOrganisationalUnits(data.organisationUnits || []);
-      setFilteredOrgUnits(data.organisationUnits || []);
+      // Enhance the organizational units with parent information
+      const enhancedOrgUnits = data.organisationUnits?.map(unit => ({
+        ...unit,
+        displayName: unit.parent && unit.parent.name 
+          ? `${unit.displayName} (${unit.parent.name})`
+          : unit.displayName
+      })) || [];
       
-      console.log('✅ Organizational units loaded successfully');
+      setOrganisationalUnits(enhancedOrgUnits);
+      setFilteredOrgUnits(enhancedOrgUnits);
+      
+      console.log('✅ Enhanced organizational units loaded successfully');
     } catch (error) {
       console.error("❌ Error fetching organisational units:", error);
     } finally {
@@ -489,13 +507,65 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce((query) => {
-      const filtered = organisationalUnits.filter((unit) =>
-        unit.displayName.toLowerCase().includes(query.toLowerCase())
-      );
+      const filtered = organisationalUnits.filter((unit) => {
+        // Search in both the original display name and the enhanced display name
+        const originalName = unit.displayName.split(' (')[0]; // Get original name without parent
+        const enhancedName = unit.displayName; // Full enhanced name
+        const searchTerm = query.toLowerCase();
+        
+        return originalName.toLowerCase().includes(searchTerm) || 
+               enhancedName.toLowerCase().includes(searchTerm);
+      });
       setFilteredOrgUnits(filtered);
     }, 300),
     [organisationalUnits]
   );
+
+  // Fetch parent information for selected location
+  const fetchLocationParentInfo = async (locationId) => {
+    if (!locationId) {
+      setSelectedLocationInfo(null);
+      return;
+    }
+
+    setIsLoadingLocationInfo(true);
+    try {
+      const response = await fetch(
+        `/api/organisationUnits/${locationId}?fields=name,parent[name]`,
+        {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch location parent information");
+      }
+      
+      const data = await response.json();
+      setSelectedLocationInfo(data);
+      
+      // Update selectedOrgUnit with enhanced display name
+      if (data && data.name) {
+        const enhancedDisplayName = data.parent && data.parent.name 
+          ? `${data.name} (${data.parent.name})`
+          : data.name;
+        
+        setSelectedOrgUnit(prev => ({
+          ...prev,
+          displayName: enhancedDisplayName
+        }));
+        
+        console.log('Updated selectedOrgUnit with enhanced display name:', enhancedDisplayName);
+      }
+    } catch (error) {
+      console.error("Error fetching location parent information:", error);
+      setSelectedLocationInfo(null);
+    } finally {
+      setIsLoadingLocationInfo(false);
+    }
+  };
 
   // Handle search input change
   const handleSearchChange = (event, value) => {
@@ -535,13 +605,20 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
   // Handle location change
   const handleLocationChange = (event, newValue) => {
-    setSelectedOrgUnit(newValue);
     const newFormValues = { ...formValues };
 
     if (newValue) {
-      newFormValues['VJzk8OdFJKA'] = newValue.displayName.trim();
+      // Set the selectedOrgUnit with enhanced display name
+      setSelectedOrgUnit(newValue);
+      // Store the original display name without parent info for form submission
+      const originalDisplayName = newValue.displayName.split(' (')[0]; // Remove parent info
+      newFormValues['VJzk8OdFJKA'] = originalDisplayName.trim();
+      // Fetch parent information when location is selected
+      fetchLocationParentInfo(newValue.id);
     } else {
+      setSelectedOrgUnit(null);
       newFormValues['VJzk8OdFJKA'] = '';
+      setSelectedLocationInfo(null);
     }
 
     setFormValues(newFormValues);
@@ -1812,8 +1889,8 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
               width: '100%'
             }}
           >
-            {/* Replace the Typography for 'Location in Botswana (Ward) *' with a label prop on the TextField (or mimic the style of other field labels) */}
-            {/* In the renderInput of the Autocomplete, set label="Location in Botswana (Ward) *" on the TextField, and remove the Typography above. */}
+                      {/* Replace the Typography for 'Location in Botswana (Ward) *' with a label prop on the TextField (or mimic the style of other field labels) */}
+          {/* In the renderInput of the Autocomplete, set label="Location in Botswana (Ward) *" on the TextField, and remove the Typography above. */}
             <Typography
               variant="subtitle2"
               align="left"
@@ -1835,7 +1912,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                   value={selectedOrgUnit}
                   onChange={handleLocationChange}
                   onInputChange={handleSearchChange}
-                  loading={isLoadingOrgUnits}
+                  loading={isLoadingOrgUnits || isLoadingLocationInfo}
                   disabled={hasExistingData || !isEditing || updating}
                   fullWidth
                   size="small"
@@ -1901,7 +1978,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                         ...params.InputProps,
                         endAdornment: (
                           <>
-                            {isLoadingOrgUnits ? <CircularProgress color="primary" size={16} /> : null}
+                            {(isLoadingOrgUnits || isLoadingLocationInfo) ? <CircularProgress color="primary" size={16} /> : null}
                             {params.InputProps.endAdornment}
                           </>
                         ),

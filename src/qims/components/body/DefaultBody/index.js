@@ -97,6 +97,8 @@ function DefaultBody() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [organisationalUnits, setOrganisationalUnits] = useState([]);
   const [isLoadingOrgUnits, setIsLoadingOrgUnits] = useState(true);
+  const [selectedLocationInfo, setSelectedLocationInfo] = useState(null);
+  const [isLoadingLocationInfo, setIsLoadingLocationInfo] = useState(false);
   const username = process.env.REACT_APP_API_USERNAME;
   const password = process.env.REACT_APP_API_PASSWORD;
 
@@ -107,7 +109,7 @@ function DefaultBody() {
     const fetchOrganisationalUnits = async () => {
       try {
         const response = await fetch(
-          "https://qimsdev.5am.co.bw/qims/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName&paging=false",
+          "https://qimsdev.5am.co.bw/qims/api/organisationUnits.json?filter=level:eq:4&fields=id,displayName,parent[name]&paging=false",
           {
             headers: {
               Authorization: `Basic ${credentials}`,
@@ -118,7 +120,16 @@ function DefaultBody() {
           throw new Error("Failed to fetch organisational units");
         }
         const data = await response.json();
-        setOrganisationalUnits(data.organisationUnits);
+        
+        // Enhance the organizational units with parent information
+        const enhancedOrgUnits = data.organisationUnits?.map(unit => ({
+          ...unit,
+          displayName: unit.parent && unit.parent.name 
+            ? `${unit.displayName} (${unit.parent.name})`
+            : unit.displayName
+        })) || [];
+        
+        setOrganisationalUnits(enhancedOrgUnits);
       } catch (error) {
         console.error("Error fetching organisational units:", error);
       } finally {
@@ -128,6 +139,47 @@ function DefaultBody() {
 
     fetchOrganisationalUnits();
   }, [credentials]); // Dependency array includes credentials
+
+  // Fetch parent information for selected location
+  const fetchLocationParentInfo = async (locationId) => {
+    if (!locationId) {
+      setSelectedLocationInfo(null);
+      return;
+    }
+
+    setIsLoadingLocationInfo(true);
+    try {
+      const response = await fetch(
+        `https://qimsdev.5am.co.bw/qims/api/organisationUnits/${locationId}?fields=name,parent[name]`,
+        {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch location parent information");
+      }
+      
+      const data = await response.json();
+      setSelectedLocationInfo(data);
+      
+      // Update the form data with enhanced display name
+      if (data && data.name) {
+        const enhancedDisplayName = data.parent && data.parent.name 
+          ? `${data.name} (${data.parent.name})`
+          : data.name;
+        
+        console.log('Enhanced display name:', enhancedDisplayName);
+      }
+    } catch (error) {
+      console.error("Error fetching location parent information:", error);
+      setSelectedLocationInfo(null);
+    } finally {
+      setIsLoadingLocationInfo(false);
+    }
+  };
 
   // create user profile
   const createUserProfile = async () => {
@@ -237,9 +289,15 @@ function DefaultBody() {
   // Debounced search handler
   const debouncedSearch = useCallback(
     debounce((query) => {
-      const filtered = organisationalUnits.filter((unit) =>
-        unit.displayName.toLowerCase().includes(query.toLowerCase())
-      );
+      const filtered = organisationalUnits.filter((unit) => {
+        // Search in both the original display name and the enhanced display name
+        const originalName = unit.displayName.split(' (')[0]; // Get original name without parent
+        const enhancedName = unit.displayName; // Full enhanced name
+        const searchTerm = query.toLowerCase();
+        
+        return originalName.toLowerCase().includes(searchTerm) || 
+               enhancedName.toLowerCase().includes(searchTerm);
+      });
       setFilteredOrgUnits(filtered);
     }, 300),
     [organisationalUnits]
@@ -607,20 +665,23 @@ function DefaultBody() {
             value={organisationalUnits.find((ou) => ou.id === formData.locationInBotswana) || null}
             onChange={(event, newValue) => {
               setFormData((prev) => ({ ...prev, locationInBotswana: newValue ? newValue.id : "" }));
+              // Fetch parent information when location is selected
+              fetchLocationParentInfo(newValue ? newValue.id : null);
             }}
             onInputChange={handleSearchChange}
-            loading={isLoadingOrgUnits}
+            loading={isLoadingOrgUnits || isLoadingLocationInfo}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Location in Botswana (Ward)"
+                placeholder="Search for a location..."
                 variant="outlined"
                 margin="dense"
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (
                     <>
-                      {isLoadingOrgUnits ? <CircularProgress color="inherit" size={20} /> : null}
+                      {(isLoadingOrgUnits || isLoadingLocationInfo) ? <CircularProgress color="inherit" size={20} /> : null}
                       {params.InputProps.endAdornment}
                     </>
                   ),
