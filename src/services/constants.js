@@ -215,16 +215,16 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                                         "NO7wjA7T9uy", "yP49GKSQxPl","lC217zTgC6C"
                                     ]
                                 },
-                                {
-                                    code:"NURSE-LED PRIVATE PRACTICE",
-                                    sortOrder:2,
-                                    displayName:"NURSE-LED PRIVATE PRACTICE",
-                                    id:"B77zhrjsjx8",
-                                    requiredDataElements: [
-                                        "NO7wjA7T9uy", "uP51La6owLL", "NO7wjA7T9uy",
-                                        "yP49GKSQxPl","lC217zTgC6C"
-                                    ]
-                                },
+                                // {
+                                //     code:"NURSE-LED PRIVATE PRACTICE",
+                                //     sortOrder:2,
+                                //     displayName:"NURSE-LED PRIVATE PRACTICE",
+                                //     id:"B77zhrjsjx8",
+                                //     requiredDataElements: [
+                                //         "NO7wjA7T9uy", "uP51La6owLL", "NO7wjA7T9uy",
+                                //         "yP49GKSQxPl","lC217zTgC6C"
+                                //     ]
+                                // },
                                 {
                                     code:"OUTREACH PRACTICE",
                                     sortOrder:3,
@@ -311,7 +311,7 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                                 {
                                     code:"Foreigner",
                                     sortOrder:2,
-                                    displayName:"Foreigner",
+                                    displayName:"Non-Citizen",
                                     id:"oory0p691mv"
                                 }
                             ],

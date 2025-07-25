@@ -1779,7 +1779,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
             align="left"
             sx={{ fontWeight: 'bold', mb: 2, textAlign: 'left' }}
           >
-            Select Location Facility is in Botswana
+            Select Facility Location in Botswana
           </Typography>
 
           <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
