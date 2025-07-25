@@ -2132,17 +2132,18 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
       case 'completeApplication':
         return (
           <div className="tab-content">
-            <div className="complete-application-details">
-              {/* <h2>Admin User & Facility Details</h2> */}
-              <TrackerEventDetails
-                onFormStatusChange={handleFormStatusChange}
-                onUpdateSuccess={handleApplicationUpdateSuccess}
-                onEventDataFetched={(eventData) => {
-                  console.log('Event data fetched in Admin User & Facility Details:', eventData);
-                  // Store the event data for use in other tabs
-                  setCompleteApplicationEvent(eventData);
-                }}
-              />
+            <div className="modern-form-container">
+              <div className="modern-form-content">
+                <TrackerEventDetails
+                  onFormStatusChange={handleFormStatusChange}
+                  onUpdateSuccess={handleApplicationUpdateSuccess}
+                  onEventDataFetched={(eventData) => {
+                    console.log('Event data fetched in Admin User & Facility Details:', eventData);
+                    // Store the event data for use in other tabs
+                    setCompleteApplicationEvent(eventData);
+                  }}
+                />
+              </div>
             </div>
           </div>
         );
@@ -2199,46 +2200,161 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
               ) : facilityOwnershipEvents.length > 0 ? (
                 <div
                   style={{
-                    background: '#e2f0ff',
-                    borderRadius: '8px',
-                    padding: '24px',
-                    margin: '24px 0',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                    maxWidth: '340px',
-                    minWidth: '220px',
-                    fontSize: '0.98rem',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '16px',
+                    padding: '32px',
+                    margin: '32px auto',
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.15)',
+                    maxWidth: '400px',
+                    minWidth: '280px',
+                    fontSize: '1rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
                     cursor: 'pointer',
-                    transition: 'box-shadow 0.2s',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                   onClick={() => setOpenAddDialog(true)}
-                  onMouseOver={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.13)'}
-                  onMouseOut={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
+                  onMouseOver={e => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 16px 48px rgba(102, 126, 234, 0.25)';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(102, 126, 234, 0.15)';
+                  }}
                   title="Click to add or edit Facility Ownership event"
                 >
-                  <h3 style={{ marginBottom: '12px', fontSize: '1.08rem' }}>Compliance Section (Read Only)</h3>
+                  {/* Decorative background elements */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-20px',
+                    right: '-20px',
+                    width: '80px',
+                    height: '80px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '50%',
+                    zIndex: 0
+                  }}></div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-30px',
+                    left: '-30px',
+                    width: '120px',
+                    height: '120px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '50%',
+                    zIndex: 0
+                  }}></div>
+                  
+                  <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+                    <h3 style={{ 
+                      marginBottom: '20px', 
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: 'white',
+                      textAlign: 'center',
+                      width: '100%',
+                      letterSpacing: '0.5px'
+                    }}>Compliance Section</h3>
                   {facilityOwnershipMetadata && facilityOwnershipMetadata.programStageSections
                     ? facilityOwnershipMetadata.programStageSections.filter(section =>
                       section.name && section.name.toLowerCase().includes('compliance')
                     ).map(section => (
-                      <div key={section.id} style={{ marginBottom: '18px' }}>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '10px' }}>{section.name}</h4>
+                      <div key={section.id} style={{ 
+                        marginBottom: '24px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                      }}>
+                        <h4 style={{ 
+                          fontSize: '1.1rem', 
+                          fontWeight: '600', 
+                          marginBottom: '16px',
+                          color: 'white',
+                          textAlign: 'center',
+                          letterSpacing: '0.5px'
+                        }}>{section.name}</h4>
                         {section.dataElements.map(de => {
                           const value = (facilityOwnershipEvents[0].dataValues || []).find(dv => dv.dataElement === de.id)?.value;
+                          
+                          // Helper function to format date values
+                          const formatDate = (dateString) => {
+                            if (!dateString) return null;
+                            try {
+                              return new Date(dateString).toLocaleDateString();
+                            } catch {
+                              return dateString;
+                            }
+                          };
+
+                          // Check if this is a date field by looking at the field name or value type
+                          const isDateField = de.displayFormName.toLowerCase().includes('date') || 
+                                            de.displayFormName.toLowerCase().includes('compliance') && de.displayFormName.toLowerCase().includes('date');
+
                           return (
-                            <div key={de.id} style={{ marginBottom: '10px' }}>
-                              <strong>{de.displayFormName}:</strong> {value || <span style={{ color: '#888', fontStyle: 'italic' }}>False</span>}
+                            <div key={de.id} style={{ 
+                              marginBottom: '12px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                              <strong style={{ 
+                                color: 'white', 
+                                fontSize: '0.9rem',
+                                fontWeight: '500'
+                              }}>{de.displayFormName}:</strong> 
+                              {isDateField ? (
+                                // Handle date fields
+                                value ? (
+                                  <span style={{ 
+                                    color: '#10b981',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem'
+                                  }}>{formatDate(value)}</span>
+                                ) : (
+                                  <span style={{ 
+                                    color: 'rgba(255, 255, 255, 0.6)', 
+                                    fontStyle: 'italic',
+                                    fontSize: '0.85rem'
+                                  }}>Not provided</span>
+                                )
+                              ) : value === 'true' ? (
+                                // Handle boolean fields
+                                <span style={{ 
+                                  color: '#10b981', 
+                                  fontSize: '20px',
+                                  fontWeight: 'bold',
+                                  textShadow: '0 0 10px rgba(16, 185, 129, 0.3)'
+                                }}>✓</span>
+                              ) : (
+                                // Handle other fields
+                                <span style={{ 
+                                  color: 'rgba(255, 255, 255, 0.6)', 
+                                  fontStyle: 'italic',
+                                  fontSize: '0.85rem'
+                                }}>False</span>
+                              )}
                             </div>
                           );
                         })}
                       </div>
                     ))
-                    : <p>Loading compliance section metadata...</p>}
+                    : <p style={{ 
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        textAlign: 'center',
+                        fontStyle: 'italic'
+                      }}>Loading compliance section metadata...</p>}
+                  </div>
                 </div>
               ) : showReviewDialog && facilityOwnershipEvents.length === 0 ? (
                 <div>
@@ -2381,8 +2497,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </div>
               ) : (
                 <>
-                  <div className="table-responsive">
-                    <table className="table table-hover">
+                  <div className="modern-table-responsive">
+                    <table className="modern-table">
                       <thead>
                         <tr>
                           <th>Core Services</th>
@@ -2440,8 +2556,6 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             <tr
                               key={event.event || index}
                               onClick={() => handleServiceRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
                             >
                               <td>{coreServices || "None"}</td>
                               <td>{specialisedServices || "None"}</td>
@@ -2488,15 +2602,27 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </div>
               ) : (
                 <>
-                  <div className="table-responsive">
-                    <table className="table table-hover">
+                  <div className="modern-table-responsive">
+                    <table className="modern-table">
                       <thead>
                         <tr>
-                          <th>Emergency Equipment</th>
-                          <th>General Practice</th>
-                          <th>Laboratory Services</th>
-                          <th>Radiology</th>
-                          <th>Pharmacy</th>
+                          <th>Defibrillator</th>
+                          <th>Ambulance</th>
+                          <th>Oxygen Supply</th>
+                          <th>Resuscitation Beds</th>
+                          <th>BP Machines</th>
+                          <th>Examination Beds</th>
+                          <th>Thermometers</th>
+                          <th>Analyzers</th>
+                          <th>Centrifuge</th>
+                          <th>Fridges</th>
+                          <th>Microscopes</th>
+                          <th>CT Scanner</th>
+                          <th>MRI</th>
+                          <th>PACS Systems</th>
+                          <th>X-Ray</th>
+                          <th>Dispensing Counters</th>
+                          <th>Inventory Software</th>
                           <th>Compliance Status</th>
                         </tr>
                       </thead>
@@ -2508,64 +2634,36 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             return dataValue ? dataValue.value : 'None';
                           };
 
-                          // Helper function to format boolean values
-                          const formatBoolean = (value) => {
-                            if (value === 'true') return 'Yes';
-                            if (value === 'false') return 'No';
-                            return 'None';
+                          // Helper function to format boolean values with modern badges
+                          const formatBooleanWithBadge = (value) => {
+                            if (value === 'true') return '<span class="modern-status-badge success">Yes</span>';
+                            if (value === 'false') return '<span class="modern-status-badge danger">No</span>';
+                            return '<span class="modern-status-badge neutral">None</span>';
                           };
-
-                          // Aggregate emergency equipment
-                          const emergencyEquipment = [
-                            getFormattedValue("Ldkhcngpzm0") === 'true' ? "Defibrillator" : "",
-                            getFormattedValue("Dpzjb4f4zie") === 'true' ? "Ambulance" : "",
-                            getFormattedValue("iBa0EKW8Rs4") === 'true' ? "Oxygen Supply" : "",
-                            getFormattedValue("BBk59Ex46rC") === 'true' ? "Resuscitation Beds" : "",
-                          ].filter(Boolean).join(", ");
-
-                          // Aggregate general practice equipment
-                          const generalPracticeEquipment = [
-                            getFormattedValue("mBr9e3ecOze") === 'true' ? "BP Machines" : "",
-                            getFormattedValue("ftukRsNTA80") === 'true' ? "Examination Beds" : "",
-                            getFormattedValue("yA7QpYbNo7s") === 'true' ? "Thermometers" : "",
-                          ].filter(Boolean).join(", ");
-
-                          // Aggregate laboratory equipment
-                          const labEquipment = [
-                            getFormattedValue("K2Wj7GjneQq") === 'true' ? "Analyzers" : "",
-                            getFormattedValue("RzTeaeV0dKS") === 'true' ? "Centrifuge" : "",
-                            getFormattedValue("tlh2pkI5qro") === 'true' ? "Fridges" : "",
-                            getFormattedValue("H5zk9T4UZgr") === 'true' ? "Microscopes" : "",
-                          ].filter(Boolean).join(", ");
-
-                          // Aggregate radiology equipment
-                          const radiologyEquipment = [
-                            getFormattedValue("nh6jg8mhDpC") === 'true' ? "CT Scanner" : "",
-                            getFormattedValue("BDdXSCIVk5J") === 'true' ? "MRI" : "",
-                            getFormattedValue("SuvRvDmUtN6") === 'true' ? "PACS Systems" : "",
-                            getFormattedValue("OR7j7sVr19a") === 'true' ? "X-Ray" : "",
-                          ].filter(Boolean).join(", ");
-
-                          // Aggregate pharmacy equipment
-                          const pharmacyEquipment = [
-                            getFormattedValue("bDw85eij2QA") === 'true' ? "Dispensing Counters" : "",
-                            getFormattedValue("VCWdWq5cnqo") === 'true' ? "Inventory Software" : "",
-                          ].filter(Boolean).join(", ");
 
                           return (
                             <tr
                               key={event.event || index}
                               onClick={() => handleEquipmentRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
                             >
-                              <td>{emergencyEquipment || "None"}</td>
-                              <td>{generalPracticeEquipment || "None"}</td>
-                              <td>{labEquipment || "None"}</td>
-                              <td>{radiologyEquipment || "None"}</td>
-                              <td>{pharmacyEquipment || "None"}</td>
-                              <td>{formatBoolean(getFormattedValue("SIq5ADQjCEM"))}</td>
-
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("Ldkhcngpzm0")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("Dpzjb4f4zie")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("iBa0EKW8Rs4")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("BBk59Ex46rC")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("mBr9e3ecOze")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("ftukRsNTA80")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("yA7QpYbNo7s")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("K2Wj7GjneQq")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("RzTeaeV0dKS")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("tlh2pkI5qro")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("H5zk9T4UZgr")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("nh6jg8mhDpC")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("BDdXSCIVk5J")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("SuvRvDmUtN6")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("OR7j7sVr19a")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("bDw85eij2QA")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("VCWdWq5cnqo")) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("SIq5ADQjCEM")) }}></td>
                             </tr>
                           );
                         })}
@@ -2607,84 +2705,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </div>
               ) : (
                 <>
-                  <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>Date and Time</th>
-                          <th>Pre-Inspection Code</th>
-                          <th>Inspector</th>
-                          <th>Type</th>
-                          <th>Organization Structure</th>
-                          <th>Patient Policies</th>
-                          <th>Facility Environment</th>
-                        </tr>
-                      </thead>
-                      {/* <tbody>
-                        {inspectionEvents.map((event, index) => {
-                          const dataValues = event.dataValues || [];
-                          const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'None';
-                          };
-
-                          // Helper function to format date
-                          const formatDate = (dateString) => {
-                            if (!dateString) return 'None';
-                            try {
-                              return new Date(dateString).toLocaleDateString();
-                            } catch {
-                              return dateString;
-                            }
-                          };
-
-                          // Helper function to format boolean values
-                          const formatBoolean = (value) => {
-                            if (value === 'true') return 'Yes';
-                            if (value === 'false') return 'No';
-                            return 'None';
-                          };
-
-                          // Aggregate policy compliance
-                          const patientPolicies = [
-                            getFormattedValue("pCxcolinfQ0"), // hasPoliciesForPatientAssessment
-                            getFormattedValue("D6yET9Rm3Ql"), // hasPoliciesForPatientReferral
-                            getFormattedValue("qxWs7aK3qGZ")  // hasPoliciesForPatientConsent
-                          ];
-                          const policiesCompliant = patientPolicies.filter(p => p === 'true').length;
-                          const policiesStatus = policiesCompliant === 3 ? 'All Compliant' : 
-                                               policiesCompliant > 0 ? `${policiesCompliant}/3 Compliant` : 'Not Compliant';
-
-                          // Aggregate facility environment
-                          const facilityChecks = [
-                            getFormattedValue("wjLqyKpPclD"), // hasWheelchairAccessibility
-                            getFormattedValue("uiwrRhfPUX9"), // isFencedAndSecure
-                            getFormattedValue("bWVuvn0rN0W"), // hasAdequateParking
-                            getFormattedValue("mE0keb9FteW"), // isCleanAndNeat
-                            getFormattedValue("K3me4A3CyVO")  // hasAdequateLighting
-                          ];
-                          const facilityCompliant = facilityChecks.filter(f => f === 'true').length;
-                          const facilityStatus = facilityCompliant >= 4 ? 'Compliant' : 
-                                               facilityCompliant >= 2 ? 'Partial' : 'Non-Compliant';
-
-                                                  return (
-                            <tr 
-                              key={event.event || index}
-                              onClick={() => handleInspectionRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
-                            >
-                              <td>{formatDate(getFormattedValue("e4MmMJ3zrhK"))}</td>
-                              <td>{getFormattedValue("wS6bfV1hrU0")}</td>
-                              <td>{getFormattedValue("VOjM6ArpORU")}</td>
-                              <td>{getFormattedValue("Pl4RdRtKErd")}</td>
-                              <td>{formatBoolean(getFormattedValue("WCys8b95Qrw"))}</td>
-                              <td>{policiesStatus}</td>
-                              <td>{facilityStatus}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody> */}
+                  <div className="modern-table-responsive">
+                    <table className="modern-table">
                       <thead>
                         <tr>
                           <th>Date and Time</th>
@@ -2714,11 +2736,11 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                             }
                           };
 
-                          // Helper function to format boolean values
-                          const formatBoolean = (value) => {
-                            if (value === 'true') return 'Yes';
-                            if (value === 'false') return 'No';
-                            return 'N/A';
+                          // Helper function to format boolean values with modern badges
+                          const formatBooleanWithBadge = (value) => {
+                            if (value === 'true') return '<span class="modern-status-badge success">Yes</span>';
+                            if (value === 'false') return '<span class="modern-status-badge danger">No</span>';
+                            return '<span class="modern-status-badge neutral">N/A</span>';
                           };
 
                           // Get all values
@@ -2726,24 +2748,22 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                           const code = getFormattedValue("wS6bfV1hrU0") || 'N/A';
                           const inspector = getFormattedValue("VOjM6ArpORU") || 'N/A';
                           const type = getFormattedValue("Pl4RdRtKErd") || 'N/A';
-                          const orgStructure = formatBoolean(getFormattedValue("WCys8b95Qrw"));
-                          const patientPolicies = formatBoolean(getFormattedValue("pCxcolinfQ0"));
-                          const facilityEnv = formatBoolean(getFormattedValue("wjLqyKpPclD"));
+                          const orgStructure = getFormattedValue("WCys8b95Qrw");
+                          const patientPolicies = getFormattedValue("pCxcolinfQ0");
+                          const facilityEnv = getFormattedValue("wjLqyKpPclD");
 
                           return (
                             <tr
                               key={event.event || index}
                               onClick={() => handleInspectionRowClick(event)}
-                              style={{ cursor: 'pointer' }}
-                              className="hover-row"
                             >
-                              <td>{date}</td>
+                              <td>{formatDate(date)}</td>
                               <td>{code}</td>
                               <td>{inspector}</td>
                               <td>{type}</td>
-                              <td>{orgStructure}</td>
-                              <td>{patientPolicies}</td>
-                              <td>{facilityEnv}</td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(orgStructure) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(patientPolicies) }}></td>
+                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(facilityEnv) }}></td>
                             </tr>
                           );
                         })}
@@ -2785,8 +2805,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                 </div>
               ) : (
                 statutoryComplianceMetadata && statutoryComplianceMetadata.programStageSections && (
-                  <div className="table-responsive">
-                    <table className="table table-hover">
+                  <div className="modern-table-responsive">
+                    <table className="modern-table">
                       <thead>
                         <tr>
                           {statutoryComplianceMetadata.programStageSections.flatMap(section =>
@@ -2799,20 +2819,32 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                       <tbody>
                         {statutoryComplianceEvents.map((event, index) => {
                           const dataValues = event.dataValues || [];
+                          
+                          // Helper function to format values with modern badges
+                          const formatValueWithBadge = (value, valueType) => {
+                            if (valueType === 'FILE_RESOURCE') {
+                              if (value) return '<span class="modern-status-badge success">Submitted</span>';
+                              return '<span class="modern-status-badge neutral">None</span>';
+                            }
+                            if (valueType === 'BOOLEAN' || valueType === 'TRUE_ONLY') {
+                              if (value === 'true') return '<span class="modern-status-badge success">Yes</span>';
+                              if (value === 'false') return '<span class="modern-status-badge danger">No</span>';
+                              return '<span class="modern-status-badge neutral">None</span>';
+                            }
+                            return value || 'None';
+                          };
+
                           return (
-                            <tr key={event.event || index} className="hover-row" style={{ cursor: 'pointer' }} onClick={() => handleStatutoryComplianceRowClick(event)}>
+                            <tr key={event.event || index} onClick={() => handleStatutoryComplianceRowClick(event)}>
                               {statutoryComplianceMetadata.programStageSections.flatMap(section =>
                                 section.dataElements.map(de => {
                                   const value = dataValues.find(dv => dv.dataElement === de.id)?.value;
-                                  if (de.valueType === 'FILE_RESOURCE') {
-                                    return <td key={de.id}>{value ? 'Submitted' : 'None'}</td>;
+                                  const formattedValue = formatValueWithBadge(value, de.valueType);
+                                  
+                                  if (de.valueType === 'FILE_RESOURCE' || de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
+                                    return <td key={de.id} dangerouslySetInnerHTML={{ __html: formattedValue }}></td>;
                                   }
-                                  if (de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
-                                    if (value === 'true') return <td key={de.id}>Yes</td>;
-                                    if (value === 'false') return <td key={de.id}>No</td>;
-                                    return <td key={de.id}>None</td>;
-                                  }
-                                  return <td key={de.id}>{value || 'None'}</td>;
+                                  return <td key={de.id}>{formattedValue}</td>;
                                 })
                               )}
                             </tr>
@@ -3189,14 +3221,69 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           </Box>
         </Box>
 
-        {/* Next Action Card */}
-        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #dee2e6' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
-            🎯 Next Action Required:
+        {/* Process Flow Summary */}
+        <Box sx={{ 
+          mb: 4, 
+          p: 3, 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 3,
+          color: 'white',
+          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.15)'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, textAlign: 'center' }}>
+            🚀 Registration Process Overview
           </Typography>
-          <Typography variant="body2" sx={{ color: '#6c757d' }}>
-            {getNextAction()}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: 1, minWidth: '200px' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, opacity: 0.9 }}>
+                📊 Current Progress
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                {calculateProgress()}%
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                {(() => {
+                  const allSteps = [
+                    { number: 1, title: 'Application Setup', key: 'completeApplication', icon: '📋', description: 'Basic facility information' },
+                    { number: 2, title: 'Ownership & Compliance', key: 'facilityOwnership', icon: '🏢', description: 'Legal ownership details' },
+                    { number: 3, title: 'Service Portfolio', key: 'servicesOffered', icon: '🏥', description: 'Medical services offered' },
+                    { number: 4, title: 'Legal Requirements', key: 'statutoryCompliance', icon: '📜', description: 'Regulatory compliance' },
+                    { number: 5, title: 'Infrastructure', key: 'equipmentMachinery', icon: '⚙️', description: 'Equipment & facilities' },
+                    { number: 6, title: 'Self-Assessment', key: 'inspectionSchedule', icon: '🔍', description: 'Pre-inspection review' },
+                    { number: 7, title: 'Inspection Scheduling', key: 'inspectionDate', icon: '📅', description: 'Final inspection date' }
+                  ];
+                  const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+                  let visibleSteps;
+                  if (!hasPermissionToEstablish) {
+                    visibleSteps = allSteps.slice(0, 2);
+                  } else if (hasTabData('inspectionSchedule')) {
+                    visibleSteps = allSteps;
+                  } else {
+                    visibleSteps = allSteps.slice(0, 6);
+                  }
+                  return `${visibleSteps.filter(step => hasTabData(step.key)).length} of ${visibleSteps.length} steps completed`;
+                })()}
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: '200px' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, opacity: 0.9 }}>
+                🎯 Next Action
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9, lineHeight: 1.4 }}>
+                {getNextAction()}
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: '200px' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, opacity: 0.9 }}>
+                📋 Process Phases
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, lineHeight: 1.4 }}>
+                <strong>Phase 1:</strong> Application & Ownership (Steps 1-2)<br/>
+                <strong>Phase 2:</strong> Facility Setup (Steps 3-5)<br/>
+                <strong>Phase 3:</strong> Inspection & Approval (Steps 6-7)
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
 
@@ -3307,80 +3394,71 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         })()}
         </StepContainer> */}
 
-        {(() => {
-          // Check if "Passed MOH Screening" is true (permission granted)
-          const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
+        {/* Modern Step Navigation */}
+        <div className="modern-step-container">
+          {(() => {
+            // Check if "Passed MOH Screening" is true (permission granted)
+            const hasPermissionToEstablish = hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true");
 
-          const allSteps = [
-            { number: 1, title: 'Admin User & Facility Details', key: 'completeApplication' },
-            { number: 2, title: 'Facility Ownership', key: 'facilityOwnership' },
-            { number: 3, title: 'Services Offered', key: 'servicesOffered' },
-            { number: 4, title: 'Statutory Compliance', key: 'statutoryCompliance' },
-            { number: 5, title: 'Equipment & Machinery', key: 'equipmentMachinery' },
-            { number: 6, title: 'Pre-Inspection', key: 'inspectionSchedule' },
-            { number: 7, title: 'Preferred Facility Inspection Date', key: 'inspectionDate' }
-          ];
+            const allSteps = [
+              { number: 1, title: 'Application Setup', key: 'completeApplication', icon: '📋', description: 'Basic facility information' },
+              { number: 2, title: 'Ownership & Compliance', key: 'facilityOwnership', icon: '🏢', description: 'Legal ownership details' },
+              { number: 3, title: 'Service Portfolio', key: 'servicesOffered', icon: '🏥', description: 'Medical services offered' },
+              { number: 4, title: 'Legal Requirements', key: 'statutoryCompliance', icon: '📜', description: 'Regulatory compliance' },
+              { number: 5, title: 'Infrastructure', key: 'equipmentMachinery', icon: '⚙️', description: 'Equipment & facilities' },
+              { number: 6, title: 'Self-Assessment', key: 'inspectionSchedule', icon: '🔍', description: 'Pre-inspection review' },
+              { number: 7, title: 'Inspection Scheduling', key: 'inspectionDate', icon: '📅', description: 'Final inspection date' }
+            ];
 
-          // Filter steps based on permission and Pre-Inspection completion
-          let visibleSteps;
-          if (!hasPermissionToEstablish) {
-            // Only show first 2 steps if no permission
-            visibleSteps = allSteps.slice(0, 2);
-          } else if (hasTabData('inspectionSchedule')) {
-            // Show all steps if Pre-Inspection is completed
-            visibleSteps = allSteps;
-          } else {
-            // Show steps 1-6 if permission granted but Pre-Inspection not completed
-            visibleSteps = allSteps.slice(0, 6);
-          }
+            // Filter steps based on permission and Pre-Inspection completion
+            let visibleSteps;
+            if (!hasPermissionToEstablish) {
+              // Only show first 2 steps if no permission
+              visibleSteps = allSteps.slice(0, 2);
+            } else if (hasTabData('inspectionSchedule')) {
+              // Show all steps if Pre-Inspection is completed
+              visibleSteps = allSteps;
+            } else {
+              // Show steps 1-6 if permission granted but Pre-Inspection not completed
+              visibleSteps = allSteps.slice(0, 6);
+            }
 
-          return (
-            <StepContainer style={{
-              justifyContent: hasPermissionToEstablish ? 'space-between' : 'flex-start'
-            }}>
-              {visibleSteps.map((step, index) => {
-
-                const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
-
-                return (
-                  <React.Fragment key={step.number}>
-                    <Tooltip
-                      title={isDisabled ? "Complete the 'Admin User & Facility Details' first" : `Click to access ${step.title}`}
-                      arrow
-                      placement="top"
+            return (
+              <>
+                {/* Progress Bar */}
+                <div 
+                  className="modern-progress-bar" 
+                  style={{ 
+                    width: `${(visibleSteps.filter(step => hasTabData(step.key)).length / visibleSteps.length) * 100}%` 
+                  }}
+                ></div>
+                
+                {visibleSteps.map((step, index) => {
+                  const isDisabled = !completeApplicationStatus && step.key !== 'completeApplication';
+                  const isActive = activeTab === step.key;
+                  const isCompleted = hasTabData(step.key);
+                  
+                  return (
+                    <div
+                      key={step.number}
+                      className={`modern-step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isDisabled ? 'disabled' : ''}`}
+                      onClick={() => !isDisabled && handleTabClick(step.key)}
+                      title={isDisabled ? "Complete the 'Application Setup' first" : `Click to access ${step.title}`}
                     >
-                      {/* The div wrapper is important for the Tooltip when the child is disabled */}
-                      <div>
-                        <Step
-                          active={activeTab === step.key}
-                          hasdata={hasTabData(step.key)}
-                          disabled={isDisabled}
-                          onClick={() => !isDisabled && handleTabClick(step.key)}
-                        >
-                          <span className="step-number">{step.number}</span>
-                          <Typography variant="subtitle1" className="step-title">
-                            {step.title}
-                          </Typography>
-                          <span
-                            className="completion-indicator"
-                            style={{
-                              color: hasTabData(step.key)
-                                ? theme.palette.success.main
-                                : theme.palette.error.main
-                            }}
-                          >
-                            {hasTabData(step.key) ? '✓' : '✗'}
-                          </span>
-                        </Step>
+                      <div className="modern-step-icon">
+                        <span>{step.icon}</span>
+                        <div className="modern-step-number">{step.number}</div>
                       </div>
-                    </Tooltip>
-                    {index < visibleSteps.length - 1 && <StyledDivider disabled={isDisabled} />}
-                  </React.Fragment>
-                );
-              })}
-            </StepContainer>
-          );
-        })()}
+                      <div className="modern-step-title">{step.title}</div>
+                      <div className="modern-step-description">{step.description}</div>
+                      {index < visibleSteps.length - 1 && <div className="modern-step-connector"></div>}
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
+        </div>
 
         {renderTabContent()}
       </Box>
