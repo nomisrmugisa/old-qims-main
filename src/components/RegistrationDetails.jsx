@@ -3396,7 +3396,8 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
 
         {/* Modern Step Navigation */}
         <div className="modern-step-container" style={{
-          justifyContent: !hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'center' : 'space-between'
+          justifyContent: !hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? 'center' : 'space-between',
+          gap: !hasFacilityOwnershipDataValue("NMTFfpLaGAy", "true") ? '60px' : '0'
         }}>
           {(() => {
             // Check if "Passed MOH Screening" is true (permission granted)
