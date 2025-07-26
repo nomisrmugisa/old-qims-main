@@ -2340,13 +2340,21 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
                                   fontWeight: 'bold',
                                   textShadow: '0 0 10px rgba(16, 185, 129, 0.3)'
                                 }}>✓</span>
+                              ) : value === 'false' ? (
+                                // Handle false boolean fields
+                                <span style={{ 
+                                  color: '#ef4444', 
+                                  fontSize: '20px',
+                                  fontWeight: 'bold',
+                                  textShadow: '0 0 10px rgba(239, 68, 68, 0.3)'
+                                }}>✗</span>
                               ) : (
                                 // Handle other fields
                                 <span style={{ 
                                   color: 'rgba(255, 255, 255, 0.6)', 
                                   fontStyle: 'italic',
                                   fontSize: '0.85rem'
-                                }}>False</span>
+                                }}>Not set</span>
                               )}
                               </div>
                             );
@@ -3223,11 +3231,24 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
           open={openAddDialog}
           onClose={() => {
             setOpenAddDialog(false);
+            // Force a complete refresh of all data
             fetchFacilityOwnershipData(effectiveTrackedEntityInstanceId);
+            // Also refresh statutory compliance data since it might be affected
+            fetchStatutoryComplianceData();
           }}
           onAddSuccess={() => {
             setOpenAddDialog(false);
+            // Force a complete refresh of all data
             fetchFacilityOwnershipData(effectiveTrackedEntityInstanceId);
+            // Also refresh statutory compliance data since it might be affected
+            fetchStatutoryComplianceData();
+          }}
+          onUpdateSuccess={() => {
+            setOpenAddDialog(false);
+            // Force a complete refresh of all data
+            fetchFacilityOwnershipData(effectiveTrackedEntityInstanceId);
+            // Also refresh statutory compliance data since it might be affected
+            fetchStatutoryComplianceData();
           }}
           isEditMode={!!facilityOwnershipEvent}
           event={facilityOwnershipEvent}
@@ -3243,11 +3264,19 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
             console.log("FacilityOwnershipDialog onClose called - reloading facility ownership data");
             setShowEditDialog(false);
             fetchFacilityOwnershipData(); // Always reload data when dialog closes
+            fetchStatutoryComplianceData(); // Also refresh compliance data
           }}
           onUpdateSuccess={() => {
             console.log("FacilityOwnershipDialog onUpdateSuccess called - reloading facility ownership data");
             setShowEditDialog(false);
             fetchFacilityOwnershipData();
+            fetchStatutoryComplianceData(); // Also refresh compliance data
+          }}
+          onAddSuccess={() => {
+            console.log("FacilityOwnershipDialog onAddSuccess called - reloading facility ownership data");
+            setShowEditDialog(false);
+            fetchFacilityOwnershipData();
+            fetchStatutoryComplianceData(); // Also refresh compliance data
           }}
           event={selectedEvent}
           isEditMode={true}

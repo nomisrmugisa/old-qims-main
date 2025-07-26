@@ -2,6 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './EditFacilityOwnershipDialog.css'; // Use the correct CSS file
 import ModalPortal from './ModalPortal';
 
+// Configuration for required document uploads based on facility type
+const FACILITY_TYPE_FIELD_ID = 'L3XSi86lGBP';
+
+// Configuration for required document uploads based on facility type
+const FACILITY_TYPE_DOCUMENT_MAPPING = {
+  "INDIVIDUAL PRIVATE PRACTICE": ["lKon9xsRktH", "y8OJ9pOdLwo", "HDcDWd8KxND", "M1mtzSEisTL", "PyWrHugxcFT", "uP51La6owLL", "LYPdDPu10xb", "Z68MDWA3vlk", "DyT6IesPHtW", "NO7wjA7T9uy", "KIophtKLS2U", "PC81tqQW2pT"],
+  "NURSE-LED PRIVATE PRACTICE": ["lKon9xsRktH", "y8OJ9pOdLwo", "M1mtzSEisTL", "PyWrHugxcFT", "Z68MDWA3vlk", "DyT6IesPHtW", "NO7wjA7T9uy", "uP51La6owLL"],
+  "OUTREACH PRACTICE": ["lKon9xsRktH", "y8OJ9pOdLwo", "HDcDWd8KxND", "M1mtzSEisTL", "PyWrHugxcFT", "uP51La6owLL", "Z68MDWA3vlk", "DyT6IesPHtW", "NO7wjA7T9uy", "Wbh1nd3fQlo", "Aik7NdDoFwr"],
+  "MULTIPLE LICENCE(S)": ["lKon9xsRktH", "y8OJ9pOdLwo", "HDcDWd8KxND", "PyWrHugxcFT", "uP51La6owLL", "LYPdDPu10xb", "Z68MDWA3vlk", "DyT6IesPHtW", "NO7wjA7T9uy"],
+  "GROUP PRACTICE": ["lKon9xsRktH", "y8OJ9pOdLwo", "HDcDWd8KxND", "M1mtzSEisTL", "PyWrHugxcFT", "uP51La6owLL", "LYPdDPu10xb", "Wbh1nd3fQlo", "cfPdHbFkPOA", "Aik7NdDoFwr"],
+  "F. EMS": ["lKon9xsRktH", "cfPdHbFkPOA", "VCSYRBn9Zql", "bDAl5UURqay", "Ee8R466grcE", "rwvlAQ3f0uw", "LpKmJx65y05", "Aik7NdDoFwr"],
+  "PRIVATE HOSPITAL, NURSING HOMES and STEP-DOWN FACILITIES": ["lKon9xsRktH", "cfPdHbFkPOA", "bDAl5UURqay", "Ee8R466grcE", "rwvlAQ3f0uw", "LpKmJx65y05", "Aik7NdDoFwr", "KUEmeH17ITM"],
+  "NOT-FOR-PROFIT AND WORKPLACE": ["lKon9xsRktH", "cfPdHbFkPOA", "VCSYRBn9Zql", "bDAl5UURqay", "Ee8R466grcE", "rwvlAQ3f0uw", "LpKmJx65y05", "Aik7NdDoFwr", "HdOefa1HTrn"]
+};
+
 const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) => {
   const [programStageMetadata, setProgramStageMetadata] = useState(null);
   const [formData, setFormData] = useState({});
@@ -304,12 +319,53 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
            section.name.toLowerCase().includes('circumstances');
   };
 
+  // Function to check if ID Type is Omang
+  const isIdTypeOmang = () => {
+    // Check if ID Type field (assumed to be 'idType' or similar) is set to Omang
+    return formData['idType'] === 'omang' || formData['idType'] === 'OMANG';
+  };
+
+  // Function to check if field should be hidden based on ID Type
+  const shouldHideField = (de) => {
+    if (isIdTypeOmang()) {
+      // Hide permit fields when ID Type is Omang
+      const permitFields = ['cUObXSGtCuD', 'g9jXH9LJyxU']; // Copy of Resident Permit, Work Permit / Waiver
+      return permitFields.includes(de.id);
+    }
+    return false;
+  };
+  
+  // Function to get the currently selected facility type
+  const getSelectedFacilityType = () => {
+    // Find the facility type field in the form data
+    return formData[FACILITY_TYPE_FIELD_ID];
+  };
+  
+  // Function to check if a document field should be shown based on facility type
+  const shouldShowDocumentField = (dataElementId) => {
+    const selectedFacilityType = getSelectedFacilityType();
+    
+    // If no facility type is selected, show all document fields
+    if (!selectedFacilityType) return true;
+    
+    // Check if the selected facility type exists in our mapping
+    if (!FACILITY_TYPE_DOCUMENT_MAPPING[selectedFacilityType]) return true;
+    
+    // Check if the document ID is in the list for the selected facility type
+    return FACILITY_TYPE_DOCUMENT_MAPPING[selectedFacilityType].includes(dataElementId);
+  };
+
   const renderFileInput = (de) => {
+    // Check if this document field should be shown based on facility type
+    if (!shouldShowDocumentField(de.id)) {
+      return null; // Don't render this field if it's not in the list for the selected facility type
+    }
+    
     const fileInputId = `file-input-${de.id}`;
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div>
         {formData[de.id] ? (
-          <>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <a 
               href={`/api/fileResources/${formData[de.id]}/data`} 
               target="_blank" 
@@ -324,7 +380,7 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
               }}
             >
               <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
-              {selectedFileNames[de.id] || 'Download current file'}
+              {selectedFileNames[de.id] || 'Download file'}
             </a>
             {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
               <button 
@@ -360,9 +416,9 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
             >
               Remove
             </button>
-          </>
+          </div>
         ) : (
-          <>
+          <div>
             <input
               id={fileInputId}
               type="file"
@@ -395,8 +451,7 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
                 marginLeft: 8, 
                 fontStyle: 'italic', 
                 color: '#333',
-                display: 'flex',
-                alignItems: 'center',
+                display: 'inline-block',
                 fontSize: '0.9rem'
               }}>
                 <span style={{ marginRight: '6px', fontSize: '1.1em' }}>📄</span>
@@ -407,8 +462,7 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
               <span style={{
                 marginLeft: 8,
                 color: '#1976d2',
-                display: 'flex',
-                alignItems: 'center',
+                display: 'inline-block',
                 fontSize: '0.9rem'
               }}>
                 <span style={{ marginRight: '6px' }}>⏳</span>
@@ -419,16 +473,16 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
               <span style={{
                 marginLeft: 8, 
                 color: '#d32f2f',
-                display: 'flex',
-                alignItems: 'center',
+                display: 'inline-block',
                 fontSize: '0.9rem'
               }}>
                 <span style={{ marginRight: '6px' }}>⚠️</span>
                 {fileUploadStatus[de.id].error}
               </span>
             )}
-          </>
+          </div>
         )}
+        
         {/* Preview Modal */}
         {previewUrl && previewType && (
           <div style={{
@@ -531,13 +585,416 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
       borderRadius: '4px',
       border: '1px solid #ffeeba'
     }}>Form metadata could not be loaded.</div>;
+
+    const selectedFacilityType = formData[FACILITY_TYPE_FIELD_ID];
+    
+    // Collect all file upload elements for the dedicated section
+    const fileUploadElements = programStageMetadata.programStageSections.flatMap(section => 
+      section.dataElements.filter(de => isFileValueType(de.valueType))
+    );
+    
+    // Filter file upload elements based on the selected facility type
+    const requiredFileUploadElements = fileUploadElements.filter(de => 
+      selectedFacilityType && FACILITY_TYPE_DOCUMENT_MAPPING[selectedFacilityType]
+        ? FACILITY_TYPE_DOCUMENT_MAPPING[selectedFacilityType].includes(de.id)
+        : true // Show all if no facility type is selected
+    );
+
+    // Identify sections that are document upload sections to avoid duplicates
+    const isDocumentUploadSection = (section) => {
+      return section.name && (
+        section.name.toLowerCase().includes("required upload") ||
+        section.name.toLowerCase().includes("document") ||
+        section.name.toLowerCase().includes("upload")
+      );
+    };
+
+    // Find the Licence Holder Details section to move it to the top
+    const licenceHolderSection = programStageMetadata.programStageSections.find(
+      section => section.name && (
+        section.name.toLowerCase().includes("licence holder details") || 
+        section.name.toLowerCase().includes("lead medical professional")
+      )
+    );
+    
+    // Get all other sections except document upload sections and licence holder section
+    const otherSections = programStageMetadata.programStageSections.filter(
+      section => !isDocumentUploadSection(section) && section !== licenceHolderSection
+    );
+    
     return (
       <div className="dynamic-form-body">
-        {programStageMetadata.programStageSections.map(section => (
+        {/* Licence Holder Details Section - at the top */}
+        {licenceHolderSection && (
+          <div key={licenceHolderSection.id} className="section-group" style={{
+            marginBottom: '28px',
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+            padding: '20px',
+            borderBottom: '1px solid #eee'
+          }}>
+            {licenceHolderSection.name && (
+              <h4 style={{
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                marginBottom: '16px',
+                color: '#333',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #eee'
+              }}>
+                {licenceHolderSection.name}
+                {isComplianceSection(licenceHolderSection) && (
+                  <span style={{ 
+                    fontSize: '0.8em', 
+                    fontWeight: 'normal', 
+                    marginLeft: '10px', 
+                    color: '#666',
+                    backgroundColor: '#f8f9fa',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
+                  }}>
+                    (Read Only)
+                  </span>
+                )}
+              </h4>
+            )}
+            {licenceHolderSection.dataElements
+              .filter(de => !isFileValueType(de.valueType) || !selectedFacilityType)
+              .map(de => (
+                <div key={de.id} className="form-group-dhis2" style={{
+                  marginBottom: '16px'
+                }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    fontSize: '0.95rem',
+                    fontWeight: '500',
+                    color: '#333'
+                  }}>
+                    {de.displayFormName}{de.compulsory && <span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>}
+                  </label>
+                  {isComplianceSection(licenceHolderSection) ? (
+                    // Render read-only fields for compliance section
+                    isFileValueType(de.valueType) ? (
+                      <div>
+                        {formData[de.id] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <a 
+                              href={`/api/fileResources/${formData[de.id]}/data`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="file-download-link"
+                              style={{
+                                color: '#1976d2',
+                                textDecoration: 'none',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
+                              {selectedFileNames[de.id] || 'Download file'}
+                            </a>
+                            {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
+                              <button 
+                                type="button" 
+                                className="btn btn-link" 
+                                style={{
+                                  marginLeft: 8,
+                                  color: '#1976d2',
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem',
+                                  textDecoration: 'underline'
+                                }} 
+                                onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
+                              >
+                                Preview
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ 
+                            color: '#666', 
+                            fontStyle: 'italic',
+                            padding: '8px 0',
+                            display: 'block'
+                          }}>No file uploaded</span>
+                        )}
+                      </div>
+                    ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={formData[de.id] === 'true'}
+                          disabled={true}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            cursor: 'not-allowed',
+                            opacity: 0.7
+                          }}
+                        />
+                        <span style={{ fontSize: '0.95rem' }}>Yes</span>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <div style={{ 
+                        padding: '10px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '4px',
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {de.optionSet.options && 
+                          de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName || 
+                          <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
+                        }
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        padding: '10px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '4px',
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                      </div>
+                    )
+                  ) : (
+                    // Normal editable fields for non-compliance sections
+                    isFileValueType(de.valueType) ? (
+                      renderFileInput(de)
+                    ) : de.valueType === 'NUMBER' ? (
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : de.valueType === 'TRUE_ONLY' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            accentColor: '#1976d2'
+                          }}
+                        />
+                        <label 
+                          htmlFor={`checkbox-${de.id}`}
+                          style={{ 
+                            cursor: 'pointer', 
+                            fontWeight: 'normal', 
+                            margin: 0,
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    ) : de.valueType === 'BOOLEAN' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            accentColor: '#1976d2'
+                          }}
+                        />
+                        <label 
+                          htmlFor={`checkbox-${de.id}`}
+                          style={{ 
+                            cursor: 'pointer', 
+                            fontWeight: 'normal', 
+                            margin: 0,
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <select
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          appearance: 'auto',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="">Select</option>
+                        {de.optionSet.options && de.optionSet.options.map(opt => (
+                          <option key={opt.id} value={opt.code}>{opt.displayName}</option>
+                        ))}
+                      </select>
+                    ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : de.valueType === 'DATE' ? (
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    )
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Required Document Uploads Section based on Facility Type */}
+        {selectedFacilityType && (
+          <div className="section-group" style={{ 
+            marginBottom: '30px',
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+            padding: '20px'
+          }}>
+            <h4 style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              backgroundColor: '#f0f7ff',
+              padding: '10px 15px',
+              borderRadius: '6px',
+              marginBottom: '20px'
+            }}>
+              Required Document Uploads for {selectedFacilityType}
+              <span style={{
+                fontSize: '0.8em',
+                fontWeight: 'normal',
+                color: '#0066cc',
+                backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                padding: '4px 8px',
+                borderRadius: '4px'
+              }}>
+                {requiredFileUploadElements.length} document{requiredFileUploadElements.length !== 1 ? 's' : ''} required
+              </span>
+            </h4>
+            <div className="file-uploads-grid" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr', 
+              gap: '20px',
+              width: '100%'
+            }}>
+              {requiredFileUploadElements.map(de => (
+                <div key={de.id} style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px',
+                  backgroundColor: '#f9f9f9',
+                  borderRadius: '4px',
+                  border: '1px solid #eee'
+                }}>
+                  <div style={{ flex: '1', fontWeight: '500' }}>
+                    {de.displayFormName}{de.compulsory && <span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>}
+                  </div>
+                  <div style={{ flex: '1', textAlign: 'right' }}>
+                    {renderFileInput(de)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Render all other sections except document upload sections */}
+        {otherSections.map(section => (
           <div key={section.id} className="section-group" style={{
             marginBottom: '28px',
-            padding: '0 0 16px 0',
-            borderBottom: section !== programStageMetadata.programStageSections[programStageMetadata.programStageSections.length - 1] ? '1px solid #eee' : 'none'
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+            padding: '20px',
+            borderBottom: section !== otherSections[otherSections.length - 1] ? '1px solid #eee' : 'none'
           }}>
             {section.name && (
               <h4 style={{
@@ -564,269 +1021,272 @@ const EditFacilityOwnershipDialog = ({ open, onClose, onUpdateSuccess, event }) 
                 )}
               </h4>
             )}
-            {section.dataElements.map(de => (
-              <div key={de.id} className="form-group-dhis2" style={{
-                marginBottom: '16px'
-              }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  fontSize: '0.95rem',
-                  fontWeight: '500',
-                  color: '#333'
+            {section.dataElements
+              // Filter out file type elements as they're shown in the dedicated section
+              .filter(de => !isFileValueType(de.valueType) || !selectedFacilityType)
+              .map(de => (
+                <div key={de.id} className="form-group-dhis2" style={{
+                  marginBottom: '16px'
                 }}>
-                  {de.displayFormName}{de.compulsory && <span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>}
-                </label>
-                {isComplianceSection(section) ? (
-                  // Render read-only fields for compliance section
-                  isFileValueType(de.valueType) ? (
-                    <div>
-                      {formData[de.id] ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <a 
-                            href={`/api/fileResources/${formData[de.id]}/data`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="file-download-link"
-                            style={{
-                              color: '#1976d2',
-                              textDecoration: 'none',
-                              fontWeight: '500',
-                              display: 'flex',
-                              alignItems: 'center'
-                            }}
-                          >
-                            <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
-                            {selectedFileNames[de.id] || 'Download file'}
-                          </a>
-                          {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
-                            <button 
-                              type="button" 
-                              className="btn btn-link" 
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    fontSize: '0.95rem',
+                    fontWeight: '500',
+                    color: '#333'
+                  }}>
+                    {de.displayFormName}{de.compulsory && <span style={{color:'#d32f2f', marginLeft: '3px'}}>*</span>}
+                  </label>
+                  {isComplianceSection(section) ? (
+                    // Render read-only fields for compliance section
+                    isFileValueType(de.valueType) ? (
+                      <div>
+                        {formData[de.id] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <a 
+                              href={`/api/fileResources/${formData[de.id]}/data`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="file-download-link"
                               style={{
-                                marginLeft: 8,
                                 color: '#1976d2',
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px 8px',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                                textDecoration: 'underline'
-                              }} 
-                              onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
+                                textDecoration: 'none',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
                             >
-                              Preview
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ 
-                          color: '#666', 
-                          fontStyle: 'italic',
-                          padding: '8px 0',
-                          display: 'block'
-                        }}>No file uploaded</span>
-                      )}
-                    </div>
-                  ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
-                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={formData[de.id] === 'true'}
-                        disabled={true}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          cursor: 'not-allowed',
-                          opacity: 0.7
-                        }}
-                      />
-                      <span style={{ fontSize: '0.95rem' }}>Yes</span>
-                    </div>
-                  ) : shouldRenderAsDropdown(de) ? (
-                    <div style={{ 
-                      padding: '10px 12px',
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      color: '#333',
-                      fontSize: '0.95rem'
-                    }}>
-                      {de.optionSet.options && 
-                        de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName || 
-                        <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
-                      }
-                    </div>
-                  ) : (
-                    <div style={{ 
-                      padding: '10px 12px',
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      color: '#333',
-                      fontSize: '0.95rem'
-                    }}>
-                      {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>False</span>}
-                    </div>
-                  )
-                ) : (
-                  // Normal editable fields for non-compliance sections
-                  isFileValueType(de.valueType) ? (
-                    renderFileInput(de)
-                  ) : de.valueType === 'NUMBER' ? (
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
-                      style={{
-                        width: '100%',
+                              <span style={{ marginRight: '6px', fontSize: '1.2em' }}>📄</span>
+                              {selectedFileNames[de.id] || 'Download file'}
+                            </a>
+                            {selectedFileNames[de.id] && isPreviewable(selectedFileNames[de.id]) && (
+                              <button 
+                                type="button" 
+                                className="btn btn-link" 
+                                style={{
+                                  marginLeft: 8,
+                                  color: '#1976d2',
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem',
+                                  textDecoration: 'underline'
+                                }} 
+                                onClick={() => handlePreview(formData[de.id], selectedFileNames[de.id])}
+                              >
+                                Preview
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ 
+                            color: '#666', 
+                            fontStyle: 'italic',
+                            padding: '8px 0',
+                            display: 'block'
+                          }}>No file uploaded</span>
+                        )}
+                      </div>
+                    ) : de.valueType === 'TRUE_ONLY' || de.valueType === 'BOOLEAN' ? (
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={formData[de.id] === 'true'}
+                          disabled={true}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            cursor: 'not-allowed',
+                            opacity: 0.7
+                          }}
+                        />
+                        <span style={{ fontSize: '0.95rem' }}>Yes</span>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <div style={{ 
                         padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
                         borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : de.valueType === 'TRUE_ONLY' ? (
-                    <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {de.optionSet.options && 
+                          de.optionSet.options.find(opt => opt.code === formData[de.id])?.displayName || 
+                          <span style={{ color: '#666', fontStyle: 'italic' }}>Not selected</span>
+                        }
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        padding: '10px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '4px',
+                        color: '#333',
+                        fontSize: '0.95rem'
+                      }}>
+                        {formData[de.id] || <span style={{ color: '#666', fontStyle: 'italic' }}>Not provided</span>}
+                      </div>
+                    )
+                  ) : (
+                    // Normal editable fields for non-compliance sections
+                    isFileValueType(de.valueType) ? (
+                      renderFileInput(de)
+                    ) : de.valueType === 'NUMBER' ? (
                       <input
-                        type="checkbox"
-                        id={`checkbox-${de.id}`}
-                        checked={formData[de.id] === 'true'}
-                        onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          accentColor: '#1976d2'
+                        type="number"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
-                      <label 
-                        htmlFor={`checkbox-${de.id}`}
-                        style={{ 
-                          cursor: 'pointer', 
-                          fontWeight: 'normal', 
-                          margin: 0,
-                          fontSize: '0.95rem'
+                    ) : de.valueType === 'TRUE_ONLY' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : '')}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            accentColor: '#1976d2'
+                          }}
+                        />
+                        <label 
+                          htmlFor={`checkbox-${de.id}`}
+                          style={{ 
+                            cursor: 'pointer', 
+                            fontWeight: 'normal', 
+                            margin: 0,
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    ) : de.valueType === 'BOOLEAN' ? (
+                      <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          id={`checkbox-${de.id}`}
+                          checked={formData[de.id] === 'true'}
+                          onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
+                          style={{ 
+                            marginRight: '8px', 
+                            width: '18px', 
+                            height: '18px',
+                            accentColor: '#1976d2'
+                          }}
+                        />
+                        <label 
+                          htmlFor={`checkbox-${de.id}`}
+                          style={{ 
+                            cursor: 'pointer', 
+                            fontWeight: 'normal', 
+                            margin: 0,
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    ) : shouldRenderAsDropdown(de) ? (
+                      <select
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          appearance: 'auto',
+                          boxSizing: 'border-box'
                         }}
                       >
-                        Yes
-                      </label>
-                    </div>
-                  ) : de.valueType === 'BOOLEAN' ? (
-                    <div className="checkbox-wrapper" style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                        <option value="">Select</option>
+                        {de.optionSet.options && de.optionSet.options.map(opt => (
+                          <option key={opt.id} value={opt.code}>{opt.displayName}</option>
+                        ))}
+                      </select>
+                    ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
                       <input
-                        type="checkbox"
-                        id={`checkbox-${de.id}`}
-                        checked={formData[de.id] === 'true'}
-                        onChange={e => handleInputChange(de.id, e.target.checked ? 'true' : 'false')}
-                        style={{ 
-                          marginRight: '8px', 
-                          width: '18px', 
-                          height: '18px',
-                          accentColor: '#1976d2'
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
-                      <label 
-                        htmlFor={`checkbox-${de.id}`}
-                        style={{ 
-                          cursor: 'pointer', 
-                          fontWeight: 'normal', 
-                          margin: 0,
-                          fontSize: '0.95rem'
+                    ) : de.valueType === 'DATE' ? (
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
-                      >
-                        Yes
-                      </label>
-                    </div>
-                  ) : shouldRenderAsDropdown(de) ? (
-                    <select
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        appearance: 'auto',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">Select</option>
-                      {de.optionSet.options && de.optionSet.options.map(opt => (
-                        <option key={opt.id} value={opt.code}>{opt.displayName}</option>
-                      ))}
-                    </select>
-                  ) : de.valueType === 'TEXT' || de.valueType === 'LONG_TEXT' ? (
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : de.valueType === 'DATE' ? (
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData[de.id] || ''}
-                      onChange={e => handleInputChange(de.id, e.target.value)}
-                      required={de.compulsory}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '0.95rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        transition: 'border-color 0.2s ease',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  )
-                )}
-              </div>
-            ))}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData[de.id] || ''}
+                        onChange={e => handleInputChange(de.id, e.target.value)}
+                        required={de.compulsory}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.95rem',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          transition: 'border-color 0.2s ease',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    )
+                  )}
+                </div>
+              ))}
           </div>
         ))}
       </div>
