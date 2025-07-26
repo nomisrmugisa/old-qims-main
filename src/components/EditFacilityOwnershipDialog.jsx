@@ -629,59 +629,59 @@ const EditFacilityOwnershipDialog = ({
       <div className="file-input-wrapper">
         <span>{de.displayFormName}{de.compulsory && <span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>}</span>
         <div>
-          {formData[de.id] ? (
-            <>
+        {formData[de.id] ? (
+          <>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <a
-                  href={`/api/fileResources/${formData[de.id]}/data`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#1976d2',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                >
+            <a
+              href={`/api/fileResources/${formData[de.id]}/data`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#1976d2',
+                textDecoration: 'none',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
                   Download current file
-                </a>
-                <button
-                  type="button"
-                  style={{
-                    color: '#d32f2f',
-                    background: 'none',
-                    border: 'none',
+            </a>
+              <button
+                type="button"
+              style={{
+                color: '#d32f2f',
+                background: 'none',
+                border: 'none',
                     padding: '0',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    textDecoration: 'underline'
-                  }}
-                  onClick={() => handleRemoveFile(de)}
-                >
-                  Remove
-                </button>
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                textDecoration: 'underline'
+              }}
+              onClick={() => handleRemoveFile(de)}
+            >
+              Remove
+            </button>
               </div>
-            </>
-          ) : (
-            <>
-              <input
-                id={fileInputId}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={e => handleFileUpload(de, e.target.files[0])}
+          </>
+        ) : (
+          <>
+            <input
+              id={fileInputId}
+              type="file"
+              style={{ display: 'none' }}
+              onChange={e => handleFileUpload(de, e.target.files[0])}
                 required={de.compulsory}
-                disabled={fileUploadStatus[de.id]?.uploading}
-              />
-              <label
-                htmlFor={fileInputId}
+              disabled={fileUploadStatus[de.id]?.uploading}
+            />
+            <label
+              htmlFor={fileInputId}
                 className="custom-file-upload"
-              >
-                Choose File
-              </label>
+            >
+              Choose File
+            </label>
             </>
-          )}
-        </div>
+                )}
+              </div>
       </div>
     );
   };
@@ -959,37 +959,37 @@ const EditFacilityOwnershipDialog = ({
                     width: "30%",
                     textAlign: "right"
                   }}>
-                    {formData[de.id] ? (
+                        {formData[de.id] ? (
                       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <a
-                          href={`/api/fileResources/${formData[de.id]}/data`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: '#1976d2',
-                            textDecoration: 'none',
+                            <a
+                              href={`/api/fileResources/${formData[de.id]}/data`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: '#1976d2',
+                                textDecoration: 'none',
                             fontWeight: '500'
-                          }}
-                        >
+                              }}
+                            >
                           Download
-                        </a>
-                        <button
-                          type="button"
-                          style={{
+                            </a>
+                              <button
+                                type="button"
+                                style={{
                             color: '#d32f2f',
-                            background: 'none',
-                            border: 'none',
+                                  background: 'none',
+                                  border: 'none',
                             padding: '0',
-                            cursor: 'pointer',
-                            fontSize: '0.9rem',
-                            textDecoration: 'underline'
-                          }}
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem',
+                                  textDecoration: 'underline'
+                                }}
                           onClick={() => handleRemoveFile(de)}
-                        >
+                              >
                           Remove
-                        </button>
-                      </div>
-                    ) : (
+                              </button>
+                          </div>
+                        ) : (
                       <>
                         <input
                           id={`file-input-${de.id}`}
@@ -1007,8 +1007,8 @@ const EditFacilityOwnershipDialog = ({
                         </label>
                       </>
                     )}
-                  </div>
-                </div>
+                      </div>
+                      </div>
               ))}
             </div>
           </div>
@@ -1048,7 +1048,7 @@ const EditFacilityOwnershipDialog = ({
                     // Render read-only fields for compliance section
                     <div className="form-control-readonly">
                       {formData[de.id] || '-'}
-                    </div>
+                      </div>
                   ) : (
                     // Normal editable fields for non-compliance sections
                     de.valueType === 'NUMBER' ? (

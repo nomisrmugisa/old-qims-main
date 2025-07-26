@@ -1,0 +1,233 @@
+/* Equipment & Machinery Component Styles */
+.equipment-machinery-container {
+  margin-bottom: 20px;
+}
+
+.equipment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.equipment-header h2 {
+  font-size: 1.25rem;
+  color: #333;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-button, .add-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0 5px;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-button {
+  color: #666;
+}
+
+.add-button {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.equipment-details {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.equipment-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.search-field {
+  flex-grow: 1;
+  min-width: 200px;
+}
+
+.filter-field {
+  min-width: 150px;
+}
+
+.no-equipment {
+  padding: 30px;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #666;
+}
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.equipment-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e8e8e8;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.equipment-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.operational {
+  background-color: #e3f6e4;
+  color: #2e7d32;
+}
+
+.status-badge.maintenance {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.card-body {
+  padding: 16px;
+  flex-grow: 1;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.detail-label {
+  width: 40%;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.detail-value {
+  width: 60%;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+/* Maintenance urgency indicators */
+.maintenance-urgent {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.maintenance-upcoming {
+  color: #f57c00;
+  font-weight: 500;
+}
+
+.maintenance-normal {
+  color: #333;
+}
+
+.maintenance-alert {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-color: #d32f2f;
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 18px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: #fafafa;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: #4776E6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3d68d8;
+}
+
+.btn-secondary {
+  background-color: #f1f3f5;
+  color: #495057;
+}
+
+.btn-secondary:hover {
+  background-color: #e9ecef;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .equipment-filters {
+    flex-direction: column;
+  }
+  
+  .search-field, .filter-field {
+    width: 100%;
+  }
+  
+  .equipment-grid {
+    grid-template-columns: 1fr;
+  }
+} 

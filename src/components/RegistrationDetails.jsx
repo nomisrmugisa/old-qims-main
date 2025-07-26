@@ -17,6 +17,10 @@ import { getCredentials } from '../utils/credentialHelper';
 import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import EquipmentMachinery from './EquipmentMachinery';
+import ExpandableEquipmentMachinery from './ExpandableEquipmentMachinery';
+import ExpandableStatutoryCompliance from './ExpandableStatutoryCompliance';
+import ExpandableServicesOffered from './ExpandableServicesOffered';
 
 // Inside your component:
 
@@ -2469,106 +2473,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="services-offered-details">
-              <h2>
-                Services Offered Details 
-                <button 
-                  className="add-icon" 
-                  onClick={handleAddService}
-                  style={{ 
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '28px',
-                    color: '#28a745',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    padding: '0 5px'
-                  }}
-                >
-                  +
-                </button>
-              </h2>
-              
-
-              {isLoadingServices ? (
-                <p>Loading services data...</p>
-              ) : serviceEvents.length === 0 ? (
-                <div>
-                  <p>No service offering records found.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="modern-table-responsive">
-                    <table className="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Core Services</th>
-                          <th>Specialised Services</th>
-                          <th>Support Services</th>
-                          <th>Additional Services</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {serviceEvents.map((event, index) => {
-                          const dataValues = event.dataValues || [];
-                          const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'None';
-                          };
-
-                          // Helper function to check if service type is offered
-                          const isServiceOffered = (dataElementId) => {
-                            return getFormattedValue(dataElementId) === 'true';
-                          };
-
-                          // Aggregate services by category
-                          const coreServices = [
-                            isServiceOffered("j57HXXX4Ijz") ? "Emergency" : "",
-                            isServiceOffered("ECjGkIq0Deq") ? "General Practice" : "",
-                            isServiceOffered("aM41KiGDJAs") ? "Treatment & Care" : "",
-                            isServiceOffered("flzyZUlf30v") ? "Urgent Care" : "",
-                          ].filter(Boolean).join(", ");
-                          
-                          const specialisedServices = [
-                            isServiceOffered("y9QSgKRoc6L") ? "Maternity & Reproductive" : "",
-                            isServiceOffered("yZhlCTgamq0") ? "Mental Health" : "",
-                            isServiceOffered("RCvjFJQUaPV") ? "Radiology" : "",
-                            isServiceOffered("uxcdCPnaqWL") ? "Rehabilitation" : "",
-                          ].filter(Boolean).join(", ");
-                          
-                          const supportServices = [
-                            isServiceOffered("r76ODkNZv43") ? "Ambulatory Care" : "",
-                            isServiceOffered("E7OMKr09N0R") ? "Dialysis" : "",
-                            isServiceOffered("GyQNkXpNraW") ? "Hospices" : "",
-                            isServiceOffered("OgpVvPxkLwf") ? "Lab Services" : "",
-                            isServiceOffered("rLC2CE79p7Q") ? "Nursing Homes" : "",
-                            isServiceOffered("w86r0XZCLCr") ? "Outpatient" : "",
-                            isServiceOffered("m8Kl585eWSK") ? "Transportation" : "",
-                            isServiceOffered("yecnkdC7HtM") ? "Pharmacy" : "",
-                          ].filter(Boolean).join(", ");
-                          
-                          const additionalServices = [
-                            isServiceOffered("SMvKa2EWeBO") ? "Health Education" : "",
-                            isServiceOffered("i0QXYWMOUjy") ? "Counseling" : "",
-                            isServiceOffered("e48W7983nBs") ? "Community-Based" : "",
-                          ].filter(Boolean).join(", ");
-
-                          return (
-                            <tr 
-                              key={event.event || index}
-                              onClick={() => handleServiceRowClick(event)}
-                            >
-                              <td>{coreServices || "None"}</td>
-                              <td>{specialisedServices || "None"}</td>
-                              <td>{supportServices || "None"}</td>
-                              <td>{additionalServices || "None"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
+              <ExpandableServicesOffered
+                onAddService={handleAddService}
+                serviceEvents={serviceEvents}
+                isLoading={isLoadingServices}
+                onServiceRowClick={handleServiceRowClick}
+              />
             </div>
           </div>
         );
@@ -2576,102 +2486,12 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="equipment-machinery-details">
-              <h2>
-                Equipment & Machinery 
-                <button 
-                  className="add-icon" 
-                  onClick={handleAddEquipment}
-                  style={{ 
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '28px',
-                    color: '#28a745',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    padding: '0 5px'
-                  }}
-                >
-                  +
-                </button>
-              </h2>
-              {isLoadingEquipment ? (
-                <p>Loading equipment data...</p>
-              ) : equipmentEvents.length === 0 ? (
-                <div>
-                  <p>No equipment records found.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="modern-table-responsive">
-                    <table className="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Defibrillator</th>
-                          <th>Ambulance</th>
-                          <th>Oxygen Supply</th>
-                          <th>Resuscitation Beds</th>
-                          <th>BP Machines</th>
-                          <th>Examination Beds</th>
-                          <th>Thermometers</th>
-                          <th>Analyzers</th>
-                          <th>Centrifuge</th>
-                          <th>Fridges</th>
-                          <th>Microscopes</th>
-                          <th>CT Scanner</th>
-                          <th>MRI</th>
-                          <th>PACS Systems</th>
-                          <th>X-Ray</th>
-                          <th>Dispensing Counters</th>
-                          <th>Inventory Software</th>
-                          <th>Compliance Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {equipmentEvents.map((event, index) => {
-                          const dataValues = event.dataValues || [];
-                          const getFormattedValue = (dataElementId) => {
-                            const dataValue = dataValues.find(dv => dv.dataElement === dataElementId);
-                            return dataValue ? dataValue.value : 'None';
-                          };
-
-                          // Helper function to format boolean values with modern badges
-                          const formatBooleanWithBadge = (value) => {
-                            if (value === 'true') return '<span class="modern-status-badge success">Yes</span>';
-                            if (value === 'false') return '<span class="modern-status-badge danger">No</span>';
-                            return '<span class="modern-status-badge neutral">None</span>';
-                          };
-
-                          return (
-                            <tr 
-                              key={event.event || index}
-                              onClick={() => handleEquipmentRowClick(event)}
-                            >
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("Ldkhcngpzm0")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("Dpzjb4f4zie")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("iBa0EKW8Rs4")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("BBk59Ex46rC")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("mBr9e3ecOze")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("ftukRsNTA80")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("yA7QpYbNo7s")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("K2Wj7GjneQq")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("RzTeaeV0dKS")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("tlh2pkI5qro")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("H5zk9T4UZgr")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("nh6jg8mhDpC")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("BDdXSCIVk5J")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("SuvRvDmUtN6")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("OR7j7sVr19a")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("bDw85eij2QA")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("VCWdWq5cnqo")) }}></td>
-                              <td dangerouslySetInnerHTML={{ __html: formatBooleanWithBadge(getFormattedValue("SIq5ADQjCEM")) }}></td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
+              <ExpandableEquipmentMachinery 
+                onAddEquipment={handleAddEquipment}
+                equipmentEvents={equipmentEvents}
+                isLoading={isLoadingEquipment}
+                onEquipmentRowClick={handleEquipmentRowClick}
+              />
             </div>
           </div>
         );
@@ -2779,82 +2599,13 @@ const RegistrationDetails = ({ trackedEntityInstanceId, showReviewDialog }) => {
         return (
           <div className="tab-content">
             <div className="statutory-compliance-details">
-              <h2>
-                Statutory Compliance Details
-                <button
-                  className="add-icon"
-                  onClick={handleAddStatutoryCompliance}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '28px',
-                    color: '#28a745',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    padding: '0 5px'
-                  }}
-                >
-                  +
-                </button>
-              </h2>
-              {isLoadingStatutoryCompliance ? (
-                <p>Loading statutory compliance data...</p>
-              ) : statutoryComplianceEvents.length === 0 ? (
-                <div>
-                  <p>No statutory compliance records found.</p>
-                </div>
-              ) : (
-                statutoryComplianceMetadata && statutoryComplianceMetadata.programStageSections && (
-                  <div className="modern-table-responsive">
-                    <table className="modern-table">
-                      <thead>
-                        <tr>
-                          {statutoryComplianceMetadata.programStageSections.flatMap(section =>
-                            section.dataElements.map(de => (
-                              <th key={de.id}>{de.displayFormName}</th>
-                            ))
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {statutoryComplianceEvents.map((event, index) => {
-                          const dataValues = event.dataValues || [];
-                          
-                          // Helper function to format values with modern badges
-                          const formatValueWithBadge = (value, valueType) => {
-                            if (valueType === 'FILE_RESOURCE') {
-                              if (value) return '<span class="modern-status-badge success">Submitted</span>';
-                              return '<span class="modern-status-badge neutral">None</span>';
-                            }
-                            if (valueType === 'BOOLEAN' || valueType === 'TRUE_ONLY') {
-                              if (value === 'true') return '<span class="modern-status-badge success">Yes</span>';
-                              if (value === 'false') return '<span class="modern-status-badge danger">No</span>';
-                              return '<span class="modern-status-badge neutral">None</span>';
-                            }
-                            return value || 'None';
-                          };
-
-                          return (
-                            <tr key={event.event || index} onClick={() => handleStatutoryComplianceRowClick(event)}>
-                              {statutoryComplianceMetadata.programStageSections.flatMap(section =>
-                                section.dataElements.map(de => {
-                                  const value = dataValues.find(dv => dv.dataElement === de.id)?.value;
-                                  const formattedValue = formatValueWithBadge(value, de.valueType);
-                                  
-                                  if (de.valueType === 'FILE_RESOURCE' || de.valueType === 'BOOLEAN' || de.valueType === 'TRUE_ONLY') {
-                                    return <td key={de.id} dangerouslySetInnerHTML={{ __html: formattedValue }}></td>;
-                                  }
-                                  return <td key={de.id}>{formattedValue}</td>;
-                                })
-                              )}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              )}
+              <ExpandableStatutoryCompliance
+                onAddStatutoryCompliance={handleAddStatutoryCompliance}
+                statutoryComplianceEvents={statutoryComplianceEvents}
+                isLoading={isLoadingStatutoryCompliance}
+                statutoryComplianceMetadata={statutoryComplianceMetadata}
+                onStatutoryComplianceRowClick={handleStatutoryComplianceRowClick}
+              />
             </div>
           </div>
         );

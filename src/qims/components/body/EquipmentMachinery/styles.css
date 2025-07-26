@@ -1,0 +1,52 @@
+/* Equipment & Machinery Component Styles */
+.equipment-machinery-container {
+  margin: 20px 0;
+  padding: 0;
+}
+
+.equipment-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* Maintenance urgency indicators */
+.maintenance-urgent {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.maintenance-upcoming {
+  color: #f57c00;
+  font-weight: 500;
+}
+
+.maintenance-normal {
+  color: #333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .equipment-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-container, .filter-container {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* Animation for hover effect */
+@keyframes elevate {
+  from {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  to {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+} 

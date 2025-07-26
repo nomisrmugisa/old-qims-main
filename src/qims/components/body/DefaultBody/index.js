@@ -27,6 +27,9 @@ import Autocomplete from "@mui/material/Autocomplete";
 import MDTypography from "components/MDTypography";
 import { debounce } from "lodash";
 
+// Import the EquipmentMachinery component
+import EquipmentMachinery from "../EquipmentMachinery";
+
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
     padding: theme.spacing(2),
@@ -545,7 +548,10 @@ function DefaultBody() {
             </Card>
 
             <br />
-            <br />
+            
+            {/* Equipment & Machinery Section */}
+            <EquipmentMachinery />
+            
             <br />
             <Card
               sx={{
