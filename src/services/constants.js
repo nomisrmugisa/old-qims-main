@@ -309,10 +309,10 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                                     id:"IjFoC4IawvF"
                                 },
                                 {
-                                    code:"Foreigner",
+                                    code:"Non-Citizen",
                                     sortOrder:2,
                                     displayName:"Non-Citizen",
-                                    id:"oory0p691mv"
+                                    id:"llHkNOdkhsG"
                                 }
                             ],
                             displayName:"Citizenship",
@@ -350,6 +350,11 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                         id:"aUGSyyfbUVI"
                     },
                     {
+                        valueType:"TEXT",
+                        displayFormName:"PASSPORT No.",
+                        id:"v7XIOI2kXFd"
+                    },
+                    {
                         valueType:"FILE_RESOURCE",
                         displayFormName:"Copy of ID / Passport",
                         id:"KRj1TOR5cVM"
@@ -373,12 +378,12 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                         valueType:"TEXT",
                         optionSet:{
                             options:[
-                                {
-                                    code:"NMCB practicing licence",
-                                    sortOrder:1,
-                                    displayName:"NMCB practicing licence",
-                                    id:"y8HzYzIhkYW"
-                                },
+                                // {
+                                //     code:"NMCB practicing licence",
+                                //     sortOrder:1,
+                                //     displayName:"NMCB practicing licence",
+                                //     id:"y8HzYzIhkYW"
+                                // },
                                 {
                                     code:"BHPC certificate",
                                     sortOrder:2,
@@ -392,11 +397,11 @@ export const FACILITY_OWNERSHIP_REGISTRATION_FORM_MAP = {
                         displayFormName:"Type of health profession license",
                         id:"K3nP8CUkNYi"
                     },
-                    {
-                        valueType:"FILE_RESOURCE",
-                        displayFormName:"Certified copy of current NMCB practicing licence",
-                        id:"uP51La6owLL"
-                    },
+                    // {
+                    //     valueType:"FILE_RESOURCE",
+                    //     displayFormName:"Certified copy of current NMCB practicing licence",
+                    //     id:"uP51La6owLL"
+                    // },
                     {
                         valueType:"FILE_RESOURCE",
                         displayFormName:"Certified copy of BHPC blue card",

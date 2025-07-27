@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import debounce from 'lodash/debounce';
-import {StorageService} from '../services';
+import { StorageService } from '../services';
 import { getCredentials, setCredentials } from '../utils/credentialHelper';
 
 // Define required fields for "Other Details" section
@@ -73,15 +73,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   // Function to set real user data when no event data is found
   const setUserDataOnly = async () => {
     console.log('Setting user data only (no event data found)');
-    
+
     // Get credentials using the helper with fallbacks
     const effectiveCredentials = credentials || await getCredentials();
-    
+
     if (!effectiveCredentials) {
       console.error('No credentials available for setUserDataOnly');
       return;
     }
-    
+
     // Fetch user data to get email
     let userEmail = '';
     try {
@@ -90,7 +90,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           Authorization: `Basic ${effectiveCredentials}`,
         },
       });
-      
+
       if (meResponse.ok) {
         const userData = await meResponse.json();
         userEmail = userData.email || '';
@@ -99,7 +99,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     } catch (error) {
       console.error('Error fetching user email:', error);
     }
-    
+
     const initialFormValues = {
       'NVlLoMZbXIW': userEmail // Only set the email field
     };
@@ -124,7 +124,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         setCredentials(null);
       }
     };
-    
+
     loadCredentials();
   }, []);
 
@@ -134,9 +134,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       try {
         console.log('🔄 Starting data fetch...');
         console.log('🔐 Credentials available:', !!credentials);
-        
+
         setLoading(true);
-        
+
         // Get credentials using the helper with fallbacks
         const effectiveCredentials = credentials || await getCredentials();
         const userOrgUnitId = localStorage.getItem('userOrgUnitId');
@@ -235,12 +235,12 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   useEffect(() => {
     if (eventData && eventData.dataValues) {
       const initialFormValues = {};
-      
+
       // Map all data values from the event to form fields
       eventData.dataValues.forEach(dv => {
         initialFormValues[dv.dataElement] = dv.value;
       });
-      
+
       // Ensure all required fields are present with proper defaults
       const fieldMappings = {
         // Licensed Users Details Section
@@ -251,15 +251,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         'aMFg2iq9VIg': initialFormValues['aMFg2iq9VIg'] || '', // Private Practice Number
         'HMk4LZ9ESOq': initialFormValues['HMk4LZ9ESOq'] || '', // Name of the License Holder
         'ykwhsQQPVH0': initialFormValues['ykwhsQQPVH0'] || '', // Surname of License Holder
-        
+
         // Select Location Facility is in Botswana Section
         'PdtizqOqE6Q': initialFormValues['PdtizqOqE6Q'] || '', // Name of Facility to be Registered
         'VJzk8OdFJKA': initialFormValues['VJzk8OdFJKA'] || '', // Location in Botswana (Ward)
-        
+
         // Additional fields that might be in the event data
         'jV5Y8XOfkgb': initialFormValues['jV5Y8XOfkgb'] || 'true', // Application status
       };
-      
+
       // If user email is not in event data, add it from user data
       if (!fieldMappings['NVlLoMZbXIW'] && registrationCode) {
         const userEmail = localStorage.getItem('userEmail');
@@ -268,14 +268,14 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           fieldMappings['g3J1CH26hSA'] = userEmail; // Set preferred username to email if not provided
         }
       }
-      
+
       console.log('📋 Mapped form values:', fieldMappings);
       console.log('📊 Original event data values:', eventData.dataValues);
-      
+
       setFormValues(fieldMappings);
       setHasExistingData(true);
       setIsEditing(false);
-      
+
       // Notify parent component about the fetched event data
       if (onEventDataFetched) {
         onEventDataFetched(eventData);
@@ -298,7 +298,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       try {
         // Get credentials using the helper with fallbacks
         const effectiveCredentials = credentials || await getCredentials();
-        
+
         if (!effectiveCredentials) {
           console.error('No credentials found for fetching org unit name');
           return;
@@ -325,10 +325,10 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
         if (data && data.name) {
           // Create enhanced display name with parent information
-          const enhancedDisplayName = data.parent && data.parent.name 
+          const enhancedDisplayName = data.parent && data.parent.name
             ? `${data.name} (${data.parent.name})`
             : data.name;
-          
+
           // Update selectedOrgUnit with the enhanced display name
           setSelectedOrgUnit({
             id: formValues['VJzk8OdFJKA'],
@@ -362,15 +362,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   // Enhanced validation function to check if all required fields are filled
   const validateAllRequiredFields = () => {
     const missingFields = [];
-    
+
     console.log('🔍 === FORM VALIDATION DEBUG ===');
     console.log('Current formValues:', formValues);
-    
+
     // Check each required field
     requiredOtherDetailsFields.forEach(fieldId => {
       const value = formValues[fieldId];
       console.log(`Field ${fieldId}:`, value, 'Type:', typeof value);
-      
+
       // Handle different data types properly
       if (!value || (typeof value === 'string' && value.trim() === '') || value === null || value === undefined) {
         missingFields.push(fieldId);
@@ -379,20 +379,20 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         console.log(`✅ Field ${fieldId} is valid`);
       }
     });
-    
+
     console.log('Missing fields:', missingFields);
     console.log('=== END FORM VALIDATION DEBUG ===');
-    
+
     // Additional validation for specific fields
     if (formValues['PdtizqOqE6Q'] && typeof formValues['PdtizqOqE6Q'] === 'string' && formValues['PdtizqOqE6Q'].trim().length < 3) {
       missingFields.push('PdtizqOqE6Q'); // Facility name too short
     }
-    
+
     // Private Practice Number - accept any non-empty value (minimum 1 character)
     if (formValues['aMFg2iq9VIg'] && typeof formValues['aMFg2iq9VIg'] === 'string' && formValues['aMFg2iq9VIg'].trim().length < 1) {
       missingFields.push('aMFg2iq9VIg'); // Private Practice Number cannot be empty
     }
-    
+
     return {
       isValid: missingFields.length === 0,
       missingFields,
@@ -422,7 +422,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
     // Also store in localStorage for access by other components
     localStorage.setItem('completeApplicationFormStatus', JSON.stringify(isComplete));
-    
+
     // Log validation details for debugging
     if (!isComplete) {
       console.log('Form validation failed. Missing fields:', validation.missingFieldNames);
@@ -473,28 +473,28 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           Authorization: `Basic ${credentials}`,
         },
       });
-      
+
       console.log('📡 Response status:', response.status);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch organisational units: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('📊 Response data:', data);
       console.log('🏢 Number of org units:', data.organisationUnits?.length || 0);
-      
+
       // Enhance the organizational units with parent information
       const enhancedOrgUnits = data.organisationUnits?.map(unit => ({
         ...unit,
-        displayName: unit.parent && unit.parent.name 
+        displayName: unit.parent && unit.parent.name
           ? `${unit.displayName} (${unit.parent.name})`
           : unit.displayName
       })) || [];
-      
+
       setOrganisationalUnits(enhancedOrgUnits);
       setFilteredOrgUnits(enhancedOrgUnits);
-      
+
       console.log('✅ Enhanced organizational units loaded successfully');
     } catch (error) {
       console.error("❌ Error fetching organisational units:", error);
@@ -512,9 +512,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         const originalName = unit.displayName.split(' (')[0]; // Get original name without parent
         const enhancedName = unit.displayName; // Full enhanced name
         const searchTerm = query.toLowerCase();
-        
-        return originalName.toLowerCase().includes(searchTerm) || 
-               enhancedName.toLowerCase().includes(searchTerm);
+
+        return originalName.toLowerCase().includes(searchTerm) ||
+          enhancedName.toLowerCase().includes(searchTerm);
       });
       setFilteredOrgUnits(filtered);
     }, 300),
@@ -538,25 +538,25 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           },
         }
       );
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch location parent information");
       }
-      
+
       const data = await response.json();
       setSelectedLocationInfo(data);
-      
+
       // Update selectedOrgUnit with enhanced display name
       if (data && data.name) {
-        const enhancedDisplayName = data.parent && data.parent.name 
+        const enhancedDisplayName = data.parent && data.parent.name
           ? `${data.name} (${data.parent.name})`
           : data.name;
-        
+
         setSelectedOrgUnit(prev => ({
           ...prev,
           displayName: enhancedDisplayName
         }));
-        
+
         console.log('Updated selectedOrgUnit with enhanced display name:', enhancedDisplayName);
       }
     } catch (error) {
@@ -595,10 +595,18 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   };
 
   // Handle form field changes
+  // const handleChange = (e, dataElementId) => {
+  //   const newFormValues = {
+  //     ...formValues,
+  //     [dataElementId]: typeof e.target.value === 'string' ? e.target.value.trim() : e.target.value
+  //   };
+  //   setFormValues(newFormValues);
+  // };
+
   const handleChange = (e, dataElementId) => {
     const newFormValues = {
       ...formValues,
-      [dataElementId]: typeof e.target.value === 'string' ? e.target.value.trim() : e.target.value
+      [dataElementId]: e.target.value  // Remove the .trim() here
     };
     setFormValues(newFormValues);
   };
@@ -769,7 +777,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       // Step 5d: Update organization unit with email if not set during creation
       if (formValues['NVlLoMZbXIW']) {
         console.log('📧 Step 5d: Setting email on organization unit...');
-        
+
         const updatePayload = {
           id: orgUnitId,
           name: formValues['PdtizqOqE6Q'],
@@ -905,7 +913,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       const result = await response.json();
       console.log('📄 TEI creation response:', result);
-      
+
       newTei = result.response.importSummaries[0].reference;
       console.log('🆔 Generated TEI ID:', newTei);
 
@@ -932,15 +940,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     try {
       console.log(`📋 Creating enrollment for program ${programId}...`);
       const today = new Date().toISOString().split('T')[0];
-      
+
       const enrollmentPayload = {
         enrollment: enrollmentId,
-          trackedEntityInstance: teiCalled,
-          program: programId,
-          status: "ACTIVE",
-          orgUnit: orgUnitId,
-          enrollmentDate: today,
-          incidentDate: today
+        trackedEntityInstance: teiCalled,
+        program: programId,
+        status: "ACTIVE",
+        orgUnit: orgUnitId,
+        enrollmentDate: today,
+        incidentDate: today
       };
 
       console.log('📦 Enrollment Payload:', enrollmentPayload);
@@ -972,10 +980,10 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
       console.log('👤 Step 9a: Fetching current user information...');
       // Get current user information from /api/me
       const meResponse = await fetch('/api/me', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${credentials}`
-          }
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${credentials}`
+        }
       });
 
       if (!meResponse.ok) {
@@ -985,15 +993,15 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
       const userData = await meResponse.json();
       console.log('📋 Current user data:', userData);
-      
+
       const userToUpdate = {
         id: userData.id || userData.uid,
         username: userData.username,
         email: userData.email
       };
-      
+
       console.log('👤 User to update:', userToUpdate);
-      
+
       // Return the current user as the user to update
       return [userToUpdate];
     } catch (error) {
@@ -1008,7 +1016,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
     try {
       console.log(`🔄 Updating user ${userId} for ${orgUnitUpdateType}...`);
       console.log(`📍 New org unit ID: ${newOrgUnitId}`);
-      
+
       // Step 1: Assign new org unit
       console.log(`📝 Step 1: Assigning new org unit ${newOrgUnitId} to user ${userId}...`);
       const assignResponse = await fetch(
@@ -1063,7 +1071,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const sendFacilityUpdateEmail = async () => {
     try {
       console.log('📧 Step 10a: Starting facility update email process...');
-      
+
       // 1. Get the user's email from the form
       const formEmail = formValues['NVlLoMZbXIW'];
       let emails = [];
@@ -1082,11 +1090,11 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           Authorization: `Basic ${credentials}`,
         },
       });
-      
+
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
         console.log('📋 Users data from API:', usersData);
-        
+
         if (usersData.users && Array.isArray(usersData.users)) {
           const apiEmails = usersData.users
             .map(u => u.email)
@@ -1327,7 +1335,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         if (createdEnrollmentId) {
           enrollmentIdsByProgram[programId] = createdEnrollmentId;
           console.log(`✅ Enrollment stored for program ${programId}: ${createdEnrollmentId}`);
-          
+
           // Special validation for the critical program EE8yeLVo6cN
           if (programId === 'EE8yeLVo6cN') {
             console.log(`🎯 CRITICAL: Successfully created enrollment for target program ${programId}`);
@@ -1340,14 +1348,14 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           }
         }
       }
-      
+
       // Final validation: Ensure EE8yeLVo6cN enrollment exists
       if (!enrollmentIdsByProgram['EE8yeLVo6cN']) {
         console.error('❌ CRITICAL ERROR: Missing enrollment for program EE8yeLVo6cN');
         console.error('Created enrollments:', enrollmentIdsByProgram);
         throw new Error('Failed to create required enrollment for program EE8yeLVo6cN');
       }
-      
+
       console.log('✅ Step 8 COMPLETED: Program enrollments created for all programs');
       console.log('📋 Final enrollment mapping:', enrollmentIdsByProgram);
       // setSuccessMessages(prev => [...prev, 'Program enrollments created successfully']);
@@ -1364,7 +1372,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           email: formValues['NVlLoMZbXIW'],
           username: formValues['g3J1CH26hSA']
         });
-        
+
         const users = await fetchOrgUnitUsersAssoc();
         console.log(`👥 Found ${users.length} users to enable for org unit:`, users);
 
@@ -1374,32 +1382,32 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           setOpenSnackbar(true);
           setProgress(85);
         } else {
-        const orgUnitTypes = [
-          'organisationUnits',
-          'dataViewOrganisationUnits',
-          'teiSearchOrganisationUnits'
-        ];
+          const orgUnitTypes = [
+            'organisationUnits',
+            'dataViewOrganisationUnits',
+            'teiSearchOrganisationUnits'
+          ];
 
           console.log('🔄 Step 9b: Org unit types to update:', orgUnitTypes);
           console.log('🏢 Organization unit ID to assign:', orgUnitId);
 
-        // setCurrentStep(`Assigning User to New Facility...`);
-        setCurrentStep('Saving...');
-        for (const user of users) {
+          // setCurrentStep(`Assigning User to New Facility...`);
+          setCurrentStep('Saving...');
+          for (const user of users) {
             console.log(`👤 Processing user: ${user.username} (ID: ${user.id})`);
-          for (const orgUnitType of orgUnitTypes) {
+            for (const orgUnitType of orgUnitTypes) {
               console.log(`🔄 Updating ${orgUnitType} for user ${user.username}...`);
-            await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
-          }
-          // await enableUser(user.id);
-          // await addUsertoLocation(user.id);
+              await updateUserOrgUnits(user.id, orgUnitType, orgUnitId);
+            }
+            // await enableUser(user.id);
+            // await addUsertoLocation(user.id);
             console.log(`✅ Completed updates for user ${user.id}`);
-        }
-        console.log('✅ Step 9 COMPLETED: Users enabled and assigned to location');
-        // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
-        setSuccessMessages(prev => [...prev, '5 / 5']);
+          }
+          console.log('✅ Step 9 COMPLETED: Users enabled and assigned to location');
+          // setSuccessMessages(prev => [...prev, 'User assigned to new facility successfully']);
+          setSuccessMessages(prev => [...prev, '5 / 5']);
 
-        setOpenSnackbar(true);
+          setOpenSnackbar(true);
           setProgress(85); // After user org unit updates
         }
 
@@ -1417,21 +1425,21 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         }
         const newEventId = generateDhis2Uid();
         const nowIso = new Date().toISOString();
-        
+
         // CRITICAL: Ensure we have a valid enrollment for program EE8yeLVo6cN
         const targetProgramId = 'EE8yeLVo6cN';
         const enrollmentId = enrollmentIdsByProgram[targetProgramId];
-        
+
         console.log('🎯 Target program ID:', targetProgramId);
         console.log('📋 Available enrollments by program:', enrollmentIdsByProgram);
         console.log('📋 Enrollment ID for target program:', enrollmentId);
-        
+
         if (!enrollmentId) {
           console.error(`❌ CRITICAL ERROR: No enrollment found for program ${targetProgramId}`);
           console.error('Available enrollments:', Object.keys(enrollmentIdsByProgram));
           throw new Error(`Missing enrollment for program ${targetProgramId}. Cannot create event without proper enrollment.`);
         }
-        
+
         // Use enrollment and orgUnit from previous steps
         const orgUnitIdForEvent = orgUnitId; // from orgUnit creation step
         console.log('📝 Creating event for program:', targetProgramId);
@@ -1439,11 +1447,11 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         console.log('✅ Verified enrollment ID:', enrollmentId);
         console.log('🏢 Organization unit ID:', orgUnitIdForEvent);
         console.log('📅 Event date:', nowIso);
-        
+
         // Build dataValues from form
         const dataValues = Object.keys(formValues).map(key => ({ dataElement: key, value: formValues[key] }));
         console.log('📦 Data values for new event:', dataValues);
-        
+
         const newEventPayload = {
           events: [
             {
@@ -1457,7 +1465,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
             }
           ]
         };
-        
+
         // Before posting newEventPayload.events batch:
         if (Array.isArray(newEventPayload.events) && newEventPayload.events.length > 1) {
           newEventPayload.events[1].programStage = 'WjheMIcXSkU';
@@ -1475,7 +1483,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
 
         console.log('📦 New event payload:', newEventPayload);
         console.log('📤 Step 10b: Sending new tracker event to DHIS2...');
-        
+
         const trackerResponse = await fetch('/api/40/tracker?async=false', {
           method: 'POST',
           headers: {
@@ -1505,7 +1513,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           console.log('🔄 Step 11: Showing success confirmation dialog...');
           setCurrentStep('Completing application...');
           setSuccessMessages(prev => [...prev, 'Profile update completed successfully']);
-          
+
           // Show the success confirmation dialog
           setShowSuccessDialog(true);
           console.log('✅ Step 11 COMPLETED: Success dialog displayed');
@@ -1557,7 +1565,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
   const handleSuccessDialogConfirm = () => {
     setShowSuccessDialog(false);
     console.log('🚀 Step 12: User confirmed success, proceeding with data refresh and tab switch...');
-    
+
     // Store flag in localStorage to indicate we should select Facility Ownership tab after reload
     localStorage.setItem('autoSelectTab', 'facilityOwnership');
     console.log('💾 Stored autoSelectTab flag in localStorage');
@@ -1667,14 +1675,14 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
         slotProps={{ backdrop: { timeout: 500 } }}
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
       >
-        <MuiBox sx={{ 
-          width: 400, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          boxShadow: 24, 
-          p: 4, 
-          display: 'flex', 
-          flexDirection: 'column', 
+        <MuiBox sx={{
+          width: 400,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 24,
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center'
         }}>
@@ -1689,9 +1697,9 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
             variant="contained"
             color="primary"
             onClick={handleSuccessDialogConfirm}
-            sx={{ 
-              px: 4, 
-              py: 1.5, 
+            sx={{
+              px: 4,
+              py: 1.5,
               fontSize: '1.1rem',
               fontWeight: 'bold'
             }}
@@ -1859,8 +1867,8 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
             Select Facility Location in Botswana
           </Typography>
 
-          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 label="Name of Facility to be Registered"
                 value={formValues['PdtizqOqE6Q'] || ''}
@@ -1873,11 +1881,28 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                 error={!formValues['PdtizqOqE6Q'] && !loading}
                 helperText={!formValues['PdtizqOqE6Q'] && !loading ? "This field is required" : ""}
                 className={!formValues['PdtizqOqE6Q'] && !loading ? 'blink-required' : hasExistingData ? 'grey-disabled' : ''}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
-                  }
-                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Village"
+                value=""
+                onChange={(e) => { }}
+                fullWidth
+                size="small"
+                margin="dense"
+                // disabled={hasExistingData || !isEditing || updating}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Ward"
+                value=""
+                onChange={(e) => { }}
+                fullWidth
+                size="small"
+                margin="dense"
+                // disabled={hasExistingData || !isEditing || updating}
               />
             </Grid>
           </Grid>
@@ -1889,8 +1914,8 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
               width: '100%'
             }}
           >
-                      {/* Replace the Typography for 'Location in Botswana (Ward) *' with a label prop on the TextField (or mimic the style of other field labels) */}
-          {/* In the renderInput of the Autocomplete, set label="Location in Botswana (Ward) *" on the TextField, and remove the Typography above. */}
+            {/* Replace the Typography for 'Location in Botswana (Ward) *' with a label prop on the TextField (or mimic the style of other field labels) */}
+            {/* In the renderInput of the Autocomplete, set label="Location in Botswana (Ward) *" on the TextField, and remove the Typography above. */}
             <Typography
               variant="subtitle2"
               align="left"
@@ -2029,10 +2054,10 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2, flexDirection: 'column' }}>
             {/* Validation message */}
             {!isFormComplete && (
-              <Box sx={{ 
-                p: 2, 
-                backgroundColor: '#fff3cd', 
-                border: '1px solid #ffeaa7', 
+              <Box sx={{
+                p: 2,
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffeaa7',
                 borderRadius: 1,
                 mb: 2
               }}>
@@ -2048,7 +2073,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                 </Box>
               </Box>
             )}
-            
+
             {/* {!isEditing ? (
               <Button
                 variant="outlined"
@@ -2072,7 +2097,7 @@ const TrackerEventDetails = ({ onFormStatusChange, onEventDataFetched, onUpdateS
                       console.error('Form validation failed. Cannot proceed with submission.');
                       return;
                     }
-                    
+
                     setShowProgress(true);
                     setProgress(0);
                     await handleSubmit();

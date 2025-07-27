@@ -77,6 +77,7 @@ function FacilityOwnership() {
     ownershipType: "",
     idType: "",
     id: "",
+    passport_no: "",
     copyOfIdPassport: null,
     professionalReference1: null,
     professionalReference2: null,
@@ -92,6 +93,7 @@ function FacilityOwnership() {
     ownershipType: "",
     idType: "",
     id: "",
+    passport_no: "",
     copyOfIdPassport: null,
     professionalReference1: null,
     professionalReference2: null,
@@ -193,6 +195,8 @@ function FacilityOwnership() {
         "",
       id:
         event.dataValues?.find((dv) => dv.dataElement === "aUGSyyfbUVI")?.value || event.id || "",
+      passport_no:
+        event.dataValues?.find((dv) => dv.dataElement === "v7XIOI2kXFd")?.value || "",
       copyOfIdPassport:
         event.dataValues?.find((dv) => dv.dataElement === "KRj1TOR5cVM")?.value || null,
       professionalReference1:
@@ -280,6 +284,7 @@ function FacilityOwnership() {
         { dataElement: "ykwhsQQPVH0", value: convertToProperString(editFormData.surname) }, // Surname
         { dataElement: "zVmmto7HwOc", value: convertToProperString(editFormData.citizen) }, // Citizenship
         { dataElement: "aUGSyyfbUVI", value: convertToProperString(editFormData.id) }, // ID
+        { dataElement: "v7XIOI2kXFd", value: convertToProperString(editFormData.passport_no) }, // Passport No
         { dataElement: "FLcrCfTNcQi", value: convertToProperString(editFormData.idType) }, // ID Type
         { dataElement: "vAHHXaW0Pna", value: convertToProperString(editFormData.ownershipType) }, // Type of ownership
         { dataElement: "RCvjFJQUaPV", value: "true" }, // Set to true for boolean value
@@ -446,6 +451,7 @@ function FacilityOwnership() {
         { dataElement: "ykwhsQQPVH0", value: convertToProperString(newFormData.surname) },
         { dataElement: "zVmmto7HwOc", value: convertToProperString(newFormData.citizen) },
         { dataElement: "aUGSyyfbUVI", value: convertToProperString(newFormData.id) },
+        { dataElement: "v7XIOI2kXFd", value: convertToProperString(newFormData.passport_no) },
         { dataElement: "FLcrCfTNcQi", value: convertToProperString(newFormData.idType) },
         { dataElement: "vAHHXaW0Pna", value: convertToProperString(newFormData.ownershipType) },
         { dataElement: "RCvjFJQUaPV", value: "true" }, // Set to true for boolean value
@@ -649,6 +655,13 @@ function FacilityOwnership() {
               value={editFormData.id}
               onChange={handleInputChange}
             />
+            <TextField
+              fullWidth
+              label="Passport No."
+              name="passport_no"
+              value={editFormData.passport_no}
+              onChange={handleInputChange}
+            />
             <MDTypography variant="caption" color="text" sx={{ mb: 0.5 }}>
               Copy of ID / Passport
             </MDTypography>
@@ -704,7 +717,7 @@ function FacilityOwnership() {
           <Button onClick={handleCloseDialog} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleUpdate} variant="contained" color="primary" disabled={!editFormData.ownershipType || !editFormData.surname || !editFormData.firstName || !editFormData.citizen || !editFormData.idType || !editFormData.id || !editFormData.copyOfIdPassport || !editFormData.professionalReference1 || !editFormData.professionalReference2 || !editFormData.qualificationCertificates || !editFormData.validRecentPermit || !editFormData.workPermitWaiver || !editFormData.companyRegistrationDocuments}>
+          <Button onClick={handleUpdate} variant="contained" color="primary" disabled={!editFormData.ownershipType || !editFormData.surname || !editFormData.firstName || !editFormData.citizen || !editFormData.idType || !editFormData.id || !editFormData.passport_no || !editFormData.copyOfIdPassport || !editFormData.professionalReference1 || !editFormData.professionalReference2 || !editFormData.qualificationCertificates || !editFormData.validRecentPermit || !editFormData.workPermitWaiver || !editFormData.companyRegistrationDocuments}>
             Update
           </Button>
         </DialogActions>
@@ -777,6 +790,13 @@ function FacilityOwnership() {
               value={newFormData.id}
               onChange={handleNewInputChange}
             />
+            <TextField
+              fullWidth
+              label="Passport No."
+              name="passport_no"
+              value={editFormData.passport_no}
+              onChange={handleNewInputChange}
+            />
             <MDTypography variant="caption" color="text" sx={{ mb: 0.5 }}>
               Copy of ID / Passport
             </MDTypography>
@@ -832,7 +852,7 @@ function FacilityOwnership() {
           <Button onClick={handleCloseAddDialog} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleAddSubmit} variant="contained" color="primary" disabled={!newFormData.ownershipType || !newFormData.surname || !newFormData.firstName || !newFormData.citizen || !newFormData.idType || !newFormData.id || !newFormData.copyOfIdPassport || !newFormData.professionalReference1 || !newFormData.professionalReference2 || !newFormData.qualificationCertificates || !newFormData.validRecentPermit || !newFormData.workPermitWaiver || !newFormData.companyRegistrationDocuments}>
+          <Button onClick={handleAddSubmit} variant="contained" color="primary" disabled={!newFormData.ownershipType || !newFormData.surname || !newFormData.firstName || !newFormData.citizen || !newFormData.idType || !newFormData.id || !newFormData.passport_no || !newFormData.copyOfIdPassport || !newFormData.professionalReference1 || !newFormData.professionalReference2 || !newFormData.qualificationCertificates || !newFormData.validRecentPermit || !newFormData.workPermitWaiver || !newFormData.companyRegistrationDocuments}>
             Add
           </Button>
         </DialogActions>

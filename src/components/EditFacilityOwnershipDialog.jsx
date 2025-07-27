@@ -2251,27 +2251,7 @@ const EditFacilityOwnershipDialog = ({
       </Dialog>
       {/* </ModalPortal> */}
 
-      {showEmailSent && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed',
-          top: '30%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          padding: '24px',
-          backgroundColor: '#4caf50',
-          color: 'white',
-          borderRadius: '8px',
-          zIndex: 15000,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          fontSize: '16px',
-          fontWeight: 500,
-        }}>
-          ✅ Email notification sent.
-        </div>,
-        document.body
-      )}
-
-      
+           
 
     </>
   );

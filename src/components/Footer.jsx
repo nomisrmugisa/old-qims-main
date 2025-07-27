@@ -21,7 +21,7 @@ const Footer = () => {
             {/* Middle Column */}
             <div className="text-center p-10 mx-md-3 order-1 order-md-2 flex-grow-1">
               <div style={{ width: "65%", margin: "0 auto" }}>
-                <h3>Quality Improvement Management System (QIMS)</h3>
+                <h3>Quality Information Management System (QIMS)</h3>
                 <div className="social-links d-flex justify-content-center mt-4">
                   <p><strong>Email:</strong> <span>info@example.com</span></p>
                 </div>
@@ -32,7 +32,8 @@ const Footer = () => {
             <div className="text-start mx-md-3 order-3 order-md-3" style={{ flexGrow: 0 }}>
               <h4>Physical Address</h4>
               <p>Ministry of Health</p>
-              <p>Plot 54861</p>
+              <p>Plot 54861,</p>
+              <p>24 Amos Street</p>
               <p>Government Enclave</p>
               <p>Office no 8A:34</p>
             </div>
