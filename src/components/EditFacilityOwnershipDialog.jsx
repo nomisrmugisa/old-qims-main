@@ -2215,7 +2215,7 @@ const EditFacilityOwnershipDialog = ({
                 <button
                   type="button"
                   className={`btn ${submitSuccess || isInScreeningGroup ? 'btn-secondary' : 'btn-primary'}`}
-                  disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
+                  // disabled={!isAllRequiredFieldsFilled() || submitInProgress || submitSuccess || isInScreeningGroup}
                   onClick={handleSaveAndSubmit}
                 >
                   {submitSuccess ? 'Application Sent' : isInScreeningGroup ? 'Already Submitted' : submitInProgress ? 'Submitting...' : 'Save & Submit Application'}
